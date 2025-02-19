@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Tabela de Usuários
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  tipo      String
+  avaliacoes USUAval[]
+}
+
+// Tabela de Associação entre Usuários e Avaliações
+model USUAval {
+  id          Int       @id @default(autoincrement())
+  usuarioId   Int
+  avaliacaoId Int
+  status      String    // flag para status
+  isFinalizado Boolean  // flag para indicar se finalizou
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
+  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id])
+  respostas   Resposta[] // Agora as respostas são associadas a USUAval
+}
+
+// Tabela de Respostas
+model Resposta {
+  id         Int       @id @default(autoincrement())
+  usuAvalId  Int
+  perguntaId Int
+  resposta   String    
+  usuAval    USUAval   @relation(fields: [usuAvalId], references: [id]) 
+  pergunta   Pergunta  @relation(fields: [perguntaId], references: [id])
+  @@unique ([usuAvalId, perguntaId])
+}
+
+// Tabela de Avaliações
+model Avaliacao {
+  id            Int       @id @default(autoincrement())
+  semestre      String
+  questionarioId Int
+  questionario  Questionario @relation(fields: [questionarioId], references: [id])
+  usuarios      USUAval[]
+}
+
+// Tabela de Questionários
+model Questionario {
+  id          Int        @id @default(autoincrement())
+  titulo      String
+  perguntas   QuePerg[]
+  avaliacoes  Avaliacao[]
+}
+
+// Tabela de Associação entre Questionários e Perguntas
+model QuePerg {
+  id             Int       @id @default(autoincrement())
+  questionarioId Int
+  perguntaId     Int
+  questionario   Questionario @relation(fields: [questionarioId], references: [id])
+  pergunta       Pergunta @relation(fields: [perguntaId], references: [id])
+}
+
+// Tabela de Perguntas
+model Pergunta {
+  id          Int        @id @default(autoincrement())
+  enunciado   String
+  tipos       String
+  respostas   Resposta[]
+  questionarios QuePerg[]
+}
