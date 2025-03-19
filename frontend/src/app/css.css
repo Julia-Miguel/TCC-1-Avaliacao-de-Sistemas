@@ -1,0 +1,182 @@
+/* Variáveis Globais */
+:root {
+    --font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    --primary-color: #646cff;
+    --secondary-color: #535bf2;
+    --bg-light: #ffffff;
+    --bg-dark: #242424;
+    --text-light: #242424;
+    --text-dark: #dadada;
+    --border-color: #ddd;
+    --btn-bg: #1a1a1a;
+    --btn-hover-bg: #f9f9f9;
+    --transition: 0.3s;
+    --padding: 1rem;
+  }
+  
+  /* Modo claro e escuro */
+  body.light-mode {
+    background-color: var(--bg-light);
+    color: var(--text-light);
+  }
+  body.dark-mode {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-family);
+    transition: background-color var(--transition), color var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+  
+  /* Container Principal */
+  #root {
+    max-width: 1280px;
+    width: 100%;
+    padding: 2rem;
+    margin: 0 auto;
+  }
+  
+  /* Tipografia e Links */
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0.5em 0;
+  }
+  a {
+    font-weight: 500;
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition);
+  }
+  a:hover {
+    color: var(--secondary-color);
+  }
+  
+  /* Estilização da Tabela */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  th, td {
+    padding: var(--padding);
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+  }
+  tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+  tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Containers Centralizados */
+  .center-content,
+  .Create {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  /* Estilização de Formulários */
+  .form {
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .form div {
+    padding: var(--padding);
+    border-bottom: 1px solid var(--border-color);
+    width: 100%;
+  }
+  
+  /* Botões */
+  button {
+    border: none;
+    border-radius: 8px;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: var(--btn-bg);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.25s, border-color 0.25s;
+    margin: 20px;
+  }
+  button:hover {
+    border: 1px solid var(--primary-color);
+    background-color: var(--btn-hover-bg);
+    color: var(--text-light);
+  }
+  button:focus,
+  button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+  
+  /* Logo */
+  .logo {
+    height: 6em;
+    padding: 1.5em;
+    transition: filter 300ms;
+    will-change: filter;
+  }
+  .logo:hover {
+    filter: drop-shadow(0 0 2em var(--primary-color));
+  }
+  .logo.react:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
+  }
+  
+  /* Animação de rotação da Logo */
+  @keyframes logo-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .logo {
+      animation: logo-spin infinite 20s linear;
+    }
+  }
+  
+  /* Cartões */
+  .card {
+    padding: 2em;
+    background: inherit;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    margin: 1rem;
+  }
+  
+  /* Texto secundário */
+  .read-the-docs {
+    color: #888;
+  }
+  
+  /* Container do Theme Toggle */
+  .theme-toggle-container {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+  }
+  
+  /* Responsividade */
+  @media (max-width: 768px) {
+    #root {
+      padding: 1rem;
+    }
+    table, .form {
+      font-size: 0.9em;
+    }
+  }
+  

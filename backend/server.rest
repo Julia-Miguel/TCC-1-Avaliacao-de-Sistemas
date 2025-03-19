@@ -1,0 +1,231 @@
+############################ Questionários ############################
+### Pegar todos os questionários
+
+GET http://localhost:4444/questionarios
+
+### Criação de um questionário
+POST http://localhost:4444/questionarios
+Content-Type: application/json
+
+{
+    "titulo": "Questionário 3"
+}
+
+### Atualização de um questionário
+PUT http://localhost:4444/questionarios
+Content-Type: application/json
+
+{
+    "id": 1,
+    "titulo": "Debate sobre Senhor dos Anéis"
+}
+
+### Exclusão de um questionário
+DELETE http://localhost:4444/questionarios
+Content-Type: application/json
+
+{
+    "id": 4
+}
+
+############################ QuePerg ############################
+
+### Pegar todos os QuePerg
+GET http://localhost:4444/queperg/
+
+### Criar um QuePerg
+POST http://localhost:4444/queperg
+Content-Type: application/json
+
+{
+    "questionario_id": 1,
+    "pergunta_id": 1
+}
+
+### Delete um QuePerg
+DELETE http://localhost:4444/queperg
+Content-Type: application/json
+
+{
+    "id": 13
+}
+
+###
+PUT http://localhost:4444/queperg
+Content-Type: application/json
+
+{
+    "id": 1,
+    "questionario_id": 1,
+    "pergunta_id": 3
+}
+
+############################ Perguntas ############################
+
+### Pegar todas as perguntas
+GET http://localhost:4444/perguntas
+
+
+### Criar uma pergunta
+POST http://localhost:4444/perguntas
+Content-Type: application/json
+
+{
+  "enunciado": "Teste 2asd",
+  "tipos": "texto"
+}
+
+### Atualizar uma pergunta
+PUT http://localhost:4444/perguntas
+Content-Type: application/json
+
+{
+  "id": 1,
+  "enunciado": "Teste do enunciado",
+  "tipos": "texto"
+}
+
+### Deletar uma pergunta
+DELETE http://localhost:4444/perguntas
+Content-Type: application/json
+
+{
+  "id": 2
+}
+
+############################ Avaliação ############################
+
+### Criar uma avaliação
+POST http://localhost:4444/avaliacao
+Content-Type: application/json
+
+{
+  "semestre": "2025.2",
+  "questionario_id": 1
+}
+
+### Pegar todas as avaliações
+GET http://localhost:4444/avaliacao
+
+### Atualizar uma avaliação
+PUT http://localhost:4444/avaliacao
+Content-Type: application/json
+
+{
+  "id": 1,
+  "semestre": "2023.1",
+  "questionario_id": 1
+}
+
+### Deletar uma avaliação
+DELETE http://localhost:4444/avaliacao
+Content-Type: application/json
+
+{
+  "id": 2
+}
+
+############################ Usuario ############################
+
+### Criar um usuário
+POST http://localhost:4444/usuario
+Content-Type: application/json
+
+{
+  "nome": "Luke Skywalker",
+  "email": "lu02019.com",
+  "tipo": "aluno"
+}
+
+### Pegar todos os usuários
+GET http://localhost:4444/usuario
+
+
+### Atualizar um usuário
+PUT http://localhost:4444/usuario
+Content-Type: application/json
+
+{
+  "id": 2,
+  "nome": "Jake",
+  "email": "ja02919.com",
+  "tipo": "professor"
+}
+
+### Deletar um usuário
+DELETE http://localhost:4444/usuario
+Content-Type: application/json
+
+{
+  "id": 2
+}
+
+############################ UsuAval ############################
+
+### Criar um UsuAval
+POST http://localhost:4444/usuaval
+Content-Type: application/json
+
+{
+  "usuario_id": 2,
+  "avaliacao_id": 2,
+  "status": "pendente",
+  "isFinalizado": false
+}
+
+### Pegar todos os UsuAval
+GET http://localhost:4444/usuaval/1
+
+### Atualizar um UsuAval
+PUT http://localhost:4444/usuaval
+Content-Type: application/json
+
+{
+  "id": 1,
+  "usuario_id": 2,
+  "avaliacao_id": 2,
+  "status": "finalizado",
+  "isFinalizado": true
+}
+
+### Deletar um UsuAval
+DELETE http://localhost:4444/usuaval
+Content-Type: application/json
+
+{
+  "id": 2
+}
+
+############################ Respostas ############################
+
+### Criar uma resposta
+POST http://localhost:4444/respostas
+Content-Type: application/json
+
+{
+    "resposta": "Essa é a minha resposta",
+    "usuAval_id": 1,
+    "pergunta_id": 2
+}
+
+### Pegar todas as respostas
+GET http://localhost:4444/respostas
+
+### Atualizar uma resposta
+PUT http://localhost:4444/respostas
+Content-Type: application/json
+
+{
+    "id": 1,
+    "resposta": "teste de resposta",
+    "usuAval_id": 1,
+    "pergunta_id": 1
+}
+
+### Deletar uma resposta
+DELETE http://localhost:4444/respostas
+Content-Type: application/json
+
+{
+    "id": 2
+}

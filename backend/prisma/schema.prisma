@@ -17,13 +17,18 @@ generator client {
 // Tabela de Usuários
 model Usuario {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
+  nome      String?  
+  email     String?   @unique
   tipo      String
-  avaliacoes USUAval[]
+  avaliacoes UsuAval[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("usuarios")
 }
 
 // Tabela de Associação entre Usuários e Avaliações
-model USUAval {
+model UsuAval {
   id          Int       @id @default(autoincrement())
   usuarioId   Int
   avaliacaoId Int
@@ -31,7 +36,11 @@ model USUAval {
   isFinalizado Boolean  // flag para indicar se finalizou
   usuario     Usuario   @relation(fields: [usuarioId], references: [id])
   avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id])
-  respostas   Resposta[] // Agora as respostas são associadas a USUAval
+  respostas   Resposta[] // Agora as respostas são associadas a UsuAval
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("usu_aval")
 }
 
 // Tabela de Respostas
@@ -40,9 +49,13 @@ model Resposta {
   usuAvalId  Int
   perguntaId Int
   resposta   String    
-  usuAval    USUAval   @relation(fields: [usuAvalId], references: [id]) 
+  usuAval    UsuAval   @relation(fields: [usuAvalId], references: [id]) 
   pergunta   Pergunta  @relation(fields: [perguntaId], references: [id])
   @@unique ([usuAvalId, perguntaId])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("resposta")
 }
 
 // Tabela de Avaliações
@@ -51,7 +64,11 @@ model Avaliacao {
   semestre      String
   questionarioId Int
   questionario  Questionario @relation(fields: [questionarioId], references: [id])
-  usuarios      USUAval[]
+  usuarios      UsuAval[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("avaliacao")
 }
 
 // Tabela de Questionários
@@ -60,6 +77,10 @@ model Questionario {
   titulo      String
   perguntas   QuePerg[]
   avaliacoes  Avaliacao[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("questionarios")
 }
 
 // Tabela de Associação entre Questionários e Perguntas
@@ -69,6 +90,10 @@ model QuePerg {
   perguntaId     Int
   questionario   Questionario @relation(fields: [questionarioId], references: [id])
   pergunta       Pergunta @relation(fields: [perguntaId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("que_perg")
 }
 
 // Tabela de Perguntas
@@ -78,4 +103,8 @@ model Pergunta {
   tipos       String
   respostas   Resposta[]
   questionarios QuePerg[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("pergunta")
 }

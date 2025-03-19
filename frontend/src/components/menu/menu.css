@@ -1,0 +1,46 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+.menu-container {
+    text-align: center;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+li {
+    display: inline-block;
+    margin-top: 4rem;
+    margin-right: 9.0rem;
+}
+
+li:last-child {
+    margin-right: 0;
+}
+
+li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+    background-color: #333;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+li a:hover {
+    background-color: #111;
+}
