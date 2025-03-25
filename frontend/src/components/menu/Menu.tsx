@@ -1,4 +1,6 @@
 // src/components/menu/Menu.tsx
+"use client"; // Se precisar de interatividade (ThemeToggle, etc.)
+
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 import "./menu.css";
@@ -11,8 +13,12 @@ const Menu = () => {
       </div>
       <h2>Sistema web questionário</h2>
       <ul>
-        <li><Link href="/">Home</Link></li>
-        <li><Link href="/perguntas">Perguntas</Link></li>
+        <li>
+          <Link href="/">Home</Link>
+        </li>
+        <li>
+          <Link href="/perguntas">Perguntas</Link>
+        </li>
       </ul>
     </div>
   );

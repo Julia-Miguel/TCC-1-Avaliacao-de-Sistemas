@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 
 interface ThemeContextType {
@@ -14,13 +16,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
 
   const toggleTheme = () => {
-    setDarkMode(!darkMode);
+    setDarkMode((prev) => !prev);
   };
 
-  // Este efeito será chamado sempre que darkMode mudar
   useEffect(() => {
-    const className = darkMode ? 'dark-mode' : 'light-mode';
-    document.body.className = className;
+    const newClass = darkMode ? "dark-mode" : "light-mode";
+    // Remove classes de tema anteriores sem apagar as outras classes existentes:
+    document.body.classList.remove("dark-mode", "light-mode");
+    document.body.classList.add(newClass);
   }, [darkMode]);
 
   return (

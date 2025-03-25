@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import api from "@/services/api";
 import Link from "next/link";
-import '../css.css';
 
 interface PerguntaInterface {
   id: number;
@@ -23,21 +22,19 @@ export default function ListPergunta() {
         setPerguntas(response.data);
       })
       .catch(error => {
-        console.log(error);
+        console.error(error);
         alert("Erro ao buscar perguntas");
       });
   }, []);
 
   const handleDeletePergunta = async (id: number) => {
-    if (!window.confirm("Deseja realmente excluir esta pergunta?")) {
-      return;
-    }
+    if (!window.confirm("Deseja realmente excluir esta pergunta?")) return;
     try {
       await api.delete(`/perguntas/${id}`);
       alert("Pergunta excluída com sucesso!");
       setPerguntas(perguntas.filter(pergunta => pergunta.id !== id));
     } catch (error) {
-      console.log(error);
+      console.error(error);
       alert("Erro ao excluir a pergunta!");
     }
   };
@@ -47,7 +44,7 @@ export default function ListPergunta() {
       <div className="center-content">
         <h3>Lista de Perguntas</h3>
         <div>
-          <Link href="/perguntas/create">Inserir</Link> {/* Corrigido de /perguntas/create */}
+          <Link href="/perguntas/create">Inserir</Link>
         </div>
         <div>
           <Link href="/">Voltar</Link>
@@ -74,7 +71,11 @@ export default function ListPergunta() {
               <td>{pergunta.created_at}</td>
               <td>{pergunta.updated_at}</td>
               <td><Link href={`/perguntas/update/${pergunta.id}`}>Atualizar</Link></td>
-              <td><button onClick={() => handleDeletePergunta(pergunta.id)}>Excluir</button></td>
+              <td>
+                <button onClick={() => handleDeletePergunta(pergunta.id)}>
+                  Excluir
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

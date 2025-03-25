@@ -4,7 +4,7 @@
 import { useState } from "react";
 import api from "@/services/api";
 import { useRouter } from "next/navigation";
-import "../../css.css"; // Ajuste o caminho se necessário
+import "../../globals.css"; // Ajuste o caminho se necessário
 
 export default function CreatePergunta() {
   const [enunciado, setEnunciado] = useState("");

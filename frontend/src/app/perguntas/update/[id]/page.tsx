@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import api from "@/services/api";
 import { useRouter, useParams } from "next/navigation";
-import "../../../css.css"; // Ajuste o caminho se necessário
+import "../../../globals.css"; // Ajuste o caminho se necessário
 
 // Interface para a estrutura da pergunta
 interface Pergunta {
@@ -39,7 +39,7 @@ export default function UpdatePergunta() {
     event.preventDefault();
     const data = { id: Number(id), enunciado, tipos };
     try {
-      await api.put<Pergunta>(`/perguntas/${id}`, data);
+      await api.put<Pergunta>("/perguntas", data); // Alterado para enviar o ID no corpo
       alert("Pergunta atualizada com sucesso!");
       router.push("/perguntas");
     } catch (error: unknown) {

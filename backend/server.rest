@@ -71,7 +71,7 @@ POST http://localhost:4444/perguntas
 Content-Type: application/json
 
 {
-  "enunciado": "Teste 2asd",
+  "enunciado": "as",
   "tipos": "texto"
 }
 
@@ -167,8 +167,8 @@ POST http://localhost:4444/usuaval
 Content-Type: application/json
 
 {
-  "usuario_id": 2,
-  "avaliacao_id": 2,
+  "usuario_id": 1,
+  "avaliacao_id": 1,
   "status": "pendente",
   "isFinalizado": false
 }

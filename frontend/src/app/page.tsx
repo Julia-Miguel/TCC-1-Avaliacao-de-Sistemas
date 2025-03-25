@@ -1,13 +1,8 @@
-"use client";
-
-import Menu from "@/components/styles/main";
-
+// frontend/src/app/page.tsx
 export default function Home() {
   return (
     <div className="App">
-      <header className="App-header">
-        <Menu />
-      </header>
+      {/* Conteúdo da página inicial */}
     </div>
   );
 }
