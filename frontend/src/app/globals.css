@@ -75,15 +75,21 @@ table {
 th, td {
   padding: var(--padding);
   border-bottom: 1px solid var(--border-color);
-  text-align: left;
+  text-align: center; /* Centraliza os títulos e os conteúdos */
 }
+
+th {
+  background-color: rgba(0, 0, 0, 0.05);
+  font-weight: bold;
+}
+
 tr:nth-child(even) {
   background-color: rgba(0, 0, 0, 0.02);
 }
+
 tr:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
-
 /* Containers Centralizados */
 .center-content,
 .Create {
@@ -224,4 +230,4 @@ body.dark-mode nav a,
 body.dark-mode nav button,
 body.dark-mode nav svg {
   color: #ededed; /* garantido que links, botões e ícones fiquem claros */
-}
+} 

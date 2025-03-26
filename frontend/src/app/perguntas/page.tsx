@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import api from "@/services/api";
 import Link from "next/link";
+import "../globals.css";
 
 interface PerguntaInterface {
   id: number;
@@ -26,6 +27,17 @@ export default function ListPergunta() {
         alert("Erro ao buscar perguntas");
       });
   }, []);
+
+  const formatDate = (isoDate: string) => {
+    return new Date(isoDate).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
 
   const handleDeletePergunta = async (id: number) => {
     if (!window.confirm("Deseja realmente excluir esta pergunta?")) return;
@@ -68,8 +80,8 @@ export default function ListPergunta() {
               <td>{pergunta.id}</td>
               <td>{pergunta.enunciado}</td>
               <td>{pergunta.tipos}</td>
-              <td>{pergunta.created_at}</td>
-              <td>{pergunta.updated_at}</td>
+              <td>{formatDate(pergunta.created_at)}</td>
+              <td>{formatDate(pergunta.updated_at)}</td>
               <td><Link href={`/perguntas/update/${pergunta.id}`}>Atualizar</Link></td>
               <td>
                 <button onClick={() => handleDeletePergunta(pergunta.id)}>

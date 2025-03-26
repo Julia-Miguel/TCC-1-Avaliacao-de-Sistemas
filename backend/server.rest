@@ -8,24 +8,31 @@ POST http://localhost:4444/questionarios
 Content-Type: application/json
 
 {
-    "titulo": "Questionário 3"
+  "titulo": "Questionário dse Exemplo",
+  "perguntas": [1, 2, 3],
+  "avaliacoes": [
+    { "semestre": "2025.1" },
+    { "semestre": "2025.2" }
+  ]
 }
+
 
 ### Atualização de um questionário
 PUT http://localhost:4444/questionarios
 Content-Type: application/json
 
 {
-    "id": 1,
-    "titulo": "Debate sobre Senhor dos Anéis"
+  "id": 1,
+  "titulo": "Novo Título Atualizado"
 }
+
 
 ### Exclusão de um questionário
 DELETE http://localhost:4444/questionarios
 Content-Type: application/json
 
 {
-    "id": 4
+    "id": 6
 }
 
 ############################ QuePerg ############################

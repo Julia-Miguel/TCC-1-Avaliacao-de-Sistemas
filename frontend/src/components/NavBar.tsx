@@ -35,9 +35,9 @@ export default function NavbarLayout({ header, children }: NavbarProps) {
               </Link>
               <div className="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                 <NavLink href="/perguntas" active={false}>Perguntas</NavLink>
-                <NavLink href="/clientes" active={false}>Clientes</NavLink>
-                <NavLink href="/categorias" active={false}>Categorias</NavLink>
-                <NavLink href="/produtos" active={false}>Produtos</NavLink>
+                <NavLink href="/questionarios" active={false}>Questionarios</NavLink>
+                <NavLink href="/queperg" active={false}>Queperg</NavLink>
+                <NavLink href="/avaliacao" active={false}>Avaliação</NavLink>
               </div>
             </div>
 
@@ -115,9 +115,9 @@ export default function NavbarLayout({ header, children }: NavbarProps) {
           <div className="sm:hidden">
             <div className="space-y-1 pb-3 pt-2">
               <NavLink href="/perguntas" active={false}>Perguntas</NavLink>
-              <NavLink href="/clientes" active={false}>Clientes</NavLink>
-              <NavLink href="/categorias" active={false}>Categorias</NavLink>
-              <NavLink href="/produtos" active={false}>Produtos</NavLink>
+              <NavLink href="/questionarios" active={false}>Questionarios</NavLink>
+              <NavLink href="/queperg" active={false}>Queperg</NavLink>
+              <NavLink href="/avaliacao" active={false}>Avaliacao</NavLink>
             </div>
             <div className="border-t border-gray-200 pb-1 pt-4">
               <div className="px-4">
