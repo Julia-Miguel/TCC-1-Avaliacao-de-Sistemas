@@ -39,8 +39,7 @@ body {
   background: var(--background);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
+  overflow-y: auto; /* Adicionado para gerenciar rolagem */
 }
 
 /* Container Principal */

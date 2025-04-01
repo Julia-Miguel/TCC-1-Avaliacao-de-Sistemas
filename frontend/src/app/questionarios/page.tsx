@@ -40,7 +40,7 @@ export default function ListQuestionarios() {
   const handleDeleteQuestionario = async (id: number) => {
     if (!window.confirm("Deseja realmente excluir este questionário?")) return;
     try {
-      await api.delete("/questionarios", { data: { id } });
+      await api.delete('/questionarios', { data: { id } });
       alert("Questionário excluído com sucesso!");
       setQuestionarios(questionarios.filter(questionario => questionario.id !== id));
     } catch (error) {

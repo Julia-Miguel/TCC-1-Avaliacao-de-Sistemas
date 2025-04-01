@@ -1,17 +1,31 @@
+// backend/src/controller/avaliacao/GetAllAvaliacaoController.js
 import { prisma } from '../../database/client.js';
 
 export class GetAllAvaliacaoController {
   async handle(request, response) {
-
-    const avaliacao = await prisma.avaliacao.findMany({
-
-      select: {
-        id: true,
-        semestre: true,
-        questionario: true
-      },
-    }); 
-    
-    return response.json(avaliacao);
+    try {
+      const avaliacoes = await prisma.avaliacao.findMany({
+        include: {
+          questionario: {
+            select: {
+              titulo: true,
+            },
+          },
+          usuarios: {
+            include: {
+              usuario: {
+                select: {
+                  nome: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      return response.json(avaliacoes);
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ error: "Erro ao buscar as avaliações." });
+    }
   }
 }

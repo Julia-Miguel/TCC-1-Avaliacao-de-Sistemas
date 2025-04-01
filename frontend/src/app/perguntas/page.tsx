@@ -42,7 +42,7 @@ export default function ListPergunta() {
   const handleDeletePergunta = async (id: number) => {
     if (!window.confirm("Deseja realmente excluir esta pergunta?")) return;
     try {
-      await api.delete(`/perguntas/${id}`);
+      await api.delete('/perguntas', { data: { id } });
       alert("Pergunta excluída com sucesso!");
       setPerguntas(perguntas.filter(pergunta => pergunta.id !== id));
     } catch (error) {

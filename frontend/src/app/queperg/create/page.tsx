@@ -64,7 +64,7 @@ export default function CreateQueperg() {
                   <option value="">Selecione um questionário</option>
                   {questionarios.map((q: any) => (
                     <option key={q.id} value={q.id}>
-                      {q.pergunta}
+                      {q.titulo}
                     </option>
                   ))}
                 </select>
@@ -82,7 +82,7 @@ export default function CreateQueperg() {
                   <option value="">Selecione uma pergunta</option>
                   {perguntas.map((p: any) => (
                     <option key={p.id} value={p.id}>
-                      {p.questionario}
+                      {p.enunciado}
                     </option>
                   ))}
                 </select>

@@ -4,55 +4,85 @@ import { useEffect, useState } from "react";
 import api from "@/services/api";
 import { useRouter, useParams } from "next/navigation";
 import "../../../globals.css";
+import { errorMonitor } from "node:stream";
 
 interface QuePerg {
   id: number;
-  pergunta_id: number;
-  questionario_id: number;
+  perguntaId: number;
+  questionarioId: number;
+  pergunta: {
+    enunciado: string;
+    tipos: string;
+  };
+  questionario: {
+    titulo: string;
+  };
+}
+
+interface Questionario {
+  id: number;
+  titulo: string;
+}
+
+interface Pergunta {
+  id: number;
+  enunciado: string;
+  tipos: string;
 }
 
 export default function UpdateQuePerg() {
-  const [perguntaId, setPerguntaId] = useState<number | "">("");
-  const [questionarioId, setQuestionarioId] = useState<number | "">("");
+  const [questionarioId, setQuestionarioId] = useState("");
+  const [perguntaId, setPerguntaId] = useState("");
+  const [questionarios, setQuestionarios] = useState<Questionario[]>([]);
+  const [perguntas, setPerguntas] = useState<Pergunta[]>([]);
   const router = useRouter();
   const { id } = useParams();
 
   useEffect(() => {
-    const loadQuePerg = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get<QuePerg>(`/quepreg/${id}`);
-        setPerguntaId(response.data.pergunta_id);
-        setQuestionarioId(response.data.questionario_id);
+        // Carregar questionários e perguntas para os dropdowns
+        const resQuestionarios = await api.get("/questionarios");
+        const resPerguntas = await api.get("/perguntas");
+        setQuestionarios(resQuestionarios.data);
+        setPerguntas(resPerguntas.data);
+
+        // Carregar os dados do quePerg para preencher os campos
+        const response = await api.get<QuePerg>(`/queperg/${id}`);
+        const quePerg = response.data;
+        setPerguntaId(quePerg.perguntaId.toString());
+        setQuestionarioId(quePerg.questionarioId.toString());
       } catch (error) {
-        console.error("Erro ao carregar relação pergunta-questionário:", error);
-        alert("Relação não encontrada");
-        router.push("/quepreg");
+        console.error("Erro ao carregar dados:", error);
+        alert("Erro ao carregar os dados: " + (error));
+        router.push("/queperg");
       }
     };
 
-    if (id) loadQuePerg();
+    if (id) fetchData();
   }, [id, router]);
 
   const handleUpdateQuePerg = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Verifique se os campos estão preenchidos antes de enviar a requisição
-    if (perguntaId === "" || questionarioId === "") {
-      alert("Todos os campos devem ser preenchidos!");
+    if (!questionarioId || !perguntaId) {
+      alert("Selecione um questionário e uma pergunta.");
       return;
     }
 
+    const data = {
+      id: parseInt(id as string), // Inclui o id no corpo da requisição
+      pergunta_id: parseInt(perguntaId),
+      questionario_id: parseInt(questionarioId),
+    };
+
     try {
-      await api.put(`/quepreg/${id}`, {
-        pergunta_id: Number(perguntaId),
-        questionario_id: Number(questionarioId)
-      });
-      
+      await api.put(`/queperg`, data); // Alterado para /queperg, sem o id na URL
       alert("Relação atualizada com sucesso!");
-      router.push("/quepreg");
+      router.push("/queperg");
     } catch (error) {
       console.error("Erro na atualização:", error);
-      alert("Erro ao atualizar a relação!");
+      alert(`Erro ao atualizar a relação: ${error}`);
     }
   };
 
@@ -60,40 +90,40 @@ export default function UpdateQuePerg() {
     <div className="Create">
       <h3>Atualização de Relação Pergunta-Questionário</h3>
       <form onSubmit={handleUpdateQuePerg}>
-        <div className="form-group">
-          <label htmlFor="perguntaId">ID da Pergunta:</label>
-          <input
-            type="number"
-            id="perguntaId"
-            value={perguntaId}
-            onChange={(e) => setPerguntaId(Number(e.target.value) || "")}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="questionarioId">ID do Questionário:</label>
-          <input
-            type="number"
-            id="questionarioId"
-            value={questionarioId}
-            onChange={(e) => setQuestionarioId(Number(e.target.value) || "")}
-            required
-          />
-        </div>
-
-        <div className="button-group">
-          <button type="submit" className="btn-primary">
-            Salvar Alterações
-          </button>
-          <button 
-            type="button" 
-            onClick={() => router.push("/quepreg")}
-            className="btn-secondary"
-          >
-            Cancelar
-          </button>
-        </div>
+        <table>
+          <tbody>
+            <tr><td><label htmlFor="questionario">Questionário</label></td><td>
+              <select
+                id="questionario"
+                value={questionarioId}
+                onChange={(e) => setQuestionarioId(e.target.value)}
+                required
+              >
+                <option value="">Selecione um questionário</option>
+                {questionarios.map((q) => (
+                  <option key={q.id} value={q.id}>{q.titulo}</option>
+                ))}
+              </select>
+            </td></tr>
+            <tr><td><label htmlFor="pergunta">Pergunta</label></td><td>
+              <select
+                id="pergunta"
+                value={perguntaId}
+                onChange={(e) => setPerguntaId(e.target.value)}
+                required
+              >
+                <option value="">Selecione uma pergunta</option>
+                {perguntas.map((p) => (
+                  <option key={p.id} value={p.id}>{p.enunciado}</option>
+                ))}
+              </select>
+            </td></tr>
+          </tbody>
+        </table>
+        <button type="submit">Salvar Alterações</button>
+        <button type="button" onClick={() => router.push("/queperg")}>
+          Cancelar
+        </button>
       </form>
     </div>
   );

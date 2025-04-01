@@ -1,4 +1,4 @@
-// src/app/layout.tsx
+// frontend/src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -31,9 +31,9 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} bg-gray-50 text-gray-900 antialiased`}>
         <ThemeProvider>
           <NavbarLayout>
-            <div className="flex h-screen pt-16">
+            <div className="flex-1 pl-64">
               <SideMenu />
-              <main className="flex-1 p-8 bg-gray-50 overflow-auto">{children}</main>
+              <main className="flex-1">{children}</main>
             </div>
           </NavbarLayout>
         </ThemeProvider>

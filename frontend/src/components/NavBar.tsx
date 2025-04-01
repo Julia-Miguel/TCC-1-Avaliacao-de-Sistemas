@@ -38,6 +38,7 @@ export default function NavbarLayout({ header, children }: NavbarProps) {
                 <NavLink href="/questionarios" active={false}>Questionarios</NavLink>
                 <NavLink href="/queperg" active={false}>Queperg</NavLink>
                 <NavLink href="/avaliacao" active={false}>Avaliação</NavLink>
+                <NavLink href="/respostas" active={false}>Respostas</NavLink>
               </div>
             </div>
 
@@ -118,6 +119,7 @@ export default function NavbarLayout({ header, children }: NavbarProps) {
               <NavLink href="/questionarios" active={false}>Questionarios</NavLink>
               <NavLink href="/queperg" active={false}>Queperg</NavLink>
               <NavLink href="/avaliacao" active={false}>Avaliacao</NavLink>
+              <NavLink href="/respostas" active={false}>Respostas</NavLink>
             </div>
             <div className="border-t border-gray-200 pb-1 pt-4">
               <div className="px-4">

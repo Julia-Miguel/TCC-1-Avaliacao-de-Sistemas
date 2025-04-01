@@ -1,26 +1,49 @@
+// backend/src/controller/resposta/CreateRespostaController.js
 import { prisma } from '../../database/client.js';
 
 export class CreateRespostaController {
-    async handle(request, response) {
-        try {
-            const { resposta, usuAval_id, pergunta_id } = request.body;
+  async handle(request, response) {
+    const { resposta, usuAvalId, perguntaId } = request.body;
 
-            if (!resposta || !usuAval_id || !pergunta_id) {
-                return response.status(400).json({ error: 'Todos os campos são obrigatórios: resposta, usuAval_id e pergunta_id' });
-            }
-
-            const novaResposta = await prisma.resposta.create({
-                data: {
-                    resposta,
-                    usuAvalId: usuAval_id,
-                    perguntaId: pergunta_id
-                }
-            });
-
-            return response.status(201).json(novaResposta);
-        } catch (error) {
-            console.error(error);
-            return response.status(500).json({ error: 'Erro ao criar a resposta' });
-        }
+    try {
+      const novaResposta = await prisma.resposta.create({
+        data: {
+          resposta,
+          usuAval: { connect: { id: parseInt(usuAvalId) } },
+          pergunta: { connect: { id: parseInt(perguntaId) } },
+        },
+        include: {
+          pergunta: {
+            select: {
+              enunciado: true,
+              tipos: true,
+            },
+          },
+          usuAval: {
+            select: {
+              status: true,
+              isFinalizado: true,
+              usuario: {
+                select: {
+                  nome: true,
+                  email: true,
+                  tipo: true,
+                },
+              },
+              avaliacao: {
+                select: {
+                  semestre: true,
+                  questionarioId: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      return response.json(novaResposta);
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ error: "Erro ao criar a resposta." });
     }
+  }
 }
