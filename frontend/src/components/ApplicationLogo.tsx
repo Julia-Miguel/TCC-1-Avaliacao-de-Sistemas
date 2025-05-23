@@ -7,7 +7,7 @@ interface ApplicationLogoProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
-export default function ApplicationLogo({ className, ...props }: ApplicationLogoProps) {
+export default function ApplicationLogo({ className, ...props }: Readonly<ApplicationLogoProps>) {
   return (
     <div className={className} {...props} suppressHydrationWarning>
       <Image

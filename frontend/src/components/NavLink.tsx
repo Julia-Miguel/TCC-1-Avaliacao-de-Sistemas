@@ -4,10 +4,10 @@
 import Link from "next/link";
 
 interface NavLinkProps {
-  href: string;
-  active?: boolean;
-  className?: string;
-  children: React.ReactNode;
+  readonly href: string;
+  readonly active?: boolean;
+  readonly className?: string;
+  readonly children: React.ReactNode;
 }
 
 export default function NavLink({

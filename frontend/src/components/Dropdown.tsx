@@ -10,6 +10,7 @@ import {
   SetStateAction,
   useContext,
   useState,
+  useRef,
 } from "react";
 
 type DropdownContextType = {
@@ -31,8 +32,13 @@ const Dropdown = ({ children }: PropsWithChildren) => {
     setOpen((previousState) => !previousState);
   };
 
+  const contextValue = useMemo(
+    () => ({ open, setOpen, toggleOpen }),
+    [open, setOpen, toggleOpen]
+  );
+
   return (
-    <DropDownContext.Provider value={{ open, setOpen, toggleOpen }}>
+    <DropDownContext.Provider value={contextValue}>
       <div className="relative">{children}</div>
     </DropDownContext.Provider>
   );
@@ -43,12 +49,36 @@ const Trigger = ({ children }: PropsWithChildren) => {
 
   return (
     <>
-      <div onClick={toggleOpen}>{children}</div>
+      <button
+        type="button"
+        onClick={toggleOpen}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleOpen();
+          }
+        }}
+        tabIndex={0}
+        className="bg-transparent border-none p-0 m-0 cursor-pointer"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        {children}
+      </button>
       {open && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 z-40"
+          aria-label="Close dropdown"
           onClick={() => setOpen(false)}
-        ></div>
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setOpen(false);
+            }
+          }}
+          tabIndex={0}
+          style={{ background: "transparent", border: "none", padding: 0, margin: 0 }}
+        ></button>
       )}
     </>
   );
@@ -90,14 +120,23 @@ const Content = ({
       leaveFrom="opacity-100 scale-100"
       leaveTo="opacity-0 scale-95"
     >
-      <div
+      <button
+        type="button"
         className={`absolute z-50 mt-2 rounded-md shadow-lg ${alignmentClasses} ${widthClasses}`}
         onClick={() => setOpen(false)}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen(false);
+          }
+        }}
+        style={{ background: "transparent", border: "none", padding: 0, margin: 0 }}
       >
         <div className={`rounded-md ring-1 ring-black ring-opacity-5 ${contentClasses}`}>
           {children}
         </div>
-      </div>
+      </button>
     </Transition>
   );
 };
@@ -126,4 +165,27 @@ Dropdown.Trigger = Trigger;
 Dropdown.Content = Content;
 Dropdown.Link = DropdownLink;
 
+function useMemo<T>(factory: () => T, deps: any[]): T {
+  const ref = useRef<{ deps: any[]; value: T } | undefined>(undefined);
+
+  if (!ref.current || !areHookInputsEqual(ref.current.deps, deps)) {
+    ref.current = { deps, value: factory() };
+  }
+
+  return ref.current.value;
+}
+
+function areHookInputsEqual(nextDeps: any[], prevDeps: any[]) {
+  if (prevDeps === null || nextDeps.length !== prevDeps.length) {
+    return false;
+  }
+  for (let i = 0; i < prevDeps.length; i++) {
+    if (Object.is(nextDeps[i], prevDeps[i]) === false) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export default Dropdown;
+

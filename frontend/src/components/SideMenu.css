@@ -1,0 +1,169 @@
+
+/* frontend/src/components/SideMenu.css */
+
+.sidebar {
+  position: fixed;
+  top: 64px; /* Ajuste conforme a altura do header */
+  left: 0;
+  height: calc(100vh - 64px);
+  width: 256px;
+  background-color: #f9fafb; /* Substitua por var(--bg-light) se usar variáveis */
+  color: #374151; /* Substitua por var(--text-light) se usar variáveis */
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+  z-index: 50;
+}
+
+.sidebar.dark {
+  background-color: #1f2937; /* Substitua por var(--bg-dark) */
+  color: #d1d5db; /* Substitua por var(--text-dark) */
+}
+
+.sidebar-header {
+  margin-bottom: 2rem;
+}
+
+.sidebar-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-nav {
+  flex: 1;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav li {
+  margin: 0;
+}
+
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sidebar-nav a:hover {
+  background-color: #e5e7eb; /* Substitua por var(--secondary-color) */
+  color: white;
+}
+
+.sidebar-nav a.active {
+  background-color: #32edc8; /* Substitua por var(--primary-color) */
+  color: white;
+  font-weight: 500;
+}
+
+.sidebar-footer {
+  padding-top: 1.5rem;
+  margin-top: auto;
+  border-top: 1px solid #e5e7eb; /* Substitua por var(--border-color) */
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+.side-menu {
+  width: 16rem; /* 64 */
+  position: fixed;
+  top: 4rem; /* 16 */
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color);
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 40;
+  height: calc(100vh - 4rem);
+}
+
+.side-menu-header {
+  padding: 1.25rem 1.5rem; /* px-6 py-5 */
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: bold;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.side-menu-nav {
+  flex: 1;
+  padding: 1rem 0.5rem; /* py-4 px-2 */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* space-y-2 */
+}
+
+.side-menu-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem; /* px-4 py-2 */
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  color: inherit;
+  text-decoration: none;
+}
+
+.side-menu-link:hover {
+  background-color: var(--btn-hover-bg);
+  color: white;
+}
+
+.side-menu-link.active {
+  background-color: var(--btn-bg);
+  color: white;
+}
+
+.side-menu-icon {
+  width: 1.25rem; /* 5 */
+  height: 1.25rem;
+  margin-right: 0.75rem; /* 3 */
+}
+
+.side-menu-label {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* medium */
+}
+
+.side-menu-footer {
+  padding: 0.75rem 1rem; /* px-4 py-3 */
+  border-top: 1px solid var(--border-color);
+}
+
+
+.gradient-border {
+  padding-left: 0.1rem;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  background-clip: padding-box;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #414847, #D1D5DB, #373a3e);
+  border-radius: 0.5rem;
+  z-index: -1;
+}

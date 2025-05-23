@@ -26,8 +26,13 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     document.body.classList.add(newClass);
   }, [darkMode]);
 
+  const contextValue = React.useMemo(
+    () => ({ darkMode, toggleTheme }),
+    [darkMode, toggleTheme]
+  );
+
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

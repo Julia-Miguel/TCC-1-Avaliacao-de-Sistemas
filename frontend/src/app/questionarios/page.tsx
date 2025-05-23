@@ -1,9 +1,10 @@
-// src/app/questionarios/page.tsx
 'use client';
 
 import { useEffect, useState } from "react";
 import api from "@/services/api";
 import Link from "next/link";
+import "../globals.css";
+import "../questionario.css";
 
 interface QuestionarioInterface {
   id: number;
@@ -12,17 +13,37 @@ interface QuestionarioInterface {
   updated_at: string;
 }
 
+interface PerguntaInterface {
+  id: number;
+  enunciado: string;
+  tipos: string;
+  questionarioId: number;
+}
+
 export default function ListQuestionarios() {
   const [questionarios, setQuestionarios] = useState<QuestionarioInterface[]>([]);
+  const [perguntas, setPerguntas] = useState<PerguntaInterface[]>([]);
+  const [menuAberto, setMenuAberto] = useState<number | null>(null);
+  const [detalhesVisiveis, setDetalhesVisiveis] = useState<number | null>(null);
 
   useEffect(() => {
     api.get("/questionarios")
-      .then(response => {
-        setQuestionarios(response.data);
-      })
+      .then(response => setQuestionarios(response.data))
       .catch(error => {
         console.error(error);
         alert("Erro ao buscar questionários");
+      });
+
+    api.get("/queperg")
+      .then(response => setPerguntas(response.data.map((qp: any) => ({
+        id: qp.pergunta.id,
+        enunciado: qp.pergunta.enunciado,
+        tipos: qp.pergunta.tipos,
+        questionarioId: qp.questionarioId
+      }))))
+      .catch(error => {
+        console.error(error);
+        alert("Erro ao buscar perguntas");
       });
   }, []);
 
@@ -33,7 +54,6 @@ export default function ListQuestionarios() {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
     });
   };
 
@@ -41,57 +61,70 @@ export default function ListQuestionarios() {
     if (!window.confirm("Deseja realmente excluir este questionário?")) return;
     try {
       await api.delete('/questionarios', { data: { id } });
-      alert("Questionário excluído com sucesso!");
-      setQuestionarios(questionarios.filter(questionario => questionario.id !== id));
+      setQuestionarios(questionarios.filter(q => q.id !== id));
     } catch (error) {
       console.error(error);
       alert("Erro ao excluir o questionário!");
     }
   };
 
+  const toggleMenu = (id: number) => {
+    setMenuAberto(menuAberto === id ? null : id);
+  };
+
+  const toggleDetalhes = (id: number) => {
+    setDetalhesVisiveis(detalhesVisiveis === id ? null : id);
+    setMenuAberto(null);
+  };
+
   return (
-    <div>
+    <div className="list-container">
       <div className="center-content">
         <h3>Lista de Questionários</h3>
-        <div>
-          <Link href="/questionarios/create">Inserir</Link>
-        </div>
-        <div>
-          <Link href="/">Voltar</Link>
+        <div className="button-group">
+          <Link href="/questionarios/create" className="btn-primary">Inserir</Link>
+          <Link href="/" className="btn-secondary">Voltar</Link>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Id</th>
-            <th>Título</th>
-            <th>Criado</th>
-            <th>Alterado</th>
-            <th>Atualizar</th>
-            <th>Excluir</th>
-          </tr>
-        </thead>
-        <tbody>
-          {questionarios.map((q) => (
-            <tr key={q.id}>
-              <td>{q.id}</td>
-              <td>{q.titulo}</td>
-              <td>{formatDate(q.created_at)}</td>
-              <td>{formatDate(q.updated_at)}</td>
-              <td>
-                <Link href={`/questionarios/update/${q.id}`}>
-                  Atualizar
-                </Link>
-              </td>
-              <td>
-                <button onClick={() => handleDeleteQuestionario(q.id)}>
-                  Excluir
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="questionarios-grid">
+        {questionarios.map((q) => (
+          <div key={q.id} className="questionario-card">
+            <div className="card-header">
+              <h4>{q.titulo}</h4>
+              <button className="botao" onClick={() => toggleMenu(q.id)}>⋮</button>
+            </div>
+            <div className="perguntas-list">
+              {perguntas.filter(p => p.questionarioId === q.id).length > 0 ? (
+                perguntas
+                  .filter(p => p.questionarioId === q.id)
+                  .map((p, idx) => (
+                    <h5
+                      key={typeof p.id === "number" && p.id !== undefined ? p.id : `idx-${idx}`}
+                      className="enunciado-pergunta"
+                    >
+                      {p.enunciado}
+                    </h5>
+                  ))
+              ) : (
+                <p className="no-perguntas">Nenhuma pergunta associada</p>
+              )}
+            </div>
+            {menuAberto === q.id && (
+              <div className="menu-dropdown">
+                <button className="botao" onClick={() => handleDeleteQuestionario(q.id)}>Deletar</button>
+                <button className="botao" onClick={() => toggleDetalhes(q.id)}>Detalhes</button>
+              </div>
+            )}
+            {detalhesVisiveis === q.id && (
+              <div className="detalhes">
+                <p><strong>Criado em:</strong> {formatDate(q.created_at)}</p>
+                <p><strong>Última modificação:</strong> {formatDate(q.updated_at)}</p>
+                <button onClick={() => setDetalhesVisiveis(null)}>Fechar</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

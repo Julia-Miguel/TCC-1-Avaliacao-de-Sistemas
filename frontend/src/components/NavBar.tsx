@@ -9,8 +9,8 @@ import NavLink from "./NavLink";
 import ThemeToggle from "@/components/menu/ThemeToggle";
 
 interface NavbarProps {
-  header?: React.ReactNode;
-  children?: React.ReactNode;
+  readonly header?: React.ReactNode;
+  readonly children?: React.ReactNode;
 }
 
 export default function NavbarLayout({ header, children }: NavbarProps) {
@@ -39,6 +39,8 @@ export default function NavbarLayout({ header, children }: NavbarProps) {
                 <NavLink href="/queperg" active={false}>Queperg</NavLink>
                 <NavLink href="/avaliacao" active={false}>Avaliação</NavLink>
                 <NavLink href="/respostas" active={false}>Respostas</NavLink>
+                <NavLink href="/usuAval" active={false}>Usuário avaliado</NavLink>
+                <NavLink href="/usuario" active={false}>Usuários</NavLink>
               </div>
             </div>
 
@@ -120,6 +122,8 @@ export default function NavbarLayout({ header, children }: NavbarProps) {
               <NavLink href="/queperg" active={false}>Queperg</NavLink>
               <NavLink href="/avaliacao" active={false}>Avaliacao</NavLink>
               <NavLink href="/respostas" active={false}>Respostas</NavLink>
+              <NavLink href="/usuAval" active={false}>Usuário avaliado</NavLink>
+              <NavLink href="/usuario" active={false}>Usuários</NavLink>
             </div>
             <div className="border-t border-gray-200 pb-1 pt-4">
               <div className="px-4">
