@@ -3,16 +3,12 @@ import { prisma } from '../../database/client.js';
 export class GetAllPerguntasController {
   async handle(request, response) {
 
-    const pergunta = await prisma.pergunta.findMany({
-      select: {
-        id: true,
-        enunciado: true,
-        tipos: true,
-        created_at: true,
-        updated_at: true,
+    const perguntas = await prisma.pergunta.findMany({
+      include: {
+        opcoes: true, // Isso diz ao Prisma: "Traga também todas as opções desta pergunta"
       },
     }); 
     
-    return response.json(pergunta);
+    return response.json(perguntas);
   }
 }

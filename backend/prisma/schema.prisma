@@ -14,97 +14,114 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Tabela de Tipo de Pergunta
+enum TipoPergunta {
+  TEXTO
+  MULTIPLA_ESCOLHA
+}
+
+// Tabela de Opcao
+model Opcao {
+  id         Int      @id @default(autoincrement())
+  texto      String
+  pergunta   Pergunta @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
+  perguntaId Int
+
+  @@map("opcoes")
+}
+
+// Tabela de Perguntas
+model Pergunta {
+  id            Int            @id @default(autoincrement())
+  enunciado     String
+  tipos         TipoPergunta   @default(TEXTO) // MODIFICADO: Usa o Enum
+  respostas     Resposta[]
+  questionarios QuePerg[]
+  opcoes        Opcao[]        // ADICIONADO: Relação com as opções
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+
+  @@map("pergunta")
+}
+
 // Tabela de Usuários
 model Usuario {
-  id        Int      @id @default(autoincrement())
-  nome      String?  
-  email     String?   @unique
-  tipo      String
+  id         Int       @id @default(autoincrement())
+  nome       String?
+  email      String?   @unique
+  tipo       String
   avaliacoes UsuAval[]
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 
   @@map("usuarios")
 }
 
 // Tabela de Associação entre Usuários e Avaliações
 model UsuAval {
-  id          Int       @id @default(autoincrement())
-  usuarioId   Int
-  avaliacaoId Int
-  status      String    // flag para status
-  isFinalizado Boolean  // flag para indicar se finalizou
-  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
-  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id])
-  respostas   Resposta[] // Agora as respostas são associadas a UsuAval
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id           Int       @id @default(autoincrement())
+  usuarioId    Int
+  avaliacaoId  Int
+  status       String // flag para status
+  isFinalizado Boolean // flag para indicar se finalizou
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
+  avaliacao    Avaliacao @relation(fields: [avaliacaoId], references: [id])
+  respostas    Resposta[] // Agora as respostas são associadas a UsuAval
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
 
   @@map("usu_aval")
 }
 
 // Tabela de Respostas
 model Resposta {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   usuAvalId  Int
   perguntaId Int
-  resposta   String    
-  usuAval    UsuAval   @relation(fields: [usuAvalId], references: [id]) 
-  pergunta   Pergunta  @relation(fields: [perguntaId], references: [id])
-  @@unique ([usuAvalId, perguntaId])
+  resposta   String
+  usuAval    UsuAval  @relation(fields: [usuAvalId], references: [id])
+  pergunta   Pergunta @relation(fields: [perguntaId], references: [id])
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  @@unique([usuAvalId, perguntaId])
 
   @@map("resposta")
 }
 
 // Tabela de Avaliações
 model Avaliacao {
-  id            Int       @id @default(autoincrement())
-  semestre      String
+  id             Int          @id @default(autoincrement())
+  semestre       String
   questionarioId Int
-  questionario  Questionario @relation(fields: [questionarioId], references: [id])
-  usuarios      UsuAval[]
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  questionario   Questionario @relation(fields: [questionarioId], references: [id])
+  usuarios       UsuAval[]
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
 
   @@map("avaliacao")
 }
 
 // Tabela de Questionários
 model Questionario {
-  id          Int        @id @default(autoincrement())
-  titulo      String
-  perguntas   QuePerg[]
-  avaliacoes  Avaliacao[]
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         Int         @id @default(autoincrement())
+  titulo     String
+  perguntas  QuePerg[]
+  avaliacoes Avaliacao[]
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
 
   @@map("questionarios")
 }
 
 // Tabela de Associação entre Questionários e Perguntas
 model QuePerg {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   questionarioId Int
   perguntaId     Int
   questionario   Questionario @relation(fields: [questionarioId], references: [id])
-  pergunta       Pergunta @relation(fields: [perguntaId], references: [id])
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  pergunta       Pergunta     @relation(fields: [perguntaId], references: [id])
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
 
   @@map("que_perg")
-}
-
-// Tabela de Perguntas
-model Pergunta {
-  id          Int        @id @default(autoincrement())
-  enunciado   String
-  tipos       String
-  respostas   Resposta[]
-  questionarios QuePerg[]
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@map("pergunta")
 }

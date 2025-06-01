@@ -8,8 +8,8 @@ POST http://localhost:4444/questionarios
 Content-Type: application/json
 
 {
-  "titulo": "Questionário dse Exemplo",
-  "perguntas": [1, 2, 3],
+  "titulo": "teste",
+  "perguntas": [1],
   "avaliacoes": [
     { "semestre": "2025.1" },
     { "semestre": "2025.2" }
@@ -78,8 +78,8 @@ POST http://localhost:4444/perguntas
 Content-Type: application/json
 
 {
-  "enunciado": "as",
-  "tipos": "texto"
+  "enunciado": "Descreasdasdasda em poucas palavras por que gosta de programar.",
+  "tipos": "TEXTO"
 }
 
 ### Atualizar uma pergunta
