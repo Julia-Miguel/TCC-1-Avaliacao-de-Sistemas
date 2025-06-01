@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/services/api";
 import Link from "next/link";
 import "../globals.css";
@@ -21,6 +22,7 @@ interface PerguntaInterface {
 }
 
 export default function ListQuestionarios() {
+  const router = useRouter();
   const [questionarios, setQuestionarios] = useState<QuestionarioInterface[]>([]);
   const [perguntas, setPerguntas] = useState<PerguntaInterface[]>([]);
   const [menuAberto, setMenuAberto] = useState<number | null>(null);
@@ -35,12 +37,15 @@ export default function ListQuestionarios() {
       });
 
     api.get("/queperg")
-      .then(response => setPerguntas(response.data.map((qp: any) => ({
-        id: qp.pergunta.id,
-        enunciado: qp.pergunta.enunciado,
-        tipos: qp.pergunta.tipos,
-        questionarioId: qp.questionarioId
-      }))))
+      .then(response => {
+        const perguntasFormatadas: PerguntaInterface[] = response.data.map((qp: any) => ({
+          id: qp.pergunta.id,
+          enunciado: qp.pergunta.enunciado,
+          tipos: qp.pergunta.tipos,
+          questionarioId: qp.questionarioId,
+        }));
+        setPerguntas(perguntasFormatadas);
+      })
       .catch(error => {
         console.error(error);
         alert("Erro ao buscar perguntas");
@@ -61,7 +66,7 @@ export default function ListQuestionarios() {
     if (!window.confirm("Deseja realmente excluir este questionário?")) return;
     try {
       await api.delete('/questionarios', { data: { id } });
-      setQuestionarios(questionarios.filter(q => q.id !== id));
+      setQuestionarios(prev => prev.filter(q => q.id !== id));
     } catch (error) {
       console.error(error);
       alert("Erro ao excluir o questionário!");
@@ -86,20 +91,34 @@ export default function ListQuestionarios() {
           <Link href="/" className="btn-secondary">Voltar</Link>
         </div>
       </div>
+
       <div className="questionarios-grid">
         {questionarios.map((q) => (
-          <div key={q.id} className="questionario-card">
+          <div
+            key={q.id}
+            className="questionario-card"
+            onClick={() => router.push(`/questionarios/${q.id}`)}
+          >
             <div className="card-header">
               <h4>{q.titulo}</h4>
-              <button className="botao" onClick={() => toggleMenu(q.id)}>⋮</button>
+              <button
+                className="botao"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMenu(q.id);
+                }}
+              >
+                ⋮
+              </button>
             </div>
+
             <div className="perguntas-list">
               {perguntas.filter(p => p.questionarioId === q.id).length > 0 ? (
                 perguntas
                   .filter(p => p.questionarioId === q.id)
                   .map((p, idx) => (
                     <h5
-                      key={typeof p.id === "number" && p.id !== undefined ? p.id : `idx-${idx}`}
+                      key={`${q.id}-${p.id}-${idx}`}
                       className="enunciado-pergunta"
                     >
                       {p.enunciado}
@@ -109,14 +128,32 @@ export default function ListQuestionarios() {
                 <p className="no-perguntas">Nenhuma pergunta associada</p>
               )}
             </div>
+
             {menuAberto === q.id && (
-              <div className="menu-dropdown">
-                <button className="botao" onClick={() => handleDeleteQuestionario(q.id)}>Deletar</button>
-                <button className="botao" onClick={() => toggleDetalhes(q.id)}>Detalhes</button>
+              <div
+                className="menu-dropdown"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  className="botao"
+                  onClick={() => handleDeleteQuestionario(q.id)}
+                >
+                  Deletar
+                </button>
+                <button
+                  className="botao"
+                  onClick={() => toggleDetalhes(q.id)}
+                >
+                  Detalhes
+                </button>
               </div>
             )}
+
             {detalhesVisiveis === q.id && (
-              <div className="detalhes">
+              <div
+                className="detalhes"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <p><strong>Criado em:</strong> {formatDate(q.created_at)}</p>
                 <p><strong>Última modificação:</strong> {formatDate(q.updated_at)}</p>
                 <button onClick={() => setDetalhesVisiveis(null)}>Fechar</button>
