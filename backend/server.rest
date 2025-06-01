@@ -79,7 +79,12 @@ Content-Type: application/json
 
 {
   "enunciado": "Descreasdasdasda em poucas palavras por que gosta de programar.",
-  "tipos": "TEXTO"
+  "tipos": "MULTIPLA_ESCOLHA",
+  "opcao": [
+    "Porque é divertido",
+    "Porque é desafiador",
+    "Porque é útil"
+  ]
 }
 
 ### Atualizar uma pergunta
@@ -235,4 +240,58 @@ Content-Type: application/json
 
 {
     "id": 2
+}
+
+############################ Empresa ############################
+
+### Pegar a empresa
+GET http://localhost:4444/empresas
+
+### Criar uma empresa
+### Registrar uma Nova Empresa
+POST http://localhost:4444/empresas/register
+Content-Type: application/json
+
+{
+    "nome": "Hospital Modelo Beta",
+    "emailResponsavel": "direcao@hospitalbeta.com.br",
+    "senhaEmpresa": "senhaSegura456!"
+}
+
+
+### Login de Empresa Bem-Sucedido
+POST http://localhost:4444/empresas/login
+Content-Type: application/json
+
+{
+    "emailResponsavel": "direcao@hospitalbeta.com.br", 
+    "senhaEmpresa": "senhaSegura456!"
+}
+
+
+### Login de Empresa com Email Incorreto
+POST http://localhost:4444/empresas/login
+Content-Type: application/json
+
+{
+    "emailResponsavel": "email.errado@hospitalbeta.com.br",
+    "senhaEmpresa": "senhaSegura456!"
+}
+
+### Login de Empresa com Senha Incorreta
+POST http://localhost:4444/empresas/login
+Content-Type: application/json
+
+{
+    "emailResponsavel": "direcao@hospitalbeta.com.br",
+    "senhaEmpresa": "senhaErrada123"
+}
+
+### Login de Empresa com Dados Incompletos
+POST http://localhost:4444/empresas/login
+Content-Type: application/json
+
+{
+    "emailResponsavel": "direcao@hospitalbeta.com.br"
+    // Faltando senhaEmpresa
 }

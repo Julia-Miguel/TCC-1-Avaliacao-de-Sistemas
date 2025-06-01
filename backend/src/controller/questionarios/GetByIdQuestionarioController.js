@@ -1,25 +1,49 @@
-// controllers/GetByIdQuestionarioController.js
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+// backend/src/controller/questionarios/GetByIdQuestionarioController.js
+import { prisma } from '../../database/client.js';
 
 export class GetByIdQuestionarioController {
-  async handle(req, res) {
-    try {
-      const id = parseInt(req.params.id);
+    async handle(request, response) {
+        // ASSUMINDO AUTH MIDDLEWARE
+        // const { empresaId } = request.user; // Descomente quando o authMiddleware estiver pronto
+        const { id: questionarioId } = request.params;
 
-      const questionario = await prisma.questionario.findUnique({
-        where: { id },
-        include: { perguntas: true, avaliacoes: true },
-      });
+        // PARA TESTES SEM AUTH
+        const { empresaId_para_teste } = request.query;
+        const empresaId = empresaId_para_teste; // SUBSTITUA QUANDO O AUTH ESTIVER PRONTO
+        
+        if (!empresaId) {
+            return response.status(400).json({ message: "empresaId é obrigatório (será automático com login)." });
+        }
 
-      if (!questionario) {
-        return res.status(404).json({ error: "Questionário não encontrado" });
-      }
+        try {
+            const questionario = await prisma.questionario.findFirst({
+                where: {
+                    id: Number(questionarioId),
+                    criador: {
+                        empresaId: Number(empresaId)
+                    }
+                },
+                include: {
+                    criador: { select: { nome: true } },
+                    perguntas: { // Trazendo as perguntas e suas opções
+                        include: {
+                            pergunta: {
+                                include: {
+                                    opcoes: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
 
-      res.json(questionario);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+            if (!questionario) {
+                return response.status(404).json({ message: "Questionário não encontrado ou não pertence a esta empresa." });
+            }
+            return response.json(questionario);
+        } catch (error) {
+            console.error(error);
+            return response.status(500).json({ message: "Erro interno ao buscar questionário." });
+        }
     }
-  }
 }

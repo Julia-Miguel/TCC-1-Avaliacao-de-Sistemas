@@ -8,6 +8,7 @@ import { avaliacaoRouter } from './routes/avaliacao.js';
 import { usuarioRouter } from './routes/usuario.js';
 import { usuAvalRouter } from './routes/usuAval.js';
 import { respostaRouter } from './routes/resposta.js';
+import { empresasRouter } from './routes/empresas.js';
 
 const server = express();
 const PORT = 4444;
@@ -24,6 +25,7 @@ server.use(avaliacaoRouter);
 server.use(usuarioRouter);
 server.use(usuAvalRouter);
 server.use(respostaRouter);
+server.use(empresasRouter);
 
 // Routes
 server.get('/', (request, response) => {
