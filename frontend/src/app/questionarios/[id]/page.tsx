@@ -132,6 +132,7 @@ function EditQuestionarioFormContent() {
         );
     };
 
+    
     const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
