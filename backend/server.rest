@@ -10,6 +10,8 @@ Content-Type: application/json
 {
   "titulo": "teste",
   "perguntas": [1],
+  "titulo": "teste",
+  "perguntas": [1],
   "avaliacoes": [
     { "semestre": "2025.1" },
     { "semestre": "2025.2" }

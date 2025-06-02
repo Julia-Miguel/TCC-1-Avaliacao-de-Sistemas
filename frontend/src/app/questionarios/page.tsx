@@ -152,6 +152,7 @@ function ListQuestionariosContent() {
               </button>
             </div>
 
+
             <div className="perguntas-list">
               {q.perguntas && q.perguntas.length > 0 ? (
                 q.perguntas.map((quePergItem) => (
@@ -167,6 +168,7 @@ function ListQuestionariosContent() {
                 <p className="no-perguntas">Nenhuma pergunta associada</p>
               )}
             </div>
+
 
             {menuAberto === q.id && (
               <div
@@ -200,6 +202,7 @@ function ListQuestionariosContent() {
                 </button>
               </div>
             )}
+
 
             {detalhesVisiveis === q.id && (
               <div
