@@ -3,29 +3,30 @@ import { prisma } from '../../database/client.js';
 
 export class GetByIdQuestionarioController {
     async handle(request, response) {
-        // ASSUMINDO AUTH MIDDLEWARE
-        // const { empresaId } = request.user; // Descomente quando o authMiddleware estiver pronto
-        const { id: questionarioId } = request.params;
+        const { id: questionarioIdParam } = request.params;
+        const questionarioId = parseInt(questionarioIdParam);
 
-        // PARA TESTES SEM AUTH
-        const { empresaId_para_teste } = request.query;
-        const empresaId = empresaId_para_teste; // SUBSTITUA QUANDO O AUTH ESTIVER PRONTO
-        
+        // Esta informação virá do token JWT decodificado pelo authMiddleware
+        const { empresaId } = request.user; // Assumindo que o middleware adiciona req.user
+
         if (!empresaId) {
-            return response.status(400).json({ message: "empresaId é obrigatório (será automático com login)." });
+            return response.status(400).json({ message: "ID da Empresa não identificado no token do usuário." });
+        }
+        if (isNaN(questionarioId)) {
+            return response.status(400).json({ message: "ID do Questionário inválido." });
         }
 
         try {
             const questionario = await prisma.questionario.findFirst({
                 where: {
-                    id: Number(questionarioId),
-                    criador: {
-                        empresaId: Number(empresaId)
+                    id: questionarioId,
+                    criador: { // Garante que o questionário pertence à empresa do admin logado
+                        empresaId: parseInt(empresaId)
                     }
                 },
                 include: {
-                    criador: { select: { nome: true } },
-                    perguntas: { // Trazendo as perguntas e suas opções
+                    criador: { select: { id: true, nome: true, email: true } },
+                    perguntas: {
                         include: {
                             pergunta: {
                                 include: {
@@ -34,16 +35,16 @@ export class GetByIdQuestionarioController {
                             }
                         }
                     }
-                }
+                },
             });
 
             if (!questionario) {
-                return response.status(404).json({ message: "Questionário não encontrado ou não pertence a esta empresa." });
+                return response.status(404).json({ error: "Questionário não encontrado ou não pertence à sua empresa." });
             }
             return response.json(questionario);
         } catch (error) {
-            console.error(error);
-            return response.status(500).json({ message: "Erro interno ao buscar questionário." });
+            console.error("Erro ao buscar questionário:", error);
+            return response.status(500).json({ error: "Erro ao buscar questionário: " + error.message });
         }
     }
 }

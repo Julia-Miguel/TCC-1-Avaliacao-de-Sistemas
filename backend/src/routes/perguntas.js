@@ -4,27 +4,28 @@ import { GetAllPerguntasController } from '../controller/perguntas/GetAllPergunt
 import { GetByIdPerguntasController } from '../controller/perguntas/GetByIdPerguntasController.js';
 import { UpdatePerguntasController } from '../controller/perguntas/UpdatePerguntasController.js'; 
 import { DeletePerguntasController } from '../controller/perguntas/DeletePerguntasController.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const perguntasRouter = Router();
 
 // Create
 const createPerguntasController = new CreatePerguntasController();
-perguntasRouter.post('/perguntas', createPerguntasController.handle);
+perguntasRouter.post('/perguntas', authMiddleware, createPerguntasController.handle);
 
 //GET ALL
 const getAllPerguntasController = new GetAllPerguntasController();
-perguntasRouter.get('/perguntas', getAllPerguntasController.handle);
+perguntasRouter.get('/perguntas', authMiddleware, getAllPerguntasController.handle);
 
 //GET BY ID
 const getByIdPerguntasController = new GetByIdPerguntasController();
-perguntasRouter.get('/perguntas/:id', getByIdPerguntasController.handle);
+perguntasRouter.get('/perguntas/:id', authMiddleware, getByIdPerguntasController.handle);
 
 //UPDATE
 const updatePerguntasController = new UpdatePerguntasController();
-perguntasRouter.put('/perguntas', updatePerguntasController.handle);
+perguntasRouter.put('/perguntas', authMiddleware, updatePerguntasController.handle);
 
 //DELETE
 const deletePerguntasController = new DeletePerguntasController();
-perguntasRouter.delete('/perguntas', deletePerguntasController.handle);
+perguntasRouter.delete('/perguntas', authMiddleware, deletePerguntasController.handle);
 
 export { perguntasRouter };

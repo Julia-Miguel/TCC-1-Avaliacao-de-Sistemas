@@ -1,6 +1,7 @@
 // src/app/page.tsx
 import Link from "next/link";
 
+
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-[#A6A6A6]">

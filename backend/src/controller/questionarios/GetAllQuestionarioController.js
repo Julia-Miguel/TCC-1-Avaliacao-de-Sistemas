@@ -1,37 +1,47 @@
-// backend/src/controller/questionarios/GetAllQuestionariosController.js
+// backend/src/controller/questionarios/GetAllQuestionarioController.js
 import { prisma } from '../../database/client.js';
 
 export class GetAllQuestionarioController {
     async handle(request, response) {
-        // ASSUMINDO AUTH MIDDLEWARE
-        // const { empresaId } = request.user; // Descomente quando o authMiddleware estiver pronto
-
-        // PARA TESTES SEM AUTH, você pode receber o empresaId como query param
-        const { empresaId_para_teste } = request.query;
-        const empresaId = empresaId_para_teste; // SUBSTITUA QUANDO O AUTH ESTIVER PRONTO
+        // Esta informação virá do token JWT decodificado pelo authMiddleware
+        const { empresaId } = request.user; // Assumindo que o middleware adiciona req.user
 
         if (!empresaId) {
-            return response.status(400).json({ message: "empresaId é obrigatório para listar questionários (será automático com login)." });
+            // Isso não deveria acontecer se o authMiddleware estiver funcionando
+            return response.status(400).json({ message: "ID da Empresa não identificado no token do usuário." });
         }
 
         try {
             const questionarios = await prisma.questionario.findMany({
                 where: {
-                    criador: { // Filtra pelos questionários cujo criador...
-                        empresaId: Number(empresaId) // ...pertence a esta empresa.
+                    criador: {
+                        empresaId: parseInt(empresaId)
                     }
                 },
                 include: {
-                    criador: {
-                        select: { nome: true, email: true } // Para mostrar quem criou
-                    }
-                    // Poderia incluir QuePerg e Perguntas aqui se necessário na listagem
+                    criador: { select: { id: true, nome: true, email: true } },
+                    perguntas: { // Relação QuePerg
+                        orderBy: { perguntaId: 'asc' }, // Opcional: ordenar as perguntas
+                        include: {
+                            pergunta: { // O modelo Pergunta dentro de QuePerg
+                                include: {
+                                    opcoes: { // Inclui as opções da pergunta
+                                        orderBy: { id: 'asc' } // Opcional: ordenar as opções
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    _count: { select: { avaliacoes: true } }
+                },
+                orderBy: {
+                    updated_at: 'desc' // Exemplo de ordenação dos questionários
                 }
             });
             return response.json(questionarios);
         } catch (error) {
-            console.error(error);
-            return response.status(500).json({ message: "Erro interno ao listar questionários." });
+            console.error("Erro ao listar questionários:", error);
+            return response.status(500).json({ error: "Erro ao listar questionários: " + error.message });
         }
     }
 }

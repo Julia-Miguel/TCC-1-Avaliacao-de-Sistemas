@@ -1,4 +1,6 @@
+// backend/src/routes/questionarios.js
 import { Router } from 'express';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 import { GetAllQuestionarioController } from '../controller/questionarios/GetAllQuestionarioController.js';
 import { GetByIdQuestionarioController } from '../controller/questionarios/GetByIdQuestionarioController.js';
 import { CreateQuestionarioController } from '../controller/questionarios/CreateQuestionarioController.js';
@@ -7,24 +9,23 @@ import { DeleteQuestionarioController } from '../controller/questionarios/Delete
 
 const questionarioRouter = Router();
 
-// Get All/Select
 const getAllQuestionarioController = new GetAllQuestionarioController();
-questionarioRouter.get('/questionarios', getAllQuestionarioController.handle);
-
-// Get By Id
 const getByIdQuestionarioController = new GetByIdQuestionarioController();
-questionarioRouter.get('/questionarios/:id', getByIdQuestionarioController.handle);
-
-// Create
 const createQuestionarioController = new CreateQuestionarioController();
-questionarioRouter.post('/questionarios', createQuestionarioController.handle); 
-
-// Update
 const updateQuestionarioController = new UpdateQuestionarioController();
-questionarioRouter.put('/questionarios', updateQuestionarioController.handle);
-
-// Delete
 const deleteQuestionarioController = new DeleteQuestionarioController();
-questionarioRouter.delete('/questionarios', deleteQuestionarioController.handle);
+
+// Rota PÚBLICA (Exemplo - se você quisesse que a listagem fosse pública)
+// questionarioRouter.get('/questionarios', getAllQuestionarioController.handle);
+// questionarioRouter.get('/questionarios/:id', getByIdQuestionarioController.handle);
+
+
+// Rotas PROTEGIDAS (Exigem token de ADMIN_EMPRESA)
+// Supondo que toda a gestão de questionários é apenas para admins logados:
+questionarioRouter.get('/questionarios', authMiddleware, getAllQuestionarioController.handle);
+questionarioRouter.get('/questionarios/:id', authMiddleware, getByIdQuestionarioController.handle);
+questionarioRouter.post('/questionarios', authMiddleware, createQuestionarioController.handle);
+questionarioRouter.put('/questionarios', authMiddleware, updateQuestionarioController.handle);
+questionarioRouter.delete('/questionarios', authMiddleware, deleteQuestionarioController.handle);
 
 export { questionarioRouter };

@@ -254,7 +254,7 @@ Content-Type: application/json
 
 {
     "nome": "Hospital Modelo Beta",
-    "emailResponsavel": "direcao@hospitalbeta.com.br",
+    "emailResponsavel": "direcao@hospitalbeta.coma.br",
     "senhaEmpresa": "senhaSegura456!"
 }
 
@@ -294,4 +294,47 @@ Content-Type: application/json
 {
     "emailResponsavel": "direcao@hospitalbeta.com.br"
     // Faltando senhaEmpresa
+}
+
+###
+POST http://localhost:4444/usuarios/register-admin
+Content-Type: application/json
+
+{
+    "nome": "Admin Beta Principal",
+    "email": "eu@gmail.com",
+    "senha": "senhadificil",
+    "empresaId": 2
+}
+
+
+
+### Login de Administrador de Empresa Bem-Sucedido
+POST http://localhost:4444/usuarios/login-admin
+Content-Type: application/json
+
+{
+    "email": "admin@hospitalbeta.com.br",
+    "senha": "senhadificil",
+    "empresaId": 1
+}
+
+### Login de Administrador com Credenciais Incorretas
+POST http://localhost:4444/usuarios/login-admin
+Content-Type: application/json
+
+{
+    "email": "admin@hospitalbeta.com.br",
+    "senha": "senhaErrada",
+    "empresaId": 1
+}
+
+### Login de Administrador para Empresa Incorreta
+POST http://localhost:4444/usuarios/login-admin
+Content-Type: application/json
+
+{
+    "email": "admin@hospitalbeta.com.br",
+    "senha": "senhaErrada",
+    "empresaId": 999
 }

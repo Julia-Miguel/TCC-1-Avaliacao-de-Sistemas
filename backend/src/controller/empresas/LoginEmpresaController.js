@@ -6,6 +6,8 @@ export class LoginEmpresaController {
     async handle(request, response) {
         const { emailResponsavel, senhaEmpresa } = request.body;
 
+        console.log('Corpo recebido:', request.body);
+
         // Validação básica
         if (!emailResponsavel || !senhaEmpresa) {
             return response.status(400).json({
@@ -14,21 +16,23 @@ export class LoginEmpresaController {
         }
 
         try {
-            // 1. Encontrar a empresa pelo email
             const empresa = await prisma.empresa.findUnique({
-                where: {
-                    emailResponsavel: emailResponsavel
-                }
+                where: { emailResponsavel: emailResponsavel }
             });
+            console.log('Empresa encontrada no banco:', empresa); // LOG 2
 
             if (!empresa) {
+                console.log('Empresa não encontrada no banco.'); // LOG 3
                 return response.status(401).json({ message: "Credenciais da empresa inválidas." });
             }
 
-            // 2. Comparar a senha enviada com a senha hasheada no banco
+            console.log('Senha recebida:', senhaEmpresa); // LOG 4
+            console.log('Senha hasheada no banco:', empresa.senhaEmpresa); // LOG 5
             const senhaCorreta = await bcrypt.compare(senhaEmpresa, empresa.senhaEmpresa);
+            console.log('Resultado da comparação de senha:', senhaCorreta); // LOG 6
 
             if (!senhaCorreta) {
+                console.log('Comparação de senha falhou.'); // LOG 7
                 return response.status(401).json({ message: "Credenciais da empresa inválidas." });
             }
 

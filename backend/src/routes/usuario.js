@@ -1,13 +1,25 @@
+// backend/src/routes/usuario.js
 import { Router } from 'express';
 import { CreateUsuarioController } from '../controller/usuario/CreateUsuarioController.js';
 import { GetAllUsuarioController } from '../controller/usuario/GetAllUsuarioController.js';
 import { GetByIdUsuarioController } from '../controller/usuario/GetByIdUsuarioController.js';
 import { UpdateUsuarioController } from '../controller/usuario/UpdateUsuarioController.js';
 import { DeleteUsuarioController } from '../controller/usuario/DeleteUsuarioController.js';
+import { CreateAdminEmpresaUsuarioController } from '../controller/usuario/CreateAdminEmpresaUsuarioController.js';
+import { LoginAdminEmpresaUsuarioController } from '../controller/usuario/LoginAdminEmpresaUsuarioController.js';
 
 const usuarioRouter = Router();
 
-// Create
+// Rota para criar um usuário ADMIN_EMPRESA
+const createAdminEmpresaUsuarioController = new CreateAdminEmpresaUsuarioController();
+usuarioRouter.post('/usuarios/register-admin', createAdminEmpresaUsuarioController.handle);
+
+// ADICIONE A NOVA ROTA DE LOGIN DO ADMIN_EMPRESA
+const loginAdminEmpresaUsuarioController = new LoginAdminEmpresaUsuarioController();
+usuarioRouter.post('/usuarios/login-admin', loginAdminEmpresaUsuarioController.handle);
+
+
+// Rota para criar um usuário CLIENTE_PLATAFORMA (já existente, pode precisar de ajuste no tipo depois)
 const createUsuarioController = new CreateUsuarioController();
 usuarioRouter.post('/usuario', createUsuarioController.handle);
 
