@@ -340,3 +340,17 @@ Content-Type: application/json
     "senha": "senhaErrada",
     "empresaId": 999
 }
+
+###
+POST http://localhost:4444/public/avaliacoes/1/respostas
+Content-Type: application/json
+
+{
+    "usuarioId": 1,
+    "respostas": [
+        {
+            "perguntaId": 9,
+            "respostaTexto": "Esta é minha resposta para a pergunta 9."
+        }
+    ]
+}

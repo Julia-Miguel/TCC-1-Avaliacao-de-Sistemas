@@ -5,10 +5,13 @@ import { GetAllRespostaController } from '../controller/resposta/GetAllRespostaC
 import { GetByIdRespostaController } from '../controller/resposta/GetByIdRespostaController.js';
 import { UpdateRespostaController } from '../controller/resposta/UpdateRespostaController.js';
 import { DeleteRespostaController } from '../controller/resposta/DeleteRespostaController.js';
-
+import { SubmitRespostasController } from '../controller/respostas/SubmitRespostasController.js';
 
 const respostaRouter = Router();
 
+
+const submitRespostasController = new SubmitRespostasController();
+respostaRouter.post('/public/avaliacoes/:avaliacaoId/respostas', submitRespostasController.handle);
 
 // Create
 const createRespostaController = new CreateRespostaController();

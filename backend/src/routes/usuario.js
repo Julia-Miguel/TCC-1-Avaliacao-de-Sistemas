@@ -7,8 +7,16 @@ import { UpdateUsuarioController } from '../controller/usuario/UpdateUsuarioCont
 import { DeleteUsuarioController } from '../controller/usuario/DeleteUsuarioController.js';
 import { CreateAdminEmpresaUsuarioController } from '../controller/usuario/CreateAdminEmpresaUsuarioController.js';
 import { LoginAdminEmpresaUsuarioController } from '../controller/usuario/LoginAdminEmpresaUsuarioController.js';
+import { CreateClientePlataformaUsuarioController } from '../controller/usuario/CreateClientePlataformaUsuarioController.js';
+import { LoginClientePlataformaUsuarioController } from '../controller/usuario/LoginClientePlataformaUsuarioController.js';
 
 const usuarioRouter = Router();
+
+const createClientePlataformaUsuarioController = new CreateClientePlataformaUsuarioController();
+usuarioRouter.post('/clientes/register', createClientePlataformaUsuarioController.handle);
+
+const loginClientePlataformaUsuarioController = new LoginClientePlataformaUsuarioController();
+usuarioRouter.post('/clientes/login', loginClientePlataformaUsuarioController.handle);
 
 // Rota para criar um usuário ADMIN_EMPRESA
 const createAdminEmpresaUsuarioController = new CreateAdminEmpresaUsuarioController();

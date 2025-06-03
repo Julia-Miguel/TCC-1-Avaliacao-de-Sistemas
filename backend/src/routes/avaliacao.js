@@ -5,6 +5,7 @@ import { GetAllAvaliacaoController } from '../controller/avaliacao/GetAllAvaliac
 import { GetByIdAvaliacaoController } from '../controller/avaliacao/GetByIdAvaliacaoController.js';
 import { UpdateAvaliacaoController } from '../controller/avaliacao/UpdateAvaliacaoController.js';
 import { DeleteAvaliacaoController } from '../controller/avaliacao/DeleteAvaliacaoController.js';
+import { GetPublicAvaliacaoByIdController } from '../controller/public/avaliacao/GetPublicAvaliacaoByIdController.js'; 
 
 const avaliacaoRouter = Router();
 
@@ -27,5 +28,9 @@ avaliacaoRouter.put('/avaliacao', authMiddleware, updateAvaliacaoController.hand
 // Delete
 const deleteAvaliacaoController = new DeleteAvaliacaoController();
 avaliacaoRouter.delete('/avaliacao', authMiddleware, deleteAvaliacaoController.handle);
+
+// Public GET BY ID
+const getPublicAvaliacaoByIdController = new GetPublicAvaliacaoByIdController();
+avaliacaoRouter.get('/public/avaliacoes/:id', getPublicAvaliacaoByIdController.handle);
 
 export { avaliacaoRouter };

@@ -15,8 +15,8 @@ generator client {
 
 // --- NOVOS E MODIFICADOS ---
 enum TipoUsuario {
-  ADMIN_EMPRESA     // Administrador de uma empresa específica
-  CLIENTE_PLATAFORMA // Cliente que se cadastra na plataforma para responder
+  ADMIN_EMPRESA
+  CLIENTE_PLATAFORMA
 }
 
 // NOVO MODELO: Empresa
@@ -75,7 +75,7 @@ model Questionario {
 // MODELO AVALIACAO MODIFICADO
 model Avaliacao {
   id             Int            @id @default(autoincrement())
-  semestre       String         // Ou algum outro identificador da avaliação
+  semestre       String         
   requerLoginCliente Boolean @default(false) // true = só cliente logado pode responder; false = anônimo também pode
   questionarioId Int
   questionario   Questionario   @relation(fields: [questionarioId], references: [id])
