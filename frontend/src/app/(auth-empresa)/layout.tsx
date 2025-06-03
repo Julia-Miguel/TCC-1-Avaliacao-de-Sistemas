@@ -1,8 +1,8 @@
 // frontend/src/app/(auth-empresa)/layout.tsx
 import type { Metadata } from "next";
 import "../globals.css"; // Seus estilos globais ainda são importantes
+import ApplicationLogo from "@/components/ApplicationLogo"; // Supondo que você queira usar
 
-// Metadata específica para estas páginas, se desejar
 export const metadata: Metadata = {
   title: "Acesso da Empresa",
   description: "Registro e Login para Empresas no Sistema de Avaliação",
@@ -14,12 +14,15 @@ export default function AuthEmpresaLayout({
   readonly children: React.ReactNode;
 }) {
   return (
-    // Este <main> será o container para o conteúdo das páginas dentro deste grupo.
-    // As classes de Tailwind ou CSS global podem ser usadas para estilizar.
-    // Este <main> será renderizado DENTRO do <body> do seu RootLayout.
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-      {/* Você pode adicionar um card ou um logo específico para esta seção aqui */}
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 md:p-8">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-page-bg p-4">
+      <div 
+        className="w-full bg-element-bg rounded-xl shadow-lg border border-main-border p-6 md:p-10" 
+        style={{ maxWidth: 'var(--auth-card-max-width, 28rem)' }} // Use a variável ou fallback
+      >
+        <div className="flex justify-center mb-6">
+          {/* Você pode instanciar seu ApplicationLogo aqui se desejar */}
+          {/* Exemplo: <ApplicationLogo className="w-16 h-16 text-primary" /> */}
+        </div>
         {children} 
       </div>
     </main>

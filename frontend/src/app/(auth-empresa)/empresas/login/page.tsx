@@ -2,10 +2,11 @@
 'use client';
 
 import { useState } from 'react';
-import api from '@/services/api';
+import api from '@/services/api'; //
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import '../../../globals.css'; 
+// import ApplicationLogo from '@/components/ApplicationLogo'; // Descomente se for usar o logo aqui
 
 interface EmpresaLogada {
   id: number;
@@ -26,18 +27,13 @@ export default function LoginEmpresaPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post<{ empresa: EmpresaLogada }>('/empresas/login', {
+      const response = await api.post<{ empresa: EmpresaLogada }>('/empresas/login', { //
         emailResponsavel,
         senhaEmpresa,
       });
-
       const empresaLogada = response.data.empresa;
-
-      // Login da empresa bem-sucedido!
-      // Agora redirecionamos para a página de login do administrador desta empresa,
-      // passando o ID da empresa como query parameter.
-      // AINDA NÃO CRIAMOS A PÁGINA /admin/login, mas esta é a ideia.
-      router.push(`/admin/login?empresaId=${empresaLogada.id}`);
+      // Redireciona para a página de login do admin, passando o ID e nome da empresa
+      router.push(`/admin/login?empresaId=${empresaLogada.id}&empresaNome=${encodeURIComponent(empresaLogada.nome)}`);
 
     } catch (err: any) {
       console.error('Erro ao fazer login da empresa:', err);
@@ -52,29 +48,41 @@ export default function LoginEmpresaPage() {
   };
 
   return (
-    // O layout em (auth-empresa)/layout.tsx já deve fornecer um container centralizado
     <>
-      <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: '600' }}>
+      {/* O ApplicationLogo pode ser adicionado no layout (auth-empresa)/layout.tsx ou aqui */}
+      {/* <div className="flex justify-center mb-6"> */}
+      {/* <ApplicationLogo className="w-16 h-16 text-primary" /> */}
+      {/* </div> */}
+      <h3 className="text-center text-xl sm:text-2xl font-semibold text-text-base mb-6">
         Login da Empresa
       </h3>
-      <form onSubmit={handleSubmit}>
-        {error && <p className="error-message" style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <p className="text-sm text-center text-error bg-red-50 dark:bg-red-700/10 p-3 rounded-md border border-error">
+            {error}
+          </p>
+        )}
 
-        <div className="form-group" style={{ marginBottom: '1rem' }}>
-          <label htmlFor="email-responsavel">Email do Responsável</label>
+        <div className="form-group">
+          <label htmlFor="email-responsavel" className="form-label">
+            Email do Responsável
+          </label>
           <input
             id="email-responsavel"
             type="email"
             value={emailResponsavel}
             onChange={(e) => setEmailResponsavel(e.target.value)}
             required
-            className="input-edit-mode" // Reutilizando estilo de input
-            placeholder="email@empresa.com"
+            className="input-edit-mode" // Estilo global de input
+            placeholder="email@suaempresa.com"
+            disabled={isLoading}
           />
         </div>
 
-        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-          <label htmlFor="senha-empresa">Senha da Empresa</label>
+        <div className="form-group">
+          <label htmlFor="senha-empresa" className="form-label">
+            Senha da Empresa
+          </label>
           <input
             id="senha-empresa"
             type="password"
@@ -83,19 +91,32 @@ export default function LoginEmpresaPage() {
             required
             className="input-edit-mode"
             placeholder="Digite a senha da empresa"
+            disabled={isLoading}
           />
         </div>
 
-        <div className="form-header-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <button type="submit" className="btn-primary w-full" disabled={isLoading}>
-            {isLoading ? "Entrando..." : "Entrar"}
+        <div className="pt-2 space-y-4">
+          <button 
+            type="submit" 
+            className="btn btn-primary w-full py-2.5 text-sm"
+            disabled={isLoading}
+          >
+            {isLoading ? "Avançando..." : "Avançar para Login do Admin"}
           </button>
-          <Link href="/empresas/registrar" className="btn-secondary w-full" style={{ textAlign: 'center' }}>
+          <Link 
+            href="/empresas/registrar" 
+            className="btn btn-outline w-full py-2.5 text-sm text-center block"
+            aria-disabled={isLoading}
+            style={isLoading ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+          >
             Não tem conta? Registrar Empresa
           </Link>
-          <Link href="/" className="btn-link" style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-            Voltar para Home
-          </Link>
+        </div>
+        
+        <div className="text-center mt-6">
+            <Link href="/" className="text-sm text-primary hover:text-primary-hover transition-colors">
+                Voltar para Home
+            </Link>
         </div>
       </form>
     </>
