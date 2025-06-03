@@ -1,47 +1,46 @@
 // frontend/src/app/questionarios/[id]/page.tsx
 'use client';
 
-import { useEffect, useState, Suspense } from "react"; // Adicionado Suspense
+import { useEffect, useState, Suspense } from "react";
 import api from "@/services/api";
-import { useRouter, useParams, useSearchParams } from "next/navigation"; // Adicionado useSearchParams
+import { useRouter, useParams } from "next/navigation"; // Removido useSearchParams se não usado diretamente aqui
 import Link from "next/link";
 import "../../globals.css";
-import AdminAuthGuard from '@/components/auth/AdminAuthGuard'; // Importe o guardião
+// Importe seu questionario.css se ele tiver estilos específicos para esta página
+// import "../../questionario.css"; 
+import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
+import { PlusIcon, Trash2 } from "lucide-react"; // Adicionando ícones para os botões
 
-// --- Interfaces Atualizadas ---
+// --- Interfaces (mantidas como você definiu) ---
 interface Opcao {
     id?: number; 
     texto: string;
-    tempId?: string; // Para keys no React de novas opções
+    tempId?: string; 
 }
 
 interface PerguntaAninhada {
-    id?: number; // Opcional para novas perguntas
+    id?: number; 
     enunciado: string;
     tipos: 'TEXTO' | 'MULTIPLA_ESCOLHA';
     opcoes: Opcao[];
-    tempId?: string; // Para keys no React de novas perguntas
+    tempId?: string; 
 }
 
 interface QuePerg {
-    // Se a relação QuePerg em si tiver um ID do banco e você precisar dele:
-    // id?: number; 
-    perguntaId?: number; // ID da pergunta original (se já existir no banco)
-    questionarioId: number; // ID do questionário atual
+    perguntaId?: number; 
+    questionarioId: number; 
     pergunta: PerguntaAninhada;
+    // id?: number; // ID da relação QuePerg, se o backend enviar e você precisar
 }
 
-interface QuestionarioData { // Para o título do questionário
+interface QuestionarioData {
     id: number;
     titulo: string;
 }
 // --- FIM DAS INTERFACES ---
 
-
-// Componente principal da página, protegido pelo guardião
-export default function EditQuestionarioPage() {
+export default function EditQuestionarioPage() { 
     return (
-        // Suspense é necessário porque EditQuestionarioFormContent usa useSearchParams
         <Suspense fallback={<div className="page-container center-content"><p>Carregando...</p></div>}>
             <AdminAuthGuard>
                 <EditQuestionarioFormContent />
@@ -50,14 +49,13 @@ export default function EditQuestionarioPage() {
     );
 }
 
-// Componente interno que contém a lógica do formulário
-function EditQuestionarioFormContent() {
+function EditQuestionarioFormContent() { 
     const router = useRouter();
-    const params = useParams(); // Usamos params para pegar o ID da rota
-    const questionarioId = Number(params.id); // params.id virá da URL /questionarios/[id]
+    const params = useParams(); 
+    const questionarioId = Number(params.id); 
 
     const [titulo, setTitulo] = useState("");
-    const [quePergs, setQuePergs] = useState<QuePerg[]>([]); // Armazena as associações QuePerg
+    const [quePergs, setQuePergs] = useState<QuePerg[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -73,11 +71,9 @@ function EditQuestionarioFormContent() {
 
         const loadData = async () => {
             try {
-                // Busca o título do questionário
                 const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
                 setTitulo(respQuestionario.data.titulo);
 
-                // Busca as perguntas e opções já associadas a este questionário
                 const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`);
                 const sanitizedQuePergs = respQuePerg.data.map(qp => ({
                     ...qp,
@@ -92,8 +88,6 @@ function EditQuestionarioFormContent() {
                 console.error("Erro ao carregar dados do questionário:", err);
                 if (err.response && (err.response.status === 401 || err.response.status === 403)) {
                     setError("Acesso não autorizado ou negado. Faça o login novamente.");
-                    // O AdminAuthGuard deve, em teoria, prevenir isso, mas é uma segurança extra.
-                    // Se o token expirar DURANTE a sessão, o usuário verá esta mensagem.
                 } else if (err.response && err.response.status === 404) {
                     setError("Questionário não encontrado. Verifique o ID ou se ele pertence à sua empresa.");
                 } else {
@@ -104,9 +98,8 @@ function EditQuestionarioFormContent() {
             }
         };
         loadData();
-    }, [questionarioId]); // Dependência é o questionarioId da rota
+    }, [questionarioId]);
 
-    // --- Funções para Gerenciar o Formulário Dinâmico ---
     const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => {
         setQuePergs(prevQuePergs => 
             prevQuePergs.map((qp, index) => 
@@ -131,7 +124,6 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-
     
     const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => {
         setQuePergs(prevQuePergs =>
@@ -147,7 +139,7 @@ function EditQuestionarioFormContent() {
         );
     };
 
-    const addOptionToList = (qIndex: number) => { // Renomeado de 'addOption'
+    const addOptionToList = (qIndex: number) => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
@@ -181,7 +173,6 @@ function EditQuestionarioFormContent() {
         const novoQuePerg: QuePerg = {
             questionarioId: questionarioId,
             pergunta: novaPerguntaDefault
-            // perguntaId será undefined aqui, pois é uma nova pergunta
         };
         setQuePergs(prevQuePergs => [...prevQuePergs, novoQuePerg]);
     };
@@ -191,29 +182,25 @@ function EditQuestionarioFormContent() {
         setIsLoading(true);
         setError(null);
         try {
-            // 1. Salvar o título do questionário
             await api.put(`/questionarios`, {
                 id: questionarioId,
                 titulo: titulo
             });
 
-            // 2. Processar cada pergunta (QuePerg)
-            // Usaremos Promise.all para executar todas as atualizações/criações de perguntas em paralelo
             const promisesPerguntas = quePergs.map(async (qp) => {
                 let perguntaData = qp.pergunta;
                 let perguntaSalvaOuAtualizada: PerguntaAninhada;
 
-                if (perguntaData.id) { // Pergunta existente, ATUALIZAR
+                if (perguntaData.id) { 
                     const updatePayload = {
                         id: perguntaData.id,
                         enunciado: perguntaData.enunciado,
                         tipos: perguntaData.tipos,
-                        // Para o backend, enviamos apenas o texto das opções. O backend recriará as opções.
                         opcoes: perguntaData.tipos === 'MULTIPLA_ESCOLHA' ? perguntaData.opcoes.map(opt => ({ texto: opt.texto })) : []
                     };
                     const response = await api.put(`/perguntas`, updatePayload);
                     perguntaSalvaOuAtualizada = response.data;
-                } else { // Nova pergunta, CRIAR
+                } else { 
                     const createPayload = {
                         enunciado: perguntaData.enunciado,
                         tipos: perguntaData.tipos,
@@ -221,23 +208,22 @@ function EditQuestionarioFormContent() {
                     };
                     const response = await api.post(`/perguntas`, createPayload);
                     perguntaSalvaOuAtualizada = response.data;
-
-                    // Associar a nova pergunta criada ao questionário atual
-                    // Garanta que o CreateQuePergController no backend verifica a propriedade da empresa
-                    await api.post('/queperg', {
-                        questionario_id: questionarioId,
-                        pergunta_id: perguntaSalvaOuAtualizada.id 
-                    });
+                    
+                    if (perguntaSalvaOuAtualizada.id) { // Garante que temos ID antes de associar
+                        await api.post('/queperg', {
+                            questionario_id: questionarioId,
+                            pergunta_id: perguntaSalvaOuAtualizada.id 
+                        });
+                    } else {
+                        throw new Error("Nova pergunta criada não retornou um ID.");
+                    }
                 }
-                return perguntaSalvaOuAtualizada; // Retorna a pergunta processada
+                return perguntaSalvaOuAtualizada;
             });
 
             await Promise.all(promisesPerguntas);
 
             alert("Questionário e perguntas atualizados com sucesso!");
-            // Recarregar dados para refletir IDs de novas perguntas/opções
-            // ou fazer um refetch na página de listagem após o push.
-            // Por simplicidade, vamos apenas redirecionar.
             router.push("/questionarios"); 
 
         } catch (err: any) {
@@ -256,7 +242,7 @@ function EditQuestionarioFormContent() {
         return (
             <div className="page-container center-content">
                 <p style={{color: 'red'}}>{error}</p>
-                <Link href="/questionarios" className="btn-secondary" style={{marginTop: '1rem'}}>
+                <Link href="/questionarios" className="btn btn-secondary" style={{marginTop: '1rem'}}>
                     Voltar para Lista de Questionários
                 </Link>
             </div>
@@ -264,52 +250,54 @@ function EditQuestionarioFormContent() {
     }
 
     return (
-        <div className="page-container">
-            <form onSubmit={handleSaveChanges} className="editor-form-card">
-                <div className="form-header">
-                    <h3>Editando Questionário: {titulo || "Sem Título"}</h3>
+        <div className="page-container"> {/* Usa a classe do globals.css para padding/max-width */}
+            <form onSubmit={handleSaveChanges} className="editor-form-card"> {/* Estilo do card */}
+                <div className="form-header"> {/* Estilo do cabeçalho do card */}
+                    <h3>Editando Questionário: {titulo || "Carregando Título..."}</h3>
                     <div className="form-header-actions">
-                        <button type="button" onClick={() => router.push("/questionarios")} className="btn-secondary" disabled={isLoading}>Cancelar</button>
-                        <button type="submit" className="btn-primary" disabled={isLoading}>
+                        <button type="button" onClick={() => router.push("/questionarios")} className="btn btn-secondary" disabled={isLoading}>Cancelar</button>
+                        <button type="submit" className="btn btn-primary" disabled={isLoading}>
                             {isLoading ? "Salvando..." : "Salvar Alterações"}
                         </button>
                     </div>
                 </div>
 
                 <div className="display-section">
-                    <label htmlFor="titulo-input">Título do Questionário</label>
+                    <label htmlFor="titulo-input" className="form-label">Título do Questionário</label> {/* Usando form-label */}
                     <input 
                         id="titulo-input" 
                         type="text" 
                         value={titulo} 
                         onChange={(e) => setTitulo(e.target.value)} 
-                        className="input-edit-mode title-input"
+                        className="input-edit-mode title-input" // Sua classe ou a global para inputs
                         disabled={isLoading}
                         required
                     />
                 </div>
 
                 <div className="display-section">
-                    <label>Perguntas do Questionário</label>
+                    <label className="form-label">Perguntas do Questionário</label> {/* Usando form-label */}
                     <div className="perguntas-edit-list">
                         {quePergs.map((qp, qIndex) => (
                             <div key={qp.pergunta.id || qp.pergunta.tempId} className="pergunta-editor-item">
+                                <label htmlFor={`enunciado-pergunta-${qIndex}`} className="form-label sr-only">Enunciado da Pergunta {qIndex + 1}</label>
                                 <textarea
+                                    id={`enunciado-pergunta-${qIndex}`}
                                     value={qp.pergunta.enunciado}
                                     onChange={(e) => handlePerguntaChange(qIndex, e.target.value)}
-                                    className="input-edit-mode question-textarea"
+                                    className="input-edit-mode question-textarea" // Sua classe ou a global para textareas
                                     rows={2}
-                                    placeholder="Digite o enunciado da pergunta"
+                                    placeholder={`Enunciado da Pergunta ${qIndex + 1}`}
                                     disabled={isLoading}
                                     required
                                 />
                                 <div className="pergunta-meta-editor">
-                                    <label htmlFor={`tipo-pergunta-${qp.pergunta.id || qp.pergunta.tempId}`}>Tipo</label>
+                                    <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label">Tipo</label>
                                     <select 
-                                        id={`tipo-pergunta-${qp.pergunta.id || qp.pergunta.tempId}`}
+                                        id={`tipo-pergunta-${qIndex}`}
                                         value={qp.pergunta.tipos} 
                                         onChange={(e) => handleTipoChange(qIndex, e.target.value as 'TEXTO' | 'MULTIPLA_ESCOLHA')} 
-                                        className="select-tipo-pergunta"
+                                        className="select-tipo-pergunta" // Sua classe ou a global para selects
                                         disabled={isLoading}
                                     >
                                         <option value="TEXTO">Texto</option>
@@ -319,36 +307,38 @@ function EditQuestionarioFormContent() {
 
                                 {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
                                     <div className="opcoes-editor-container">
-                                        <label>Opções de Resposta</label>
+                                        <label className="form-label">Opções de Resposta</label>
                                         {qp.pergunta.opcoes.map((opt, oIndex) => (
                                             <div key={opt.id || opt.tempId || `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
+                                                <label htmlFor={`opcao-q${qIndex}-o${oIndex}`} className="sr-only">Opção {oIndex + 1}</label>
                                                 <input
+                                                    id={`opcao-q${qIndex}-o${oIndex}`}
                                                     type="text"
                                                     value={opt.texto}
                                                     onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
-                                                    placeholder={`Opção ${oIndex + 1}`}
-                                                    className="input-edit-mode"
+                                                    placeholder={`Texto da Opção ${oIndex + 1}`}
+                                                    className="input-edit-mode" // Sua classe ou a global para inputs
                                                     disabled={isLoading}
-                                                    required
+                                                    required={qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'} // Obrigatório se for múltipla escolha
                                                 />
                                                 <button 
                                                     type="button" 
                                                     onClick={() => removeOption(qIndex, oIndex)} 
-                                                    className="btn-remover-opcao"
+                                                    className="btn-remover-opcao" // Estilo para este botão específico
                                                     title="Remover Opção"
                                                     disabled={isLoading}
                                                 >
-                                                    &times;
+                                                    <Trash2 size={18} />
                                                 </button>
                                             </div>
                                         ))}
                                         <button 
                                             type="button" 
                                             onClick={() => addOptionToList(qIndex)} 
-                                            className="btn-adicionar-opcao"
+                                            className="btn btn-outline btn-sm mt-2 flex items-center self-start" // Usando classes de botão genéricas
                                             disabled={isLoading}
                                         >
-                                            + Adicionar Opção
+                                            <PlusIcon size={16} className="mr-1" /> Adicionar Opção
                                         </button>
                                     </div>
                                 )}
@@ -357,11 +347,11 @@ function EditQuestionarioFormContent() {
                         <button 
                             type="button" 
                             onClick={handleAddNewPergunta} 
-                            className="btn-adicionar-opcao"
-                            style={{marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.75rem', fontSize:'1rem'}}
+                            className="btn btn-primary mt-4 flex items-center" // Botão primário para ação principal
+                            style={{padding: '0.75rem 1.5rem', fontSize:'1rem'}} // Estilo inline mantido, pode virar classe
                             disabled={isLoading}
                         >
-                            + Adicionar Nova Pergunta ao Questionário
+                            <PlusIcon size={20} className="mr-2" /> Adicionar Nova Pergunta
                         </button>
                     </div>
                 </div>

@@ -1,169 +1,97 @@
-
 /* frontend/src/components/SideMenu.css */
 
-.sidebar {
-  position: fixed;
-  top: 64px; /* Ajuste conforme a altura do header */
-  left: 0;
-  height: calc(100vh - 64px);
-  width: 256px;
-  background-color: #f9fafb; /* Substitua por var(--bg-light) se usar variáveis */
-  color: #374151; /* Substitua por var(--text-light) se usar variáveis */
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease-in-out;
-  z-index: 50;
-}
-
-.sidebar.dark {
-  background-color: #1f2937; /* Substitua por var(--bg-dark) */
-  color: #d1d5db; /* Substitua por var(--text-dark) */
-}
-
-.sidebar-header {
-  margin-bottom: 2rem;
-}
-
-.sidebar-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-.sidebar-nav {
-  flex: 1;
-}
-
-.sidebar-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sidebar-nav li {
-  margin: 0;
-}
-
-.sidebar-nav a {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-  color: inherit;
-  text-decoration: none;
-}
-
-.sidebar-nav a:hover {
-  background-color: #e5e7eb; /* Substitua por var(--secondary-color) */
-  color: white;
-}
-
-.sidebar-nav a.active {
-  background-color: #32edc8; /* Substitua por var(--primary-color) */
-  color: white;
-  font-weight: 500;
-}
-
-.sidebar-footer {
-  padding-top: 1.5rem;
-  margin-top: auto;
-  border-top: 1px solid #e5e7eb; /* Substitua por var(--border-color) */
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    display: none;
-  }
-}
-
 .side-menu {
-  width: 16rem; /* 64 */
+  width: 16rem; /* 256px - w-64 no Tailwind */
   position: fixed;
-  top: 4rem; /* 16 */
+  top: 4rem; /* Altura da Navbar (h-16 no Tailwind, que é 4rem ou 64px) */
   left: 0;
+  height: calc(100vh - 4rem); /* Altura restante abaixo da Navbar */
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-color);
-  background-color: var(--background);
-  color: var(--foreground);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 40;
-  height: calc(100vh - 4rem);
+  background-color: var(--color-background-element); /* Fundo branco/claro */
+  border-right: 1px solid var(--color-border); /* Borda sutil à direita */
+  color: var(--color-text-base);
+  z-index: 40; /* Abaixo da Navbar (que pode ser z-50) */
+  transition: background-color var(--transition-slow), border-color var(--transition-slow), color var(--transition-slow);
+  padding-bottom: var(--spacing-md); /* Espaço no final do menu */
 }
 
 .side-menu-header {
-  padding: 1.25rem 1.5rem; /* px-6 py-5 */
-  font-size: 1.5rem; /* text-2xl */
-  font-weight: bold;
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-lg) var(--spacing-lg); /* Espaçamento interno */
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 600; /* semibold */
+  color: var(--color-text-base);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0; /* Evita que o header encolha */
 }
 
 .side-menu-nav {
-  flex: 1;
-  padding: 1rem 0.5rem; /* py-4 px-2 */
+  flex-grow: 1; /* Permite que a navegação ocupe o espaço disponível */
+  padding: var(--spacing-md) var(--spacing-sm); /* Espaçamento vertical e horizontal menor para os itens */
+  overflow-y: auto; /* Scroll se houver muitos itens */
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* space-y-2 */
+  gap: var(--spacing-xs); /* Espaço pequeno entre os links */
 }
 
 .side-menu-link {
   display: flex;
   align-items: center;
-  padding: 0.5rem 1rem; /* px-4 py-2 */
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-  color: inherit;
+  padding: var(--spacing-sm) var(--spacing-md); /* Padding interno dos links */
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  color: var(--color-text-muted); /* Cor padrão para links inativos (cinza suave) */
   text-decoration: none;
+  font-weight: 500; /* medium */
+  margin: 0 var(--spacing-sm); /* Margem horizontal para os links não colarem nas bordas do nav */
 }
 
 .side-menu-link:hover {
-  background-color: var(--btn-hover-bg);
-  color: white;
+  background-color: rgba(var(--color-primary-rgb), 0.08); /* Fundo primário bem sutil */
+  color: var(--color-primary); /* Texto na cor primária no hover */
 }
 
 .side-menu-link.active {
-  background-color: var(--btn-bg);
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary); /* Texto branco/claro sobre fundo primário */
+  font-weight: 500; /* Pode ser semibold (600) se quiser mais destaque */
+  box-shadow: var(--shadow-sm); /* Sombra sutil para o item ativo */
 }
 
 .side-menu-icon {
-  width: 1.25rem; /* 5 */
-  height: 1.25rem;
-  margin-right: 0.75rem; /* 3 */
+  width: 1.25rem; /* w-5 */
+  height: 1.25rem; /* h-5 */
+  margin-right: var(--spacing-sm); /* Espaço entre ícone e texto */
+  flex-shrink: 0; /* Evita que o ícone encolha */
+  /* A cor do ícone será herdada do .side-menu-link (color) */
 }
+/* Para garantir que o ícone no estado ativo também use a cor correta */
+.side-menu-link.active .side-menu-icon {
+  color: var(--color-text-on-primary);
+}
+
 
 .side-menu-label {
   font-size: 0.875rem; /* text-sm */
-  font-weight: 500; /* medium */
+  line-height: 1.25rem;
+  /* O peso da fonte é herdado do .side-menu-link */
 }
 
 .side-menu-footer {
-  padding: 0.75rem 1rem; /* px-4 py-3 */
-  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem; /* text-xs */
+  color: var(--color-text-muted);
+  text-align: center;
+  flex-shrink: 0; /* Evita que o footer encolha */
+}
+.side-menu-footer p { /* Se você usar <p> dentro do footer */
+    margin: 0;
+    color: inherit; /* Herda a cor do .side-menu-footer */
 }
 
 
-.gradient-border {
-  padding-left: 0.1rem;
-  border: 2px solid transparent;
-  border-radius: 0.5rem;
-  background-clip: padding-box;
-}
-
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #414847, #D1D5DB, #373a3e);
-  border-radius: 0.5rem;
-  z-index: -1;
-}
+/* Remoção dos estilos de .gradient-border e ::before, pois a imagem de referência
+   usa uma borda simples e sombras para profundidade, não gradientes na borda do menu.
+   Se quiser manter o gradiente, pode ajustar as cores dele para combinar com a nova paleta.
+*/

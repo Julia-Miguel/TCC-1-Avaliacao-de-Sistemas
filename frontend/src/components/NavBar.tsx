@@ -1,14 +1,24 @@
-// frontend/src/components/NavBar.tsx
+// frontend/src/components/NavBar.tsx (VERSÃO UNIFICADA)
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // useRouter para o logout do AuthContext
+import {
+  ChevronDown,
+  Menu as MenuIcon,
+  X as XIcon,
+  UserCircle,
+  Settings,
+  LogOut,
+} from "lucide-react";
+
 import ApplicationLogo from "./ApplicationLogo";
-import Dropdown from "./Dropdown";
 import NavLink from "./NavLink";
 import ThemeToggle from "@/components/menu/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext"; // <<< NOSSA LÓGICA DE AUTENTICAÇÃO
 
+// Interface AdminUser do nosso AuthContext
 interface AdminUser {
   id: number;
   nome: string;
@@ -17,185 +27,263 @@ interface AdminUser {
   empresaId: number;
 }
 
-interface NavbarProps {
-  readonly header?: React.ReactNode;
-  readonly children?: React.ReactNode;
+interface NavLinkItem {
+  href: string;
+  label: string;
 }
 
-export default function NavbarLayout({ header, children }: NavbarProps) {
-  const router = useRouter();
-
-  const [loggedInAdmin, setLoggedInAdmin] = useState<AdminUser | null>(null);
+// Removida a prop 'header' e 'children' daqui, pois este componente
+// será apenas a barra de navegação, e o RootLayout gerenciará os children principais.
+export default function NavbarLayout() {
+  const { loggedInAdmin, logoutAdmin, isLoadingAuth } = useAuth(); // <<< DADOS DO ADMIN LOGADO
+  const router = useRouter(); // Para o logout do AuthContext, se ele não redirecionar
+  
   const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-  const [showUserDropdownMenu, setShowUserDropdownMenu] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  const pathname = usePathname();
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Links da área administrativa - só aparecem se logado
+  const adminNavLinks: NavLinkItem[] = [
+    { href: "/questionarios", label: "Questionários" },
+    { href: "/perguntas", label: "Perguntas Base" },
+    { href: "/queperg", label: "Associar P-Q" },
+    { href: "/avaliacao", label: "Avaliações" },
+    // Adicione outros links de admin aqui
+  ];
 
   useEffect(() => {
-    console.log("[NavbarLayout] useEffect executando no cliente."); // LOG 1
-    if (typeof window !== "undefined") {
-      const adminUserString = localStorage.getItem('adminUser');
-      const token = localStorage.getItem('adminToken');
-      
-      console.log("[NavbarLayout] Token do localStorage:", token); // LOG 2
-      console.log("[NavbarLayout] AdminUser string do localStorage:", adminUserString); // LOG 3
-
-      if (adminUserString && token) {
-        try {
-          const parsedAdminUser = JSON.parse(adminUserString);
-          console.log("[NavbarLayout] AdminUser parseado:", parsedAdminUser); // LOG 4
-          setLoggedInAdmin(parsedAdminUser);
-        } catch (e) {
-          console.error("[NavbarLayout] Erro ao parsear dados do usuário do localStorage:", e);
-          localStorage.removeItem('adminUser');
-          localStorage.removeItem('adminToken');
-          setLoggedInAdmin(null); // Garante que está nulo se houver erro
-        }
-      } else {
-        console.log("[NavbarLayout] Token ou AdminUser não encontrados no localStorage."); // LOG 5
-        setLoggedInAdmin(null); // Garante que está nulo se não encontrar
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        showUserDropdown &&
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowUserDropdown(false);
+      }
+      if (
+        showingNavigationDropdown &&
+        mobileMenuButtonRef.current &&
+        !mobileMenuButtonRef.current.contains(event.target as Node) &&
+        !(event.target as HTMLElement).closest('#mobile-menu')
+      ) {
+        setShowingNavigationDropdown(false);
       }
     }
-  }, []); 
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserDropdown, showingNavigationDropdown]);
 
-  const handleLogout = () => {
-    // ... (sua função handleLogout)
-    if (typeof window !== "undefined") {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminUser');
-    }
-    setLoggedInAdmin(null);
-    setShowUserDropdownMenu(false);
-    router.push('/empresas/login'); 
-    alert("Logout realizado com sucesso!");
+  const handleLogoutClick = () => {
+    logoutAdmin(); // Função do AuthContext que limpa localStorage e estado
+    // O redirecionamento já é feito pelo AuthContext ou você pode adicionar um aqui se necessário
+    // router.push('/empresas/login'); 
+    setShowUserDropdown(false); // Fecha o dropdown
   };
 
-  console.log("[NavbarLayout] Estado de loggedInAdmin:", loggedInAdmin); // LOG 6 (fora do useEffect para ver em cada render)
 
-  return (
-    <div>
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between items-center">
-            {/* Seção Esquerda */}
+  // Enquanto o AuthContext está carregando o estado inicial, podemos mostrar um loader simples
+  if (isLoadingAuth) {
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-element-bg border-b border-main-border shadow-sm print:hidden">
+        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
-              <Link href="/">
-                <ApplicationLogo className="block h-9 w-auto" />
+              <Link href="/" className="flex-shrink-0 flex items-center gap-2">
+                <ApplicationLogo className="block h-8 w-auto text-primary" />
+                <span className="font-semibold text-lg text-text-base hidden sm:block">Evaluation</span>
               </Link>
-              {/* --- CORREÇÃO IMPORTANTE: Mostrar links se loggedInAdmin for VERDADEIRO --- */}
-              {loggedInAdmin && ( 
-                <div className="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                  <NavLink href="/questionarios" active={false}>Questionários</NavLink>
-                  <NavLink href="/perguntas" active={false}>Perguntas Base</NavLink>
-                  <NavLink href="/queperg" active={false}>Associar P-Q</NavLink>
-                  <NavLink href="/avaliacao" active={false}>Avaliações</NavLink>
-                  {/* <NavLink href="/respostas" active={false}>Respostas</NavLink> */}
-                  {/* <NavLink href="/usuAval" active={false}>Usuário Avaliado</NavLink> */}
-                  {/* <NavLink href="/usuario" active={false}>Usuários Admin</NavLink> */}
-                </div>
-              )}
             </div>
-
-            {/* Seção Direita */}
-            <div className="hidden sm:flex sm:items-center space-x-4">
-              <ThemeToggle />
-              {loggedInAdmin ? (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowUserDropdownMenu((prev) => !prev)}
-                    className="inline-flex items-center rounded-md border border-transparent px-3 py-2 text-sm font-medium leading-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none"
-                  >
-                    {loggedInAdmin.nome}
-                    <svg
-                      className="-mr-0.5 ml-2 h-4 w-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        // Path SVG completo para a seta
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                  {showUserDropdownMenu && (
-                    <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-gray-700 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                      <Dropdown.Link href="/admin/profile">Meu Perfil</Dropdown.Link>
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <NavLink href="/empresas/login" active={false}>Login Empresa</NavLink>
-              )}
-            </div>
-
-            {/* Botão Mobile */}
-            <div className="-mr-2 flex items-center sm:hidden">
-              <ThemeToggle />
-              <button
-                onClick={() => setShowingNavigationDropdown(!showingNavigationDropdown)}
-                className="ml-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none"
-                title="Toggle Navigation"
-              >
-                <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                  <path className={showingNavigationDropdown ? "hidden" : "inline-flex"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                  <path className={showingNavigationDropdown ? "inline-flex" : "hidden"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            <div className="text-sm text-text-muted">Carregando...</div>
           </div>
         </div>
+      </nav>
+    );
+  }
 
-        {/* Menu Mobile Dropdown */}
-        {showingNavigationDropdown && (
-          <div className="sm:hidden bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
-            <div className="space-y-1 pb-3 pt-2 px-2">
-              {loggedInAdmin ? (
-                <>
-                  <NavLink href="/questionarios" active={false}>Questionários</NavLink>
-                  <NavLink href="/perguntas" active={false}>Perguntas Base</NavLink>
-                  <NavLink href="/queperg" active={false}>Associar P-Q</NavLink>
-                  <NavLink href="/avaliacao" active={false}>Avaliações</NavLink>
-                </>
-              ) : (
-                <NavLink href="/empresas/login" active={false}>Login Empresa</NavLink>
-              )}
-            </div>
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-element-bg border-b border-main-border shadow-sm print:hidden">
+      <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* Esquerda */}
+          <div className="flex items-center">
+            <Link href={loggedInAdmin ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center gap-2"> {/* Link para dashboard se logado */}
+              <ApplicationLogo className="block h-8 w-auto text-primary" />
+              <span className="font-semibold text-lg text-text-base hidden sm:block">
+                Evaluation
+              </span>
+            </Link>
+
+            {/* Links de Navegação para Admin Logado */}
             {loggedInAdmin && (
-              <div className="border-t border-gray-200 dark:border-gray-700 pb-3 pt-3">
-                <div className="px-4">
-                  <div className="text-base font-medium text-gray-800 dark:text-gray-200">{loggedInAdmin.nome}</div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{loggedInAdmin.email}</div>
-                </div>
-                <div className="mt-3 space-y-1 px-2">
-                  <NavLink href="/admin/profile" active={false}>Meu Perfil</NavLink>
-                  <button onClick={handleLogout} className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white">
-                    Logout
-                  </button>
-                </div>
+              <div className="hidden md:ml-6 md:flex md:space-x-1 lg:space-x-2">
+                {adminNavLinks.map((link) => (
+                  <NavLink
+                    key={link.href}
+                    href={link.href}
+                    active={ pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href)) }
+                    className="px-3 py-2"
+                  >
+                    {link.label}
+                  </NavLink>
+                ))}
               </div>
             )}
           </div>
-        )}
-      </nav>
 
-      <main className="pt-16"> 
-        {header && (
-          <header className="bg-white dark:bg-gray-800 shadow mb-4">
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-              {header}
+          {/* Direita */}
+          <div className="hidden md:flex md:items-center md:space-x-3">
+            <ThemeToggle />
+
+            {loggedInAdmin ? (
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  id="user-menu-button"
+                  type="button"
+                  onClick={() => setShowUserDropdown((prev) => !prev)}
+                  className="flex items-center rounded-full p-1 text-text-muted hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-element-bg"
+                  aria-expanded={showUserDropdown ? 'true' : 'false'}
+                  aria-haspopup="true"
+                >
+                  <span className="sr-only">Abrir menu do usuário</span>
+                  <UserCircle size={24} className="h-7 w-7 rounded-full text-text-muted" />
+                  <span className="mx-1 text-sm font-medium text-text-base">{loggedInAdmin.nome}</span>
+                  <ChevronDown size={18} aria-hidden="true" />
+                </button>
+
+                {showUserDropdown && (
+                  <div
+                    id="user-menu"
+                    className="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-element-bg shadow-lg ring-1 ring-main-border ring-opacity-5 focus:outline-none py-1 z-20"
+                    role="menu"
+                    aria-orientation="vertical"
+                    aria-labelledby="user-menu-button"
+                  >
+                    <div className="px-4 py-3">
+                      <p className="text-sm text-text-base font-semibold">{loggedInAdmin.nome}</p>
+                      <p className="text-xs text-text-muted truncate">{loggedInAdmin.email}</p>
+                    </div>
+                    <div className="border-t border-main-border my-1"></div>
+                    <Link
+                      href="/admin/profile" // Defina a rota do perfil do admin
+                      className="flex items-center w-full text-left px-4 py-2 text-sm text-text-base hover:bg-page-bg hover:text-primary"
+                      role="menuitem"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <UserCircle size={16} className="mr-2" /> Meu Perfil
+                    </Link>
+                    {/* <Link
+                      href="/config" // Se tiver uma página de configurações
+                      className="flex items-center w-full text-left px-4 py-2 text-sm text-text-base hover:bg-page-bg hover:text-primary"
+                      role="menuitem"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <Settings size={16} className="mr-2" /> Configurações
+                    </Link> */}
+                    <div className="border-t border-main-border my-1"></div>
+                    <button
+                      type="button"
+                      onClick={handleLogoutClick}
+                      className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                      role="menuitem"
+                    >
+                      <LogOut size={16} className="mr-2" /> Sair
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <NavLink href="/empresas/login" active={pathname === "/empresas/login"}>
+                Login Empresa
+              </NavLink>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="-mr-2 flex items-center md:hidden">
+            <ThemeToggle />
+            <button
+              ref={mobileMenuButtonRef}
+              type="button"
+              onClick={() => setShowingNavigationDropdown((prev) => !prev)}
+              className="ml-2 inline-flex items-center justify-center rounded-md p-2 text-text-muted hover:bg-page-bg hover:text-primary focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+              aria-controls="mobile-menu"
+              aria-expanded={showingNavigationDropdown ? 'true' : 'false'}
+            >
+              <span className="sr-only">Abrir menu principal</span>
+              {showingNavigationDropdown ? (
+                <XIcon className="block h-6 w-6" aria-hidden="true" />
+              ) : (
+                <MenuIcon className="block h-6 w-6" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu dropdown */}
+      {showingNavigationDropdown && (
+        <div className="md:hidden border-t border-main-border bg-element-bg shadow-lg" id="mobile-menu">
+          <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
+            {loggedInAdmin ? adminNavLinks.map((link) => ( // Mostra links de admin se logado
+              <NavLink
+                key={link.href}
+                href={link.href}
+                active={pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href))}
+                className="block rounded-md px-3 py-2 text-base font-medium"
+                onClick={() => setShowingNavigationDropdown(false)}
+              >
+                {link.label}
+              </NavLink>
+            )) : ( // Senão, mostra link de login empresa
+               <NavLink
+                href="/empresas/login"
+                active={pathname === "/empresas/login"}
+                className="block rounded-md px-3 py-2 text-base font-medium"
+                onClick={() => setShowingNavigationDropdown(false)}
+              >
+                Login Empresa
+              </NavLink>
+            )}
+          </div>
+          {loggedInAdmin && (
+            <div className="border-t border-main-border pb-3 pt-4">
+              <div className="flex items-center px-5">
+                <UserCircle size={32} className="h-10 w-10 rounded-full text-text-muted" />
+                <div className="ml-3">
+                  <div className="text-base font-medium text-text-base">{loggedInAdmin.nome}</div>
+                  <div className="text-sm font-medium text-text-muted">{loggedInAdmin.email}</div>
+                </div>
+              </div>
+              <div className="mt-3 space-y-1 px-2">
+                <NavLink
+                  href="/admin/profile"
+                  className="block rounded-md px-3 py-2 text-base font-medium hover:bg-page-bg hover:text-primary"
+                  onClick={() => setShowingNavigationDropdown(false)}
+                >
+                  Meu Perfil
+                </NavLink>
+                {/* <NavLink
+                  href="/config"
+                  className="block rounded-md px-3 py-2 text-base font-medium hover:bg-page-bg hover:text-primary"
+                  onClick={() => setShowingNavigationDropdown(false)}
+                >
+                  Configurações
+                </NavLink> */}
+                <button
+                  type="button"
+                  onClick={handleLogoutClick}
+                  className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-text-base hover:bg-page-bg hover:text-primary"
+                >
+                  Sair
+                </button>
+              </div>
             </div>
-          </header>
-        )}
-        {children}
-      </main>
-    </div>
+          )}
+        </div>
+      )}
+    </nav>
   );
 }

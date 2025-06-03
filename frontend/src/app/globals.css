@@ -3,488 +3,532 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Variáveis Globais */
 :root {
-  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  --primary-color: #3de1b0;
-  --secondary-color: #535bf2;
-  --transition: 0.3s;
-  --padding: 0.5rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 2rem;
-  --border-color: #ddd;
-  --bg-light: #ffffff;
-  --bg-dark: #333333;
-  --text-light: #171717;
-  --text-dark: #ededed;
-  --btn-bg: #646cff;
-  --btn-hover-bg: #535bf2;
-}
+  /* Família de Fontes (garanta que estejam carregadas via layout.tsx ou aqui) */
+  --font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-family-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; /* Adicionando fallbacks comuns */
 
-/* Estilos Globais */
-body {
-  margin: 0;
-  font-family: var(--font-family);
-  transition: background-color var(--transition), color var(--transition);
-  color: var(--text-light); /* Fallback */
-  background: var(--bg-light); /* Fallback */
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
+  /* Paleta de Cores Inspirada na Imagem de Referência (Tema Claro como padrão) */
+  --color-primary: #4A90E2;       /* Azul principal da imagem de referência */
+  --color-primary-hover: #357ABD; /* Um tom mais escuro para hover */
+  --color-primary-rgb: 74, 144, 226; /* Para usar com opacidade (ex: box-shadow) */
 
-#root {
-  max-width: 1280px;
-  width: 100%;
-  padding: var(--spacing-lg);
-  margin: 0 auto;
-}
+  --color-text-base: #2D3748;        /* Cinza escuro para texto principal (Tailwind gray-800) */
+  --color-text-muted: #718096;       /* Cinza médio para texto secundário (Tailwind gray-600) */
+  --color-text-on-primary: #FFFFFF;  /* Texto branco sobre fundos com cor primária */
 
-h1, h2, h3, h4, h5, h6 {
-  margin: 0.5em 0;
-}
+  --color-background-page: #F7FAFC;    /* Fundo da página (Tailwind gray-100) */
+  --color-background-element: #FFFFFF; /* Fundo de cards, sidebar, navbar (Branco) */
 
-h3 {
-  font-size: 1.5rem;
-  margin-bottom: var(--spacing-md);
-}
+  --color-border: #E2E8F0;           /* Borda sutil (Tailwind gray-300) */
+  --color-border-input: #CBD5E0;     /* Borda para inputs (Tailwind gray-400) */
 
-a {
-  font-weight: 500;
-  color: var(--primary-color);
-  text-decoration: none;
-  transition: color var(--transition), transform 0.2s;
-}
+  /* Cores de Feedback */
+  --color-success: #38A169; /* Verde (Tailwind green-600) */
+  --color-error: #E53E3E;   /* Vermelho (Tailwind red-600) */
+  --color-warning: #DD6B20; /* Laranja (Tailwind orange-600) */
 
-a:hover {
-  color: var(--secondary-color);
-  transform: translateY(-2px);
-}
+  /* Espaçamentos (consistentes com Tailwind ou customizados) */
+  --spacing-xs: 0.25rem; /* 4px */
+  --spacing-sm: 0.5rem;  /* 8px */
+  --spacing-md: 1rem;    /* 16px */
+  --spacing-lg: 1.5rem;  /* 24px */
+  --spacing-xl: 2rem;    /* 32px */
+  --spacing-2xl: 2.5rem; /* 40px */
 
-/* Componentes Específicos */
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+  /* Bordas Arredondadas */
+  --border-radius-sm: 0.25rem;  /* 4px */
+  --border-radius-md: 0.375rem; /* 6px - rounded-md */
+  --border-radius-lg: 0.5rem;   /* 8px - rounded-lg */
+  --border-radius-xl: 0.75rem;  /* 12px - rounded-xl */
 
-th, td {
-  padding: var(--padding);
-  border-bottom: 1px solid var(--border-color);
-  text-align: center;
-}
+  /* Transições */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-std: 0.2s ease-in-out;
+  --transition-slow: 0.3s ease-in-out;
 
-th {
-  background-color: rgba(0, 0, 0, 0.05);
-  font-weight: bold;
-}
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07); /* Sombra mais suave */
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07);
+  --shadow-focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.4);
 
-tr:nth-child(even) {
-  background-color: rgba(0, 0, 0, 0.02);
-}
+  /* Variáveis genéricas para Tailwind, para compatibilidade com ThemeProvider */
+  --background: var(--color-background-page);
+  --foreground: var(--color-text-base);
+  --card-background: var(--color-background-element);
+  --border-color: var(--color-border);
+  --input-background: var(--color-background-element);
 
-tr:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
+  /* Variáveis para botões (usadas pelas classes .btn-*) */
+  --btn-primary-bg: var(--color-primary);
+  --btn-primary-text: var(--color-text-on-primary);
+  --btn-primary-hover-bg: var(--color-primary-hover);
 
-.center-content,
-.Create {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  margin-top: 20px;
-}
-
-.form {
-  width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.form div {
-  padding: var(--padding);
-  border-bottom: 1px solid var(--border-color);
-  width: 100%;
-}
-
-.form-group {
-  margin-bottom: var(--spacing-md);
-}
-
-button {
-  border: none;
-  border-radius: 8px;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: var(--btn-bg);
-  color: #fff;
-  cursor: pointer;
-  transition: background-color 0.25s, border-color 0.25s, transform 0.2s;
-  margin: 20px;
-}
-
-button:hover {
-  border: 1px solid var(--primary-color);
-  background-color: var(--btn-hover-bg);
-  color: var(--text-light);
-  transform: translateY(-2px);
-}
-
-button:focus,
-button:focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
-.btn-primary {
-  background-color: var(--primary-color);
-  color: #fff;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.btn-secondary {
-  background-color: #6c757d;
-  color: #fff;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.btn-danger {
-  background-color: #dc3545;
-  color: #fff;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.button-group {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"] {
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
-}
-
-
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"]:focus {
-  border-color: var(--primary-color);
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  transition: filter 300ms;
-  will-change: filter;
-}
-
-.logo:hover {
-  filter: drop-shadow(0 0 2em var(--primary-color));
-}
-
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-  background: inherit;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  margin: 1rem;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-.theme-toggle-container {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1000;
-}
-
-.create-container,
-.list-container {
-  background-color: var(--bg-light);
-  padding: var(--spacing-lg);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  #root {
-    padding: 1rem;
-  }
-  table, .form {
-    font-size: 0.9em;
-  }
-  table {
-    display: block;
-    width: 100%;
-  }
-  thead {
-    display: none;
-  }
-  tr {
-    display: block;
-    margin-bottom: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
-  }
-  td {
-    display: block;
-    text-align: left;
-    padding: 0.5rem 0;
-  }
-  td::before {
-    content: attr(data-label);
-    font-weight: bold;
-    margin-right: 0.5rem;
-  }
-}
-
-/* Temas */
-body.light-mode {
-  --foreground: var(--text-light);
-  --background: var(--bg-light);
-  --border-color: #ddd;
-  --btn-bg: #646cff;
-  --btn-hover-bg: #535bf2;
+  --btn-secondary-bg: var(--color-background-element);
+  --btn-secondary-text: var(--color-primary);
+  --btn-secondary-border: var(--color-primary);
+  --btn-secondary-hover-bg: rgba(var(--color-primary-rgb), 0.08);
+  --btn-secondary-hover-border: var(--color-primary-hover);
+  --btn-secondary-hover-text: var(--color-primary-hover);
 }
 
 body.dark-mode {
-  --foreground: var(--text-dark);
-  --background: var(--bg-dark);
-  --border-color: #444444;
-  --btn-bg: #535bf2;
-  --btn-hover-bg: #646cff;
+  --color-primary: #60A5FA;        /* Azul Tailwind 400 */
+  --color-primary-hover: #3B82F6;  /* Azul Tailwind 500 */
+  --color-primary-rgb: 96, 165, 250;
+
+  --color-text-base: #E5E7EB;         /* Cinza Tailwind 200 */
+  --color-text-muted: #9CA3AF;        /* Cinza Tailwind 400 */
+  --color-text-on-primary: #1A202C;   /* Cinza Tailwind 900 (para contraste com azul claro) */
+
+  --color-background-page: #111827;     /* Cinza Tailwind 900 */
+  --color-background-element: #1F2937;  /* Cinza Tailwind 800 */
+
+  --color-border: #374151;            /* Cinza Tailwind 700 */
+  --color-border-input: #4B5563;      /* Cinza Tailwind 600 */
+
+  --color-success: #34D399; /* Verde Esmeralda 400 */
+  --color-error: #F87171;   /* Vermelho 400 */
+  --color-warning: #FBBF24; /* Âmbar 400 */
+
+  /* Atualiza variáveis genéricas para modo escuro */
+  --background: var(--color-background-page);
+  --foreground: var(--color-text-base);
+  --card-background: var(--color-background-element);
+  --border-color: var(--color-border);
+  --input-background: var(--color-background-element); /* Ou um tom ligeiramente diferente, ex: #2D3748 (gray-700) */
+
+  /* Botões no modo escuro */
+  --btn-primary-bg: var(--color-primary);
+  --btn-primary-text: var(--color-text-on-primary);
+  --btn-primary-hover-bg: var(--color-primary-hover);
+
+  --btn-secondary-bg: var(--color-background-element);
+  --btn-secondary-text: var(--color-primary);
+  --btn-secondary-border: var(--color-primary);
+  --btn-secondary-hover-bg: rgba(var(--color-primary-rgb), 0.15);
+  --btn-secondary-hover-border: var(--color-primary-hover);
+  --btn-secondary-hover-text: var(--color-primary-hover);
 }
 
-body.dark-mode::-webkit-scrollbar {
-  width: 8px;
+/* ========================================= */
+/* Estilos Globais Base                      */
+/* ========================================= */
+body {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  background-color: var(--background); /* Usa variável genérica */
+  color: var(--foreground);       /* Usa variável genérica */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
-body.dark-mode::-webkit-scrollbar-track {
-  background: var(--bg-dark);
-}
-
-body.dark-mode::-webkit-scrollbar-thumb {
-  background-color: var(--primary-color);
-  border-radius: 8px;
-}
-
-body.light-mode nav {
-  background-color: #ffffff;
-  border-color: #ddd;
-  color: var(--text-light);
-}
-
-body.light-mode nav a,
-body.light-mode nav button,
-body.light-mode nav svg {
-  color: var(--text-light);
-}
-
-body.dark-mode nav {
-  background-color: var(--bg-dark);
-  border-color: #444444;
-  color: var(--text-dark);
-}
-
-body.dark-mode nav a,
-body.dark-mode nav button,
-body.dark-mode nav svg {
-  color: var(--text-dark);
-}
-
-body.dark-mode .create-container,
-body.dark-mode .list-container {
-  background-color: var(--bg-dark);
-  color: var(--text-dark);
-}
-
-
-
-/* Editor container */
-/* Estilo para o título editável */
-.editor-container {
-  width: 70vw;
-  max-width: none;
-  margin: 0 auto;
-  padding: var(--spacing-lg);
-  background-color: var(--bg-light);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.editable-title-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+h1, h2, h3, h4, h5, h6 {
+  color: var(--foreground);
+  margin-top: 0;
   margin-bottom: var(--spacing-md);
-  position: relative;
-  width: 100%;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
-.editable-title {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  border: none;
-  background: transparent;
-  outline: none;
+h1 { font-size: 2rem; font-weight: 700; }
+h2 { font-size: 1.5rem; font-weight: 700; }
+h3 { font-size: 1.25rem; font-weight: 600; } /* Título da página/seção */
+h4 { font-size: 1.125rem; font-weight: 600; } /* Título de card */
+
+p {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-muted); /* Parágrafos com cor suave por padrão */
+}
+strong {
+  font-weight: 600;
+  color: var(--foreground); /* Destaque para strong */
+}
+
+a:not(.btn) { /* Links que não são botões */
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+a:not(.btn):hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+/* ========================================= */
+/* Estilos para Componentes Comuns           */
+/* ========================================= */
+
+/* Botões */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--border-radius-md);
+  border: 1px solid transparent;
   cursor: pointer;
-  position: relative;
-  display: inline-block;
-  width: auto;
-  margin: 0 auto;
-  transition: color 0.2s;
+  transition: background-color var(--transition-std), border-color var(--transition-std), color var(--transition-std), box-shadow var(--transition-std), transform var(--transition-fast);
+  text-decoration: none;
+  line-height: 1.5;
+  white-space: nowrap; /* Evita quebra de linha em botões */
+}
+.btn:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--shadow-focus-ring);
+}
+.btn:hover {
+  transform: translateY(-1px); /* Leve elevação no hover */
+}
+.btn:active {
+  transform: translateY(0);
 }
 
-.editable-title-input {
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%) scale(0.98);
-  width: auto;
-  min-width: 1ch;
-  max-width: 100%;
-  font-size: 2rem;
-  font-weight: bold;
-  font-family: inherit;
-  text-align: center;
-  border: 1px solid var(--primary-color);
-  border-radius: 4px;
-  padding: 0.1em 0.4em;
-  background: var(--bg-light);
-  transition: opacity 0.3s, transform 0.3s;
-  z-index: 2;
-  box-sizing: border-box;
+.btn-primary {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  background-color: var(--btn-primary-hover-bg);
+  box-shadow: var(--shadow-md);
 }
 
-.editable-title-container:hover .editable-title {
-  visibility: hidden;
+.btn-secondary, .btn-outline {
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border-color: var(--btn-secondary-border);
+  box-shadow: var(--shadow-sm);
+}
+.btn-secondary:hover, .btn-outline:hover {
+  background-color: var(--btn-secondary-hover-bg);
+  border-color: var(--btn-secondary-hover-border);
+  color: var(--btn-secondary-hover-text);
+  box-shadow: var(--shadow-md);
 }
 
-.editable-title-container:hover .editable-title-input,
-.editable-title-input:focus {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(-50%) scale(1);
+.btn-danger {
+  background-color: var(--color-error);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+}
+.btn-danger:hover {
+  background-color: #c53030; /* Vermelho Tailwind 700 */
+  box-shadow: var(--shadow-md);
 }
 
-.editable-title-input {
-  width: auto;
-  min-width: 1ch;
+.btn-reset { /* Um estilo mais sutil para reset/limpar */
+  background-color: transparent;
+  color: var(--color-text-muted);
+  border-color: transparent;
 }
-
-.editor-separator {
-  width: 90%;
-  height: 3px;
-  background: #000;
-  border: none;
-  margin: 1.5rem auto;
-  border-radius: 2px;
+.btn-reset:hover {
+  color: var(--foreground);
+  background-color: rgba(var(--gray-rgb, 107, 114, 128), 0.1); /* Use uma var gray-rgb */
 }
 
 
+.btn-sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.75rem;
+}
 
+/* Formulários */
+.form-group {
+  margin-bottom: var(--spacing-lg); /* Mais espaço entre grupos de formulário */
+}
 
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: var(--spacing-xs);
+}
 
-
-
-/* ======================================================================== */
-/* ESTILOS PARA PÁGINA COM MODO DE EDIÇÃO                      */
-/* ======================================================================== */
-
-.page-container {
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
   width: 100%;
+  padding: calc(var(--spacing-sm) + 2px) var(--spacing-md); /* Ajuste para altura consistente */
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--foreground);
+  background-color: var(--input-background);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--border-radius-md);
+  transition: border-color var(--transition-std), box-shadow var(--transition-std);
+  box-shadow: var(--shadow-sm);
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: var(--shadow-focus-ring);
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23718096' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* Cor do ícone (gray-500) */
+  background-position: right var(--spacing-md) center;
+  background-repeat: no-repeat;
+  background-size: 1em 1em;
+  padding-right: calc(var(--spacing-md) * 2.5 + 0.5rem);
+}
+body.dark-mode select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* Cor do ícone (gray-400) */
+}
+
+
+textarea {
+  min-height: 120px;
+}
+
+input[type="checkbox"] {
+  width: 1rem; height: 1rem;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--color-border-input);
+  color: var(--color-primary); /* Cor do checkmark */
+  margin-right: var(--spacing-sm);
+  box-shadow: none;
+  vertical-align: middle;
+}
+input[type="checkbox"]:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-ring);
+}
+.checkbox-label-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.checkbox-label-group label {
+  margin-bottom: 0;
+  font-weight: normal;
+}
+
+
+/* Estilos para as páginas .Create que usam tabela para layout de formulário */
+.Create { /* Container da página de criação/edição */
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.Create h3 { /* Título da página de criação/edição */
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
+}
+.Create form {
+  background-color: var(--card-background);
   padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+}
+.Create form table {
+  border-collapse: separate;
+  border-spacing: 0 var(--spacing-lg); /* Aumenta o espaço entre as linhas do form */
+  width: 100%;
+  margin-top: 0;
+  box-shadow: none;
+  border: none;
+}
+.Create form td {
+  padding: 0; /* Padding será nos elementos internos */
+  border: none;
+  text-align: left;
+  vertical-align: top; /* Para labels e inputs multiline */
+}
+.Create form td:first-child { /* Label cell */
+  padding-right: var(--spacing-lg);
+  width: 150px; /* Largura fixa para labels, ajuste conforme necessário */
+  padding-top: calc(var(--spacing-sm) / 2 + 2px); /* Alinhamento vertical com input */
+}
+.Create form label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  display: block; /* Garante que o label ocupe a largura */
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
 }
 
-.editor-form-card {
+/* Tabelas de Listagem */
+table:not(.Create form table) {
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  background-color: var(--bg-light);
-  border-radius: 8px; /* Cantos um pouco menos arredondados, mais profissional */
-  border: 1px solid #e3e6f0; /* Borda sutil como no exemplo */
-  /* Sombra mais suave e profissional */
-  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: var(--spacing-lg);
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
-body.dark-mode .editor-form-card {
-  background-color: #2D3748;
-  border: 1px solid #3d4a5f;
-  box-shadow: 0 0.15rem 1.75rem 0 rgba(10, 10, 12, 0.25);
+table:not(.Create form table) thead {
+  background-color: var(--table-header-bg, #F9FAFB); /* var para tema escuro */
+}
+body.dark-mode table:not(.Create form table) thead {
+  --table-header-bg: #2D3748; /* gray-800 */
+}
+
+table:not(.Create form table) th {
+  padding: var(--spacing-md) var(--spacing-lg);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--border-color); /* Borda sutil no cabeçalho */
+}
+
+table:not(.Create form table) td {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--foreground);
+  vertical-align: middle;
+}
+
+table:not(.Create form table) tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table:not(.Create form table) tbody tr:hover {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+}
+table:not(.Create form table) td .btn { /* Botões dentro de células de tabela */
+  margin-right: var(--spacing-xs);
+}
+table:not(.Create form table) td .btn:last-child {
+  margin-right: 0;
+}
+
+
+/* Containers de Página */
+.page-container {
+  padding: var(--spacing-lg) var(--spacing-xl); /* Espaçamento generoso */
+}
+.table-header-actions { /* Cabeçalho de páginas de listagem */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+.table-header-actions h3 {
+  margin-bottom: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+/* Responsividade de Tabela de Listagem (se for usar o método data-label) */
+@media (max-width: 768px) {
+  .page-container {
+    padding: var(--spacing-md);
+  }
+  .table-header-actions {
+    flex-direction: column;
+    align-items: stretch; /* Título e botões em largura total */
+    gap: var(--spacing-md);
+  }
+  .table-header-actions .button-group {
+    display: flex;
+    flex-direction: column; /* Botões empilhados ou ajustar para ficarem lado a lado */
+    gap: var(--spacing-sm);
+  }
+  .table-header-actions .btn {
+    width: 100%; /* Botões de ação em largura total no mobile */
+  }
+
+  table:not(.Create form table) {
+    border: 0;
+    box-shadow: none;
+    background-color: transparent; /* Sem fundo para a "tabela" em si */
+  }
+  table:not(.Create form table) thead {
+    display: none;
+  }
+  table:not(.Create form table) tr {
+    display: block;
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    background-color: var(--card-background); /* Cada linha vira um card */
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-md);
+  }
+  table:not(.Create form table) td {
+    display: block;
+    text-align: right;
+    padding: var(--spacing-sm) 0;
+    padding-left: 45%;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+  }
+  table:not(.Create form table) td:last-child {
+    border-bottom: 0;
+  }
+  table:not(.Create form table) td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    width: 40%;
+    padding-right: var(--spacing-sm);
+    font-weight: 500; /* Medium */
+    text-align: left;
+    color: var(--foreground);
+  }
+}
+
+/* Estilos para a página de edição de questionário com modo de visualização/edição */
+/* frontend/src/app/questionarios/[id]/page.tsx */
+.editor-form-card {
+  width: 100%;
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  margin-top: var(--spacing-lg);
 }
 
 .form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem; /* Ajuste no padding */
-  /* O cabeçalho no exemplo não tem cor de fundo, ele é separado pela borda */
-  background-color: transparent; 
-  border-bottom: 1px solid #e3e6f0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border-color);
 }
-
-body.dark-mode .form-header {
-  border-bottom: 1px solid #3d4a5f;
-}
-
 
 .form-header h3 {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--primary-color); /* Usando sua cor primária para o título do card */
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 600;
+  color: var(--foreground);
 }
 
-.form-header-actions { display: flex; gap: var(--spacing-md); }
+.form-header-actions { display: flex; gap: var(--spacing-sm); }
 
 .display-section {
   padding: var(--spacing-lg);
@@ -494,127 +538,79 @@ body.dark-mode .form-header {
   border-bottom: none;
 }
 
-.display-section label {
+.display-section > label { /* Label da seção (Título, Perguntas) */
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.75rem; /* text-xs */
   font-weight: 600;
   text-transform: uppercase;
-  color: #6c757d;
-  margin-bottom: var(--spacing-md);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-sm);
+  letter-spacing: 0.05em;
 }
 
-body.dark-mode .display-section label { color: #A0AEC0; }
-
-/* --- Estilos para o Modo de Visualização --- */
-.display-section h1 { font-size: 2rem; margin: 0; color: var(--text-light); }
-.display-section p { font-size: 1.1rem; line-height: 1.5; color: var(--text-light); margin: 0; }
-
-.perguntas-display-list p {
-  padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--border-color);
-}
-.perguntas-display-list p:last-child {
-  border-bottom: none;
-}
-
-body.dark-mode .display-section h1,
-body.dark-mode .display-section p {
-  color: var(--text-dark);
-}
-
-/* --- Estilos para o Modo de Edição --- */
-.input-edit-mode {
+.input-edit-mode { /* Para inputs e textareas no modo de edição */
   width: 100%;
-  border: none; /* Remove a borda padrão */
-  border-bottom: 2px solid #d1d3e2; /* Apenas uma linha inferior */
-  border-radius: 0; /* Remove o radius para um look de linha */
-  padding: 0.75rem 0.25rem; /* Mais padding vertical, menos horizontal */
-  background-color: transparent; /* Fundo transparente */
-  color: var(--text-light);
-  transition: border-color 0.2s ease-in-out;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--input-background);
+  color: var(--foreground);
+  transition: border-color var(--transition-std), box-shadow var(--transition-std);
 }
-
 .input-edit-mode:focus {
-  border-color: var(--primary-color); /* A linha fica da cor primária no foco */
-  box-shadow: none; /* Remove a sombra que tínhamos antes */
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-ring);
   outline: none;
 }
-
-body.dark-mode .input-edit-mode {
-  color: var(--text-dark);
-  border-bottom: 2px solid #4a5568;
+.title-input { /* Input para o título do questionário */
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 700;
+  padding: var(--spacing-md); /* Mais padding para título */
 }
-
-/* Mantém os estilos de fonte específicos */
-.title-input {
-  font-size: 2rem;
-  font-weight: bold;
-}
-
-.question-textarea {
-  font-size: 1.1rem;
-  line-height: 1.5;
+.question-textarea { /* Textarea para enunciado da pergunta */
+  font-size: 1rem; /* text-base */
   resize: vertical;
+  min-height: 60px;
 }
 
 .perguntas-edit-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg); /* Espaço entre cada item de edição de pergunta */
 }
 
-
-
-
-
-
-
-
-
-/* Em globals.css */
-
 .pergunta-editor-item {
-  background-color: rgba(0,0,0,0.02);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  background-color: rgba(var(--gray-rgb, 0,0,0), 0.02); /* Fundo sutil para cada pergunta */
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
 }
-
 body.dark-mode .pergunta-editor-item {
-  background-color: rgba(0,0,0,0.2);
+  background-color: rgba(var(--gray-rgb-dark, 255,255,255), 0.03); /* Ajustar para tema escuro */
 }
 
 .pergunta-meta-editor {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
+}
+.pergunta-meta-editor label, .opcoes-editor-container > label { /* Labels dentro do editor de pergunta */
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
 }
 
-.pergunta-meta-editor label, .opcoes-editor-container label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6c757d;
-}
-
-.select-tipo-pergunta {
-  padding: var(--spacing-sm);
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-light);
-  color: var(--text-light);
-}
-
-body.dark-mode .select-tipo-pergunta {
-  background-color: #1A202C;
-  color: var(--text-dark);
+.select-tipo-pergunta { /* Select para tipo de pergunta */
+  /* Estilos já definidos globalmente para select */
 }
 
 .opcoes-editor-container {
-  border-top: 1px dashed var(--border-color);
+  border-top: 1px dashed var(--color-border);
   padding-top: var(--spacing-md);
+  margin-top: var(--spacing-sm);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -625,30 +621,37 @@ body.dark-mode .select-tipo-pergunta {
   align-items: center;
   gap: var(--spacing-sm);
 }
+.opcao-editor-item input[type="text"] {
+  flex-grow: 1; /* Input da opção ocupa o espaço */
+}
 
+.btn-remover-opcao, .btn-adicionar-opcao {
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-std), color var(--transition-std);
+}
 .btn-remover-opcao {
   background-color: transparent;
   border: none;
-  color: #dc3545;
-  font-size: 1.5rem;
-  font-weight: bold;
-  cursor: pointer;
-  padding: 0 0.5rem;
+  color: var(--color-error);
+  padding: calc(var(--spacing-sm) + 2px); /* Para alinhar com altura do input */
+}
+.btn-remover-opcao:hover {
+  color: #c53030; /* Vermelho mais escuro */
 }
 
 .btn-adicionar-opcao {
   background-color: transparent;
-  border: 1px dashed var(--primary-color);
-  color: var(--primary-color);
-  padding: var(--spacing-sm);
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: var(--spacing-sm);
-  transition: background-color 0.2s, color 0.2s;
+  border: 1px dashed var(--color-primary);
+  color: var(--color-primary);
   text-align: center;
+  margin-top: var(--spacing-sm);
 }
-
 .btn-adicionar-opcao:hover {
-  background-color: var(--primary-color);
-  color: #fff;
+  background-color: rgba(var(--color-primary-rgb), 0.1);
+  color: var(--color-primary-hover);
+  border-style: solid;
 }
