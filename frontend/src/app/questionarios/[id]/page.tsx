@@ -7,8 +7,9 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import "../../globals.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { PlusIcon, Trash2 } from "lucide-react";
+import { PlusIcon, Trash2, ChevronDown, ChevronUp, Users, CalendarDays, ListChecks } from "lucide-react"; // Adicionado ícones
 
+// --- Interfaces (mantidas como antes) ---
 interface Opcao {
     id?: number;
     texto: string;
@@ -34,15 +35,15 @@ interface QuestionarioData {
 interface RespostaDetalhada {
     id: number;
     resposta: string;
-    pergunta: { // Detalhes da pergunta original
+    pergunta: {
         id: number;
         enunciado: string;
         tipos: 'TEXTO' | 'MULTIPLA_ESCOLHA';
-        opcoes: Opcao[]; // Para poder mostrar a pergunta completa
+        opcoes: Opcao[];
     };
 }
 interface Respondente {
-    id: number; // ID do UsuAval
+    id: number;
     status: string;
     isFinalizado: boolean;
     usuario?: { id: number; nome?: string | null; email: string };
@@ -56,9 +57,11 @@ interface AvaliacaoComDetalhes {
     requerLoginCliente: boolean;
     usuarios: Respondente[];
     _count?: { usuarios: number };
+    created_at: string; // Adicionado para ordenação se necessário
 }
 // --- Fim das Interfaces ---
 
+// Componente exportado da página (sem mudanças)
 export default function EditQuestionarioPage() {
     return (
         <Suspense fallback={<div className="page-container center-content"><p>Carregando...</p></div>}>
@@ -83,22 +86,23 @@ function EditQuestionarioFormContent() {
     const [avaliacoesComRespostas, setAvaliacoesComRespostas] = useState<AvaliacaoComDetalhes[]>([]);
     const [isLoadingRespostas, setIsLoadingRespostas] = useState(false);
     const [selectedAvaliacaoId, setSelectedAvaliacaoId] = useState<number | null>(null);
+    
+    // NOVO: Estado para controlar quais semestres estão expandidos (opcional, para UI com colapso)
+    const [semestresExpandidos, setSemestresExpandidos] = useState<Set<string>>(new Set());
 
+    // --- Lógica de carregamento inicial (sem mudanças significativas) ---
     useEffect(() => {
         if (!questionarioId) {
             setError("ID do Questionário não encontrado na URL.");
             setIsLoading(false);
             return;
         }
-
         setIsLoading(true);
         setError(null);
-
         const loadData = async () => {
             try {
                 const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
                 setTitulo(respQuestionario.data.titulo);
-
                 const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`);
                 const sanitizedQuePergs = respQuePerg.data.map(qp => ({
                     ...qp,
@@ -108,8 +112,7 @@ function EditQuestionarioFormContent() {
                     }
                 }));
                 setQuePergs(sanitizedQuePergs);
-
-            } catch (err: any) {
+            } catch (err: any) { /* ... (tratamento de erro existente) ... */ 
                 console.error("Erro ao carregar dados do questionário:", err);
                 if (err.response && (err.response.status === 401 || err.response.status === 403)) {
                     setError("Acesso não autorizado ou negado. Faça o login novamente.");
@@ -125,11 +128,12 @@ function EditQuestionarioFormContent() {
         loadData();
     }, [questionarioId]);
 
+    // --- Lógica para buscar respostas quando o modo de visualização muda ---
     useEffect(() => {
         if (viewMode === 'respostas' && questionarioId) {
             setIsLoadingRespostas(true);
-            setError(null); // Limpa erros anteriores
-            api.get<AvaliacaoComDetalhes[]>(`/admin/questionarios/${questionarioId}/avaliacoes-com-respostas`)
+            setError(null);
+            api.get<AvaliacaoComDetalhes[]>(`/questionarios/${questionarioId}/avaliacoes-com-respostas`) // Endpoint ajustado conforme backend
                 .then(response => {
                     setAvaliacoesComRespostas(response.data);
                 })
@@ -143,7 +147,8 @@ function EditQuestionarioFormContent() {
         }
     }, [viewMode, questionarioId]);
 
-    const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => {
+    // --- Funções de manipulação de perguntas e opções (sem mudanças) ---
+    const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => { /* ... seu código ... */ 
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) =>
                 index === qIndex
@@ -152,8 +157,7 @@ function EditQuestionarioFormContent() {
             )
         );
     };
-
-    const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => {
+    const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => { /* ... seu código ... */ 
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
@@ -167,9 +171,8 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-
-    const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => {
-        setQuePergs(prevQuePergs =>
+    const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => { /* ... seu código ... */ 
+         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
                     const novasOpcoes = qp.pergunta.opcoes.map((opt, optIdx) =>
@@ -181,8 +184,7 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-
-    const addOptionToList = (qIndex: number) => {
+    const addOptionToList = (qIndex: number) => { /* ... seu código ... */
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
@@ -192,9 +194,8 @@ function EditQuestionarioFormContent() {
                 return qp;
             })
         );
-    };
-
-    const removeOption = (qIndex: number, oIndex: number) => {
+     };
+    const removeOption = (qIndex: number, oIndex: number) => { /* ... seu código ... */ 
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
@@ -205,8 +206,7 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-
-    const handleAddNewPergunta = () => {
+    const handleAddNewPergunta = () => { /* ... seu código ... */ 
         const novaPerguntaDefault: PerguntaAninhada = {
             tempId: `temp-perg-${Date.now()}`,
             enunciado: "",
@@ -219,8 +219,7 @@ function EditQuestionarioFormContent() {
         };
         setQuePergs(prevQuePergs => [...prevQuePergs, novoQuePerg]);
     };
-
-    const handleSaveChanges = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveChanges = async (event: React.FormEvent<HTMLFormElement>) => { /* ... seu código ... */ 
         event.preventDefault();
         setIsLoading(true);
         setError(null);
@@ -277,16 +276,62 @@ function EditQuestionarioFormContent() {
         }
     };
 
+
+    // NOVO: Agrupamento e ordenação das avaliações por semestre
+    const avaliacoesAgrupadasPorSemestre = useMemo(() => {
+        if (viewMode !== 'respostas' || avaliacoesComRespostas.length === 0) {
+            return {};
+        }
+        const agrupado: { [semestre: string]: AvaliacaoComDetalhes[] } = {};
+        avaliacoesComRespostas.forEach(av => {
+            if (!agrupado[av.semestre]) {
+                agrupado[av.semestre] = [];
+            }
+            agrupado[av.semestre].push(av);
+        });
+
+        // Ordenar os semestres (mais recentes primeiro)
+        const semestresOrdenados = Object.keys(agrupado).sort((a, b) => {
+            const [anoA, periodoA] = a.split('/').map(Number);
+            const [anoB, periodoB] = b.split('/').map(Number);
+            if (anoA !== anoB) return anoB - anoA;
+            return periodoB - periodoA;
+        });
+
+        const agrupadoOrdenado: { [semestre: string]: AvaliacaoComDetalhes[] } = {};
+        semestresOrdenados.forEach(sem => {
+            // Ordenar avaliações dentro de cada semestre pela data de criação (mais recente primeiro)
+            agrupado[sem].sort((evalA, evalB) => new Date(evalB.created_at).getTime() - new Date(evalA.created_at).getTime());
+            agrupadoOrdenado[sem] = agrupado[sem];
+        });
+
+        return agrupadoOrdenado;
+    }, [viewMode, avaliacoesComRespostas]);
+
+    // Função para alternar a expansão de um semestre
+    const toggleSemestreExpandido = (semestre: string) => {
+        setSemestresExpandidos(prev => {
+            const novoSet = new Set(prev);
+            if (novoSet.has(semestre)) {
+                novoSet.delete(semestre);
+            } else {
+                novoSet.add(semestre);
+            }
+            return novoSet;
+        });
+    };
+
+
     const selectedAvaliacaoDetalhes = useMemo(() => {
         if (!selectedAvaliacaoId) return null;
         return avaliacoesComRespostas.find(av => av.id === selectedAvaliacaoId);
     }, [selectedAvaliacaoId, avaliacoesComRespostas]);
 
-    if (isLoading && quePergs.length === 0 && !titulo) {
+    // --- Renderização do Loading e Erro Inicial ---
+    if (isLoading && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */ 
         return <div className="page-container center-content"><p>Carregando dados do questionário...</p></div>;
     }
-
-    if (error && quePergs.length === 0 && !titulo) {
+    if (error && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */ 
         return (
             <div className="page-container center-content">
                 <p style={{ color: 'red' }}>{error}</p>
@@ -314,10 +359,9 @@ function EditQuestionarioFormContent() {
                 </button>
             </div>
 
-            {/* ------------------------------------ */}
-
             {viewMode === 'editar' && (
-                <form onSubmit={handleSaveChanges} className="editor-form-card"> {/* Estilo do card */}
+                <form onSubmit={handleSaveChanges} className="editor-form-card">
+                    {/* ... (Conteúdo do formulário de edição como antes) ... */}
                     <div className="form-header"> {/* Estilo do cabeçalho do card */}
                         <h3>Editando Questionário: {titulo || "Carregando Título..."}</h3>
                         <div className="form-header-actions">
@@ -423,67 +467,114 @@ function EditQuestionarioFormContent() {
                     </div>
                 </form>
             )}
+
+            {/* // --- SEÇÃO DE VISUALIZAÇÃO DE RESPOSTAS MODIFICADA --- */}
             {viewMode === 'respostas' && (
-                <div className="respostas-view-container">
-                    <h3 className="text-xl font-semibold text-foreground mb-4">Respostas para: {titulo}</h3>
-                    {isLoadingRespostas && <p>Carregando respostas...</p>}
-                    {error && !isLoadingRespostas && <p style={{ color: 'red' }}>{error}</p>}
+                <div className="respostas-view-container mt-6"> {/* Adiciona margem no topo */}
+                    <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-6">
+                        Respostas para o Questionário: <span className="text-primary">{titulo}</span>
+                    </h3>
 
-                    {!isLoadingRespostas && avaliacoesComRespostas.length === 0 && !error && (
-                        <p className="text-text-muted">Nenhuma avaliação encontrada ou nenhuma resposta submetida para este questionário ainda.</p>
-                    )}
+                    {isLoadingRespostas && <div className="text-center py-10"><p className="text-text-muted">Carregando respostas...</p></div>}
+                    {error && !isLoadingRespostas && <div className="text-center py-10"><p className="text-red-600 dark:text-red-400">{error}</p></div>}
 
-                    {!isLoadingRespostas && avaliacoesComRespostas.length > 0 && !selectedAvaliacaoId && (
-                        <div className="space-y-4">
-                            <h4 className="text-lg font-medium text-foreground">Selecione uma Avaliação para ver as respostas:</h4>
-                            {/* Agrupar por semestre, se desejar, ou listar direto */}
-                            {avaliacoesComRespostas.map(av => (
-                                <div key={av.id}
-                                    className="p-4 border border-border rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                                    onClick={() => setSelectedAvaliacaoId(av.id)}>
-                                    <p className="font-semibold text-primary">{av.semestre} (ID: {av.id})</p>
-                                    <p className="text-sm text-text-muted">
-                                        {av._count?.usuarios ?? 0} respondente(s) -
-                                        Requer Login: {av.requerLoginCliente ? "Sim" : "Não"}
-                                    </p>
-                                </div>
-                            ))}
+                    {!isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length === 0 && !error && (
+                        <div className="text-center py-10 px-4 bg-card-background dark:bg-gray-800 rounded-lg shadow border border-border">
+                            <ListChecks className="mx-auto h-12 w-12 text-text-muted" strokeWidth={1.5} />
+                            <p className="mt-4 text-text-muted">
+                                Nenhuma avaliação utilizando este questionário foi encontrada ou nenhuma resposta foi submetida ainda.
+                            </p>
                         </div>
                     )}
 
+                    {/* Se uma avaliação específica está selecionada, mostra os detalhes dela */}
                     {selectedAvaliacaoDetalhes && (
-                        <div className="mt-6">
-                            <button onClick={() => setSelectedAvaliacaoId(null)} className="btn btn-outline btn-sm mb-4">
-                                &larr; Voltar para lista de Avaliações
+                        <div className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
+                            <button
+                                onClick={() => setSelectedAvaliacaoId(null)}
+                                className="btn btn-outline btn-sm mb-6 inline-flex items-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                                Voltar para Lista de Avaliações
                             </button>
-                            <h4 className="text-lg font-semibold text-foreground mb-3">
-                                Detalhes da Avaliação: {selectedAvaliacaoDetalhes.semestre} (ID: {selectedAvaliacaoDetalhes.id})
+                            <h4 className="text-xl font-semibold text-primary mb-1">
+                                {selectedAvaliacaoDetalhes.semestre}
                             </h4>
-                            {selectedAvaliacaoDetalhes.usuarios.length === 0 && <p className="text-text-muted">Nenhuma resposta para esta avaliação.</p>}
+                            <p className="text-sm text-text-muted mb-4">
+                                ID da Avaliação: {selectedAvaliacaoDetalhes.id} - Requer Login: {selectedAvaliacaoDetalhes.requerLoginCliente ? "Sim" : "Não"}
+                            </p>
 
-                            {selectedAvaliacaoDetalhes.usuarios.map(respondente => (
-                                <div key={respondente.id} className="mb-6 p-4 border border-border rounded-md bg-card-background dark:bg-gray-800">
-                                    <p className="text-md font-medium text-foreground">
-                                        Respondente: {respondente.usuario?.nome || respondente.usuario?.email || `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
-                                    </p>
-                                    <p className="text-xs text-text-muted mb-2">Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}</p>
-                                    <ul className="space-y-2 mt-3">
-                                        {respondente.respostas.map(resp => (
-                                            <li key={resp.id} className="text-sm">
-                                                <strong className="block text-text-muted">{resp.pergunta.enunciado}</strong>
-                                                <span className="text-foreground">{resp.resposta}</span>
-                                                {resp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && resp.pergunta.opcoes.length > 0 && (
-                                                    <ul className="list-disc list-inside pl-4 mt-1">
-                                                        {resp.pergunta.opcoes.map(opt => (
-                                                            <li key={opt.id} className={`${opt.texto === resp.resposta ? 'font-bold text-primary' : 'text-text-muted'}`}>
-                                                                {opt.texto} {opt.texto === resp.resposta ? ' (Selecionada)' : ''}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ul>
+                            {selectedAvaliacaoDetalhes.usuarios.length === 0 && (
+                                <p className="text-text-muted py-4">Nenhuma resposta submetida para esta avaliação.</p>
+                            )}
+
+                            <div className="space-y-6">
+                                {selectedAvaliacaoDetalhes.usuarios.map(respondente => (
+                                    <div key={respondente.id} className="p-4 border border-border rounded-md bg-page-bg dark:bg-gray-800/50">
+                                        <p className="text-md font-medium text-foreground">
+                                            Respondente: {respondente.usuario?.nome || respondente.usuario?.email || `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
+                                        </p>
+                                        <p className="text-xs text-text-muted mb-3">
+                                            Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}
+                                        </p>
+                                        <ul className="space-y-3">
+                                            {respondente.respostas.map(resp => (
+                                                <li key={resp.id} className="text-sm">
+                                                    <strong className="block text-text-muted mb-0.5">{resp.pergunta.enunciado}</strong>
+                                                    <span className="text-foreground pl-1">{resp.resposta}</span>
+                                                    {/* Opcional: Mostrar opções para perguntas de múltipla escolha, se necessário */}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Se NENHUMA avaliação específica está selecionada, mostra a lista agrupada por semestre */}
+                    {!isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length > 0 && !selectedAvaliacaoId && (
+                        <div className="space-y-8">
+                            {Object.entries(avaliacoesAgrupadasPorSemestre).map(([semestre, avaliacoesDoSemestre]) => (
+                                <div key={semestre} className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
+                                    <button
+                                        onClick={() => toggleSemestreExpandido(semestre)}
+                                        className="w-full flex justify-between items-center text-left py-2"
+                                        aria-expanded={semestresExpandidos.has(semestre)}
+                                    >
+                                        <h4 className="text-lg font-semibold text-primary flex items-center">
+                                            <CalendarDays size={20} className="mr-2 text-primary/80" />
+                                            Semestre: {semestre}
+                                        </h4>
+                                        {semestresExpandidos.has(semestre) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </button>
+
+                                    {semestresExpandidos.has(semestre) && (
+                                        <div className="mt-4 space-y-3 pl-2 border-l-2 border-primary/30">
+                                            {avaliacoesDoSemestre.map(av => (
+                                                <div key={av.id}
+                                                    className="p-3 border border-border rounded-md hover:bg-page-bg dark:hover:bg-gray-700/40 cursor-pointer transition-colors duration-150"
+                                                    onClick={() => setSelectedAvaliacaoId(av.id)}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyDown={(e) => e.key === 'Enter' && setSelectedAvaliacaoId(av.id)}
+                                                >
+                                                    <p className="font-medium text-foreground">
+                                                        Avaliação ID: {av.id}
+                                                        <span className="text-xs text-text-muted ml-2">
+                                                            (Criada em: {new Date(av.created_at).toLocaleDateString('pt-BR')})
+                                                        </span>
+                                                    </p>
+                                                    <div className="text-sm text-text-muted flex items-center mt-1">
+                                                        <Users size={14} className="mr-1.5 text-text-muted/80" />
+                                                        {av._count?.usuarios ?? 0} respondente(s)
+                                                        <span className="mx-2">|</span>
+                                                        <span>Requer Login: {av.requerLoginCliente ? "Sim" : "Não"}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
