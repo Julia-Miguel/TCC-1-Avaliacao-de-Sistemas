@@ -604,10 +604,6 @@ body.dark-mode .pergunta-editor-item {
   color: var(--color-text-muted);
 }
 
-.select-tipo-pergunta { /* Select para tipo de pergunta */
-  /* Estilos já definidos globalmente para select */
-}
-
 .opcoes-editor-container {
   border-top: 1px dashed var(--color-border);
   padding-top: var(--spacing-md);
