@@ -248,7 +248,8 @@ function ListAvaliacaoContent() {
         className="p-4 rounded-xl backdrop:bg-black/70 bg-transparent"
       >
         {selectedAvaliacaoForShare && (
-          <form method="dialog" className="bg-element-bg dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-lg">
+          // A linha abaixo é a que foi modificada
+          <form method="dialog" className="bg-element-bg dark:bg-gray-800 rounded-lg shadow-2xl w-[90vw] max-w-md">
             {/* Header */}
             <header className="flex items-center justify-between p-6 border-b border-border">
                 <div>
@@ -269,7 +270,7 @@ function ListAvaliacaoContent() {
                 </button>
             </header>
 
-            {/* Content */}
+            {/* Content (sem alterações aqui, já estava bom) */}
             <main className="p-6 space-y-6">
                 <div>
                     <label htmlFor="share-link" className="form-label text-xs uppercase tracking-wider text-text-muted">Link Público:</label>
