@@ -21,6 +21,8 @@
     "jsonwebtoken": "^9.0.2",
     "node": "^23.7.0",
     "react-qr-code": "^2.0.15",
+    "sentiment": "^5.0.2",
+    "sentiment-ptbr": "^1.0.3",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {

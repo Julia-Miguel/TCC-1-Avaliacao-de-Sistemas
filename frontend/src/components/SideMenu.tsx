@@ -1,7 +1,7 @@
 // frontend/src/components/SideMenu.tsx
 "use client";
 
-import { Home, User, Settings } from "lucide-react"; //
+import { Home, User, Settings, GrabIcon } from "lucide-react"; //
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import "./SideMenu.css"; //
@@ -12,6 +12,7 @@ const menuItems = [
   // Adicione outros itens conforme sua navbar
   { label: "Perguntas", icon: Settings /* Trocar ícone */, href: "/perguntas" },
   { label: "Questionários", icon: Settings /* Trocar ícone */, href: "/questionarios" },
+  { label: "Dashboards", icon: GrabIcon /* Trocar ícone */, href: "/dashboard" },
   // ... etc
   { label: "Configurações", icon: Settings, href: "/config" },
 ];

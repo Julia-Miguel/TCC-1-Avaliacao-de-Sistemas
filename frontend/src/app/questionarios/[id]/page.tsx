@@ -7,9 +7,22 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import "../../globals.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { PlusIcon, Trash2, ChevronDown, ChevronUp, Users, CalendarDays, ListChecks } from "lucide-react"; // Adicionado ícones
+import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, FileText, CheckSquare, Users } from "lucide-react"; // Adicionado ícones
+import { StatCard } from "@/components/dashboard/StatCard";
+import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
+import { WordCloud } from "@/components/dashboard/WordCloud";
 
-// --- Interfaces (mantidas como antes) ---
+interface KpiData {
+    totalAvaliacoes: number;
+    totalRespondentes: number;
+    totalFinalizados: number;
+    taxaDeConclusao: number;
+}
+interface GraficoData {
+    perguntaId: number;
+    enunciado: string;
+    respostas: { name: string; value: number }[];
+}
 interface Opcao {
     id?: number;
     texto: string;
@@ -82,13 +95,55 @@ function EditQuestionarioFormContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [viewMode, setViewMode] = useState<'editar' | 'respostas'>('editar');
+    const [viewMode, setViewMode] = useState<'editar' | 'respostas' | 'analise'>('editar');
     const [avaliacoesComRespostas, setAvaliacoesComRespostas] = useState<AvaliacaoComDetalhes[]>([]);
     const [isLoadingRespostas, setIsLoadingRespostas] = useState(false);
     const [selectedAvaliacaoId, setSelectedAvaliacaoId] = useState<number | null>(null);
-    
-    // NOVO: Estado para controlar quais semestres estão expandidos (opcional, para UI com colapso)
+
+    const [dashboardData, setDashboardData] = useState<{ kpis: KpiData, graficos: GraficoData[] } | null>(null);
+    const [wordCloudData, setWordCloudData] = useState<{ text: string; value: number }[]>([]);
+    const [selectedTextQuestion, setSelectedTextQuestion] = useState('');
+    const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+    const [isLoadingWordCloud, setIsLoadingWordCloud] = useState(false);
+
     const [semestresExpandidos, setSemestresExpandidos] = useState<Set<string>>(new Set());
+
+    // useEffect para carregar dados do dashboard quando o modo muda para 'analise'
+    useEffect(() => {
+        if (viewMode === 'analise' && questionarioId) {
+            setIsLoadingDashboard(true);
+            api.get(`/dashboard?questionarioId=${questionarioId}`)
+                .then(response => {
+                    setDashboardData(response.data);
+                })
+                .catch(err => {
+                    console.error("Erro ao buscar dados do dashboard específico:", err);
+                    // Lidar com erro
+                })
+                .finally(() => {
+                    setIsLoadingDashboard(false);
+                });
+        }
+    }, [viewMode, questionarioId]);
+
+    // useEffect para carregar dados da nuvem de palavras
+    useEffect(() => {
+        if (viewMode === 'analise' && selectedTextQuestion) {
+            const fetchWordCloud = async () => {
+                try {
+                    setIsLoadingWordCloud(true);
+                    // Passa o questionarioId para filtrar a análise
+                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}&questionarioId=${questionarioId}`);
+                    setWordCloudData(response.data.wordCloud);
+                } catch (error) {
+                    console.error("Erro ao carregar nuvem de palavras:", error);
+                } finally {
+                    setIsLoadingWordCloud(false);
+                }
+            };
+            fetchWordCloud();
+        }
+    }, [viewMode, selectedTextQuestion, questionarioId]);
 
     // --- Lógica de carregamento inicial (sem mudanças significativas) ---
     useEffect(() => {
@@ -112,7 +167,7 @@ function EditQuestionarioFormContent() {
                     }
                 }));
                 setQuePergs(sanitizedQuePergs);
-            } catch (err: any) { /* ... (tratamento de erro existente) ... */ 
+            } catch (err: any) { /* ... (tratamento de erro existente) ... */
                 console.error("Erro ao carregar dados do questionário:", err);
                 if (err.response && (err.response.status === 401 || err.response.status === 403)) {
                     setError("Acesso não autorizado ou negado. Faça o login novamente.");
@@ -148,7 +203,7 @@ function EditQuestionarioFormContent() {
     }, [viewMode, questionarioId]);
 
     // --- Funções de manipulação de perguntas e opções (sem mudanças) ---
-    const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => { /* ... seu código ... */ 
+    const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => { /* ... seu código ... */
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) =>
                 index === qIndex
@@ -157,7 +212,7 @@ function EditQuestionarioFormContent() {
             )
         );
     };
-    const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => { /* ... seu código ... */ 
+    const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => { /* ... seu código ... */
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
@@ -171,8 +226,8 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-    const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => { /* ... seu código ... */ 
-         setQuePergs(prevQuePergs =>
+    const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => { /* ... seu código ... */
+        setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
                     const novasOpcoes = qp.pergunta.opcoes.map((opt, optIdx) =>
@@ -194,8 +249,8 @@ function EditQuestionarioFormContent() {
                 return qp;
             })
         );
-     };
-    const removeOption = (qIndex: number, oIndex: number) => { /* ... seu código ... */ 
+    };
+    const removeOption = (qIndex: number, oIndex: number) => { /* ... seu código ... */
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
@@ -206,7 +261,7 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-    const handleAddNewPergunta = () => { /* ... seu código ... */ 
+    const handleAddNewPergunta = () => { /* ... seu código ... */
         const novaPerguntaDefault: PerguntaAninhada = {
             tempId: `temp-perg-${Date.now()}`,
             enunciado: "",
@@ -219,7 +274,7 @@ function EditQuestionarioFormContent() {
         };
         setQuePergs(prevQuePergs => [...prevQuePergs, novoQuePerg]);
     };
-    const handleSaveChanges = async (event: React.FormEvent<HTMLFormElement>) => { /* ... seu código ... */ 
+    const handleSaveChanges = async (event: React.FormEvent<HTMLFormElement>) => { /* ... seu código ... */
         event.preventDefault();
         setIsLoading(true);
         setError(null);
@@ -328,10 +383,10 @@ function EditQuestionarioFormContent() {
     }, [selectedAvaliacaoId, avaliacoesComRespostas]);
 
     // --- Renderização do Loading e Erro Inicial ---
-    if (isLoading && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */ 
+    if (isLoading && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */
         return <div className="page-container center-content"><p>Carregando dados do questionário...</p></div>;
     }
-    if (error && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */ 
+    if (error && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */
         return (
             <div className="page-container center-content">
                 <p style={{ color: 'red' }}>{error}</p>
@@ -356,6 +411,12 @@ function EditQuestionarioFormContent() {
                     className={`btn ${viewMode === 'respostas' ? 'btn-primary' : 'btn-outline'}`}
                 >
                     Visualizar Respostas
+                </button>
+                <button
+                    onClick={() => setViewMode('analise')}
+                    className={`btn ${viewMode === 'analise' ? 'btn-primary' : 'btn-outline'}`}
+                >
+                    Análise / Dashboard
                 </button>
             </div>
 
@@ -494,7 +555,7 @@ function EditQuestionarioFormContent() {
                                 onClick={() => setSelectedAvaliacaoId(null)}
                                 className="btn btn-outline btn-sm mb-6 inline-flex items-center"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
                                 Voltar para Lista de Avaliações
                             </button>
                             <h4 className="text-xl font-semibold text-primary mb-1">
@@ -522,7 +583,6 @@ function EditQuestionarioFormContent() {
                                                 <li key={resp.id} className="text-sm">
                                                     <strong className="block text-text-muted mb-0.5">{resp.pergunta.enunciado}</strong>
                                                     <span className="text-foreground pl-1">{resp.resposta}</span>
-                                                    {/* Opcional: Mostrar opções para perguntas de múltipla escolha, se necessário */}
                                                 </li>
                                             ))}
                                         </ul>
@@ -580,6 +640,43 @@ function EditQuestionarioFormContent() {
                         </div>
                     )}
                 </div>
+            )}
+            {/* NOVA Renderização condicional para 'analise' */}
+            {viewMode === 'analise' && (
+                isLoadingDashboard ? <div className="text-center p-10">Carregando análise...</div> :
+                    !dashboardData ? <div className="text-center p-10">Não há dados para analisar.</div> :
+                        <div className="space-y-8">
+                            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Análise do Questionário: <span className="text-primary">{titulo}</span></h3>
+
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                                <StatCard title="Total de Avaliações" value={dashboardData.kpis.totalAvaliacoes} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
+                                <StatCard title="Total de Respondentes" value={dashboardData.kpis.totalRespondentes} icon={Users} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
+                                <StatCard title="Respostas Finalizadas" value={dashboardData.kpis.totalFinalizados} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
+                                <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {dashboardData.graficos.map(grafico => (
+                                    <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
+                                ))}
+
+                                <div>
+                                    <div className="form-group">
+                                        <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
+                                        <select
+                                            id="text-question-select-specific"
+                                            className="input-edit-mode"
+                                            value={selectedTextQuestion}
+                                            onChange={e => setSelectedTextQuestion(e.target.value)}
+                                        >
+                                            <option value="">Selecione uma pergunta</option>
+                                            {quePergs.filter(qp => qp.pergunta.tipos === 'TEXTO').map(qp => <option key={qp.pergunta.id} value={qp.pergunta.id}>{qp.pergunta.enunciado}</option>)}
+                                        </select>
+                                    </div>
+                                    {isLoadingWordCloud ? <div className="text-center p-10">Analisando textos...</div> : <WordCloud words={wordCloudData} />}
+                                </div>
+                            </div>
+                        </div>
             )}
         </div>
     );
