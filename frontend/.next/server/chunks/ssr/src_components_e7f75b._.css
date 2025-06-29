@@ -1,0 +1,146 @@
+/* [project]/src/components/menu/ThemeToggle.css [app-client] (css) */
+.theme-toggle {
+  background: #ccc;
+  border: 2px solid #000;
+  border-radius: 20px;
+  width: 50px;
+  height: 25px;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  overflow: hidden;
+  transition: background-color .3s;
+}
+
+.theme-toggle .toggle-circle {
+  background: #333;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  left: 2px;
+  transition: transform .3s ease-in-out;
+}
+
+.theme-toggle.dark .toggle-circle {
+  transform: translateX(22px);
+}
+
+.theme-toggle.light .toggle-circle {
+  transform: translateX(0);
+}
+
+.theme-toggle.dark {
+  background: #ccc;
+}
+
+.theme-toggle.light {
+  background: #ccc;
+}
+
+.theme-toggle span {
+  display: none;
+}
+
+
+/* [project]/src/components/navbar.css [app-client] (css) */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border-bottom: 1px solid #f3f4f6;
+  background-color: var(--navbar-bg, white);
+}
+
+.navbar-container {
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: 0 1rem;
+}
+
+.navbar-logo {
+  display: block;
+  height: 2.25rem;
+  width: auto;
+  color: #1f2937;
+  fill: currentColor;
+}
+
+.navbar-links {
+  display: none;
+}
+
+@media (width >= 640px) {
+  .navbar-links {
+    display: flex;
+    gap: 2rem;
+    margin-left: 2.5rem;
+    margin-top: -.25rem;
+    margin-bottom: -.25rem;
+  }
+}
+
+.user-button {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  padding: .5rem .75rem;
+  font-size: .875rem;
+  font-weight: 500;
+  color: #6b7280;
+  background: none;
+  cursor: pointer;
+}
+
+.user-button:hover {
+  color: #374151;
+}
+
+.user-dropdown {
+  position: absolute;
+  right: 0;
+  margin-top: .5rem;
+  width: 12rem;
+  background: #fff;
+  border-radius: .375rem;
+  padding: .5rem 0;
+  box-shadow: 0 10px 15px -3px #0000001a, 0 4px 6px -2px #0000000d;
+  z-index: 50;
+}
+
+.mobile-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .375rem;
+  padding: .5rem;
+  color: #9ca3af;
+  background: none;
+}
+
+.mobile-button:hover, .mobile-button:focus {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.mobile-nav {
+  padding-top: .5rem;
+  padding-bottom: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.navbar-header {
+  background-color: #fff;
+  box-shadow: 0 1px 2px #0000000d;
+  margin-bottom: 1rem;
+  padding: 1.5rem 1rem;
+}
+
+
+/*# sourceMappingURL=src_components_e7f75b._.css.map*/

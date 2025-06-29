@@ -174,3 +174,32 @@
   margin-top: var(--spacing-sm);
   /* Aplicar classes .btn .btn-sm .btn-outline */
 }
+
+
+
+.btn-remover-pergunta {
+  background-color: transparent;
+  border: none;
+  color: #ef4444; /* Cor vermelha para indicar exclusão */
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.2s, color 0.2s;
+  margin-left: 1rem; /* Adiciona um espaço à esquerda */
+}
+
+.btn-remover-pergunta:hover {
+  background-color: rgba(239, 68, 68, 0.1); /* Fundo vermelho claro no hover */
+}
+
+.btn-remover-pergunta:disabled {
+  color: #9ca3af; /* Cor cinza quando desabilitado */
+  cursor: not-allowed;
+}
+
+/* Para alinhar o botão com o seletor de "Tipo" */
+.pergunta-meta-editor {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}

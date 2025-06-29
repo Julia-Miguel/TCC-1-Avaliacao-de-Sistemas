@@ -1,0 +1,3 @@
+{
+  "/(auth-empresa)/empresas/registrar/page": "app/(auth-empresa)/empresas/registrar/page.js"
+}

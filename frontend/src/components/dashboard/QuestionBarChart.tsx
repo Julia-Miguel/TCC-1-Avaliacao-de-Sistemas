@@ -28,8 +28,8 @@ export const QuestionBarChart = ({ data, title }: BarChartProps) => {
               borderColor: 'var(--color-border)'
             }}
           />
-          {/* Garanta que a linha abaixo não possui a propriedade 'radius' */}
           <Bar dataKey="value" fill="var(--color-primary)" />
+
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>

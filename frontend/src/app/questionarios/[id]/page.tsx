@@ -212,6 +212,17 @@ function EditQuestionarioFormContent() {
             )
         );
     };
+    const removePergunta = (indexToRemove: number) => {
+        // Confirmação para evitar exclusão acidental
+        if (!window.confirm("Tem certeza de que deseja remover esta pergunta?")) {
+            return;
+        }
+
+        // Filtra o array de perguntas, mantendo todas exceto a do índice a ser removido
+        const novasPerguntas = quePergs.filter((_, index) => index !== indexToRemove);
+        setQuePergs(novasPerguntas);
+    };
+
     const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => { /* ... seu código ... */
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
@@ -274,63 +285,54 @@ function EditQuestionarioFormContent() {
         };
         setQuePergs(prevQuePergs => [...prevQuePergs, novoQuePerg]);
     };
-    const handleSaveChanges = async (event: React.FormEvent<HTMLFormElement>) => { /* ... seu código ... */
-        event.preventDefault();
-        setIsLoading(true);
-        setError(null);
-        try {
-            await api.put(`/questionarios`, {
-                id: questionarioId,
-                titulo: titulo
+    const handleSaveChanges = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+        // --- LÓGICA DE CORREÇÃO ---
+        
+        // 1. Atualiza o título do questionário primeiro, como antes.
+        await api.patch(`/questionarios/${params.id}`, { titulo });
+
+        // 2. Separa as perguntas em duas listas: as que JÁ TÊM um ID (precisam de update)
+        //    e as que SÃO NOVAS (precisam ser criadas).
+        const perguntasExistentes = quePergs.filter(qp => qp.pergunta.id && !qp.pergunta.tempId);
+        const perguntasNovas = quePergs.filter(qp => !qp.pergunta.id || qp.pergunta.tempId);
+
+        // 3. Atualiza as perguntas que já existem no banco de dados.
+        //    O Promise.all executa todas as atualizações em paralelo.
+        await Promise.all(
+            perguntasExistentes.map(qp => 
+                api.patch(`/perguntas/${qp.pergunta.id}`, { ...qp.pergunta })
+            )
+        );
+
+        // 4. CRIA apenas as perguntas que são realmente novas.
+        //    Esta é a correção principal para o erro 400.
+        if (perguntasNovas.length > 0) {
+            await api.post(`/perguntas/create-many`, {
+                questionarioId: params.id,
+                perguntas: perguntasNovas.map(qp => qp.pergunta)
             });
-
-            const promisesPerguntas = quePergs.map(async (qp) => {
-                let perguntaData = qp.pergunta;
-                let perguntaSalvaOuAtualizada: PerguntaAninhada;
-
-                if (perguntaData.id) {
-                    const updatePayload = {
-                        id: perguntaData.id,
-                        enunciado: perguntaData.enunciado,
-                        tipos: perguntaData.tipos,
-                        opcoes: perguntaData.tipos === 'MULTIPLA_ESCOLHA' ? perguntaData.opcoes.map(opt => ({ texto: opt.texto })) : []
-                    };
-                    const response = await api.put(`/perguntas`, updatePayload);
-                    perguntaSalvaOuAtualizada = response.data;
-                } else {
-                    const createPayload = {
-                        enunciado: perguntaData.enunciado,
-                        tipos: perguntaData.tipos,
-                        opcoes: perguntaData.tipos === 'MULTIPLA_ESCOLHA' ? perguntaData.opcoes.map(opt => opt.texto) : []
-                    };
-                    const response = await api.post(`/perguntas`, createPayload);
-                    perguntaSalvaOuAtualizada = response.data;
-
-                    if (perguntaSalvaOuAtualizada.id) { // Garante que temos ID antes de associar
-                        await api.post('/queperg', {
-                            questionario_id: questionarioId,
-                            pergunta_id: perguntaSalvaOuAtualizada.id
-                        });
-                    } else {
-                        throw new Error("Nova pergunta criada não retornou um ID.");
-                    }
-                }
-                return perguntaSalvaOuAtualizada;
-            });
-
-            await Promise.all(promisesPerguntas);
-
-            alert("Questionário e perguntas atualizados com sucesso!");
-            router.push("/questionarios");
-
-        } catch (err: any) {
-            console.error('Erro ao salvar:', err.response?.data || err.message);
-            setError(err.response?.data?.message || 'Erro ao salvar as alterações!');
-        } finally {
-            setIsLoading(false);
         }
-    };
+        
+        alert("Questionário salvo com sucesso!");
+        router.push('/questionarios'); // Ou recarrega os dados
 
+    } catch (error) {
+        if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {
+            const response = (error as any).response;
+            console.error("Erro ao salvar:", response?.data ?? error);
+            alert(`Erro ao salvar: ${response?.data?.message ?? 'Ocorreu um problema.'}`);
+        } else {
+            console.error("Erro ao salvar:", error);
+            alert('Erro ao salvar: Ocorreu um problema.');
+        }
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     // NOVO: Agrupamento e ordenação das avaliações por semestre
     const avaliacoesAgrupadasPorSemestre = useMemo(() => {
@@ -450,7 +452,7 @@ function EditQuestionarioFormContent() {
                         <label className="form-label">Perguntas do Questionário</label> {/* Usando form-label */}
                         <div className="perguntas-edit-list">
                             {quePergs.map((qp, qIndex) => (
-                                <div key={qp.pergunta.id || qp.pergunta.tempId} className="pergunta-editor-item">
+                                <div key={qp.pergunta.id ?? qp.pergunta.tempId} className="pergunta-editor-item">
                                     <label htmlFor={`enunciado-pergunta-${qIndex}`} className="form-label sr-only">Enunciado da Pergunta {qIndex + 1}</label>
                                     <textarea
                                         id={`enunciado-pergunta-${qIndex}`}
@@ -462,25 +464,41 @@ function EditQuestionarioFormContent() {
                                         disabled={isLoading}
                                         required
                                     />
-                                    <div className="pergunta-meta-editor">
-                                        <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label">Tipo</label>
-                                        <select
-                                            id={`tipo-pergunta-${qIndex}`}
-                                            value={qp.pergunta.tipos}
-                                            onChange={(e) => handleTipoChange(qIndex, e.target.value as 'TEXTO' | 'MULTIPLA_ESCOLHA')}
-                                            className="select-tipo-pergunta" // Sua classe ou a global para selects
+                                    <div className="mt-4 flex items-end gap-x-3">
+                                        {/* Contêiner para o seletor de tipo, que ocupará o espaço disponível */}
+                                        <div className="flex-grow">
+                                            <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label">
+                                                Tipo
+                                            </label>
+                                            <select
+                                                id={`tipo-pergunta-${qIndex}`}
+                                                value={qp.pergunta.tipos}
+                                                onChange={(e) => handleTipoChange(qIndex, e.target.value as 'TEXTO' | 'MULTIPLA_ESCOLHA')}
+                                                className="input-edit-mode w-full"
+                                                disabled={isLoading}
+                                            >
+                                                <option value="TEXTO">Texto</option>
+                                                <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Botão de lixeira */}
+                                        <button
+                                            type="button"
+                                            onClick={() => removePergunta(qIndex)}
+                                            className="btn btn-danger p-2.5" // Reutiliza suas classes de botão para consistência
+                                            title="Remover Pergunta"
                                             disabled={isLoading}
                                         >
-                                            <option value="TEXTO">Texto</option>
-                                            <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
-                                        </select>
+                                            <Trash2 size={18} />
+                                        </button>
                                     </div>
 
                                     {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
                                         <div className="opcoes-editor-container">
                                             <label className="form-label">Opções de Resposta</label>
                                             {qp.pergunta.opcoes.map((opt, oIndex) => (
-                                                <div key={opt.id || opt.tempId || `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
+                                                <div key={opt.id ?? opt.tempId ?? `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
                                                     <label htmlFor={`opcao-q${qIndex}-o${oIndex}`} className="sr-only">Opção {oIndex + 1}</label>
                                                     <input
                                                         id={`opcao-q${qIndex}-o${oIndex}`}
@@ -598,9 +616,10 @@ function EditQuestionarioFormContent() {
                             {Object.entries(avaliacoesAgrupadasPorSemestre).map(([semestre, avaliacoesDoSemestre]) => (
                                 <div key={semestre} className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
                                     <button
+                                        type="button"
                                         onClick={() => toggleSemestreExpandido(semestre)}
                                         className="w-full flex justify-between items-center text-left py-2"
-                                        aria-expanded={semestresExpandidos.has(semestre)}
+                                        aria-expanded={semestresExpandidos.has(semestre) ? "true" : "false"}
                                     >
                                         <h4 className="text-lg font-semibold text-primary flex items-center">
                                             <CalendarDays size={20} className="mr-2 text-primary/80" />
@@ -642,42 +661,68 @@ function EditQuestionarioFormContent() {
                 </div>
             )}
             {/* NOVA Renderização condicional para 'analise' */}
-            {viewMode === 'analise' && (
-                isLoadingDashboard ? <div className="text-center p-10">Carregando análise...</div> :
-                    !dashboardData ? <div className="text-center p-10">Não há dados para analisar.</div> :
-                        <div className="space-y-8">
-                            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Análise do Questionário: <span className="text-primary">{titulo}</span></h3>
+            {viewMode === 'analise' && (() => {
+                if (isLoadingDashboard) {
+                    return <div className="text-center p-10">Carregando análise...</div>;
+                }
+                if (!dashboardData) {
+                    return <div className="text-center p-10">Não há dados para analisar.</div>;
+                }
 
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                                <StatCard title="Total de Avaliações" value={dashboardData.kpis.totalAvaliacoes} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
-                                <StatCard title="Total de Respondentes" value={dashboardData.kpis.totalRespondentes} icon={Users} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
-                                <StatCard title="Respostas Finalizadas" value={dashboardData.kpis.totalFinalizados} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
-                                <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
-                            </div>
+                let wordCloudContent: React.ReactNode;
+                if (isLoadingWordCloud) {
+                    wordCloudContent = (
+                        <div className="flex h-full w-full items-center justify-center">
+                            <p>Analisando textos...</p>
+                        </div>
+                    );
+                } else if (wordCloudData && wordCloudData.length > 0) {
+                    wordCloudContent = <WordCloud words={wordCloudData} />;
+                } else {
+                    wordCloudContent = (
+                        <div className="flex h-full w-full items-center justify-center">
+                            <p>Nenhum dado de texto para exibir.</p>
+                        </div>
+                    );
+                }
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {dashboardData.graficos.map(grafico => (
-                                    <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
-                                ))}
+                return (
+                    <div className="space-y-8">
+                        <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Análise do Questionário: <span className="text-primary">{titulo}</span></h3>
 
-                                <div>
-                                    <div className="form-group">
-                                        <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
-                                        <select
-                                            id="text-question-select-specific"
-                                            className="input-edit-mode"
-                                            value={selectedTextQuestion}
-                                            onChange={e => setSelectedTextQuestion(e.target.value)}
-                                        >
-                                            <option value="">Selecione uma pergunta</option>
-                                            {quePergs.filter(qp => qp.pergunta.tipos === 'TEXTO').map(qp => <option key={qp.pergunta.id} value={qp.pergunta.id}>{qp.pergunta.enunciado}</option>)}
-                                        </select>
-                                    </div>
-                                    {isLoadingWordCloud ? <div className="text-center p-10">Analisando textos...</div> : <WordCloud words={wordCloudData} />}
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                            <StatCard title="Total de Avaliações" value={dashboardData.kpis.totalAvaliacoes} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
+                            <StatCard title="Total de Respondentes" value={dashboardData.kpis.totalRespondentes} icon={Users} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
+                            <StatCard title="Respostas Finalizadas" value={dashboardData.kpis.totalFinalizados} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
+                            <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {dashboardData.graficos.map(grafico => (
+                                <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
+                            ))}
+
+                            <div>
+                                <div className="form-group">
+                                    <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
+                                    <select
+                                        id="text-question-select-specific"
+                                        className="input-edit-mode"
+                                        value={selectedTextQuestion}
+                                        onChange={e => setSelectedTextQuestion(e.target.value)}
+                                    >
+                                        <option value="">Selecione uma pergunta</option>
+                                        {quePergs.filter(qp => qp.pergunta.tipos === 'TEXTO').map(qp => <option key={qp.pergunta.id} value={qp.pergunta.id}>{qp.pergunta.enunciado}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mt-4 h-[400px]">
+                                    {wordCloudContent}
                                 </div>
                             </div>
                         </div>
-            )}
+                    </div>
+                );
+            })()}
         </div>
     );
 }

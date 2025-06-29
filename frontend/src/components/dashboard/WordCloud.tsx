@@ -1,33 +1,41 @@
 // frontend/src/components/dashboard/WordCloud.tsx
 'use client';
-import ReactWordcloud from 'react-wordcloud';
-import { ChartContainer } from './ChartContainer';
+
+import dynamic from 'next/dynamic';
+import { GenericChartContainer } from './GenericChartContainer';
+
+// A importação dinâmica continua sendo a melhor prática para componentes de visualização
+const WordCloudComponent = dynamic(() => import('react-d3-cloud'), {
+  ssr: false, // Garantimos que ele só rode no navegador
+});
 
 interface WordCloudProps {
-    words: { text: string; value: number }[];
+  words?: { text: string; value: number }[] | null;
 }
 
-const options = {
-    rotations: 2,
-    rotationAngles: [-90, 0] as [number, number],
-    fontSizes: [15, 60] as [number, number],
-    padding: 1,
-};
+// A nova biblioteca pede uma função para mapear o tamanho da fonte
+const fontSizeMapper = (word: { value: number }) => Math.log2(word.value) * 5 + 16;
 
 export const WordCloud = ({ words }: WordCloudProps) => {
-    if (words.length === 0) {
-        return (
-            <ChartContainer title="Nuvem de Palavras">
-                <div className="flex items-center justify-center h-full text-text-muted">
-                    Nenhum dado de texto para exibir.
-                </div>
-            </ChartContainer>
-        );
-    }
-
+  if (!words || words.length === 0) {
     return (
-        <ChartContainer title="Nuvem de Palavras">
-            <ReactWordcloud words={words} options={options} />
-        </ChartContainer>
+      <GenericChartContainer title="Nuvem de Palavras">
+        <div className="flex h-full w-full items-center justify-center">
+          <p className="text-text-muted">Selecione uma pergunta para analisar ou não há dados.</p>
+        </div>
+      </GenericChartContainer>
     );
+  }
+
+  return (
+    <GenericChartContainer title="Nuvem de Palavras">
+        <WordCloudComponent
+            data={words}
+            font="sans-serif"
+            fontSize={fontSizeMapper}
+            padding={2}
+            // A nova biblioteca não precisa de 'options' separadas
+        />
+    </GenericChartContainer>
+  );
 };
