@@ -1,7 +1,8 @@
 {
   "/page": "app/page.js",
-  "/questionarios/page": "app/questionarios/page.js",
-  "/questionarios/[id]/page": "app/questionarios/[id]/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/_not-found/page": "app/_not-found/page.js"
+  "/(auth-empresa)/empresas/login/page": "app/(auth-empresa)/empresas/login/page.js",
+  "/(auth-empresa)/admin/login/page": "app/(auth-empresa)/admin/login/page.js",
+  "/questionarios/page": "app/questionarios/page.js",
+  "/questionarios/[id]/page": "app/questionarios/[id]/page.js"
 }
