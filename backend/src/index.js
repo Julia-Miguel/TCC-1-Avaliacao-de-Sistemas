@@ -1,4 +1,4 @@
-// backend/src/index.ts
+// backend/src/index.js
 import { app } from './server.js';
 
 const PORT = 4444;

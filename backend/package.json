@@ -4,8 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "start": "nodemon src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.js",
+    "start": "nodemon src/index.js",
     "test": "dotenv -e .env.test -- prisma migrate deploy && cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "build": "tsc"
   },
