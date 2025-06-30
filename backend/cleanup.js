@@ -7,7 +7,7 @@ async function main() {
   console.log('Iniciando script de limpeza de registros órfãos...');
 
   // 1. Pega todas as conexões entre questionários e perguntas.
-  const todasAsConexoes = await prisma.quePerg.findMany();
+  const todasAsConexoes = await prisma.quePerg.findMany();  
   
   let orfaosEncontrados = 0;
 
