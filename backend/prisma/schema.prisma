@@ -21,95 +21,95 @@ enum TipoUsuario {
 
 // NOVO MODELO: Empresa
 model Empresa {
-  id              Int        @id @default(autoincrement())
-  nome            String     @unique // Nome do Hospital/Empresa
+  id               Int       @id @default(autoincrement())
+  nome             String    @unique // Nome do Hospital/Empresa
   emailResponsavel String    @unique // Email para login da Empresa e contato principal
-  senhaEmpresa    String     // SENHA DA EMPRESA (será hasheada)
+  senhaEmpresa     String // SENHA DA EMPRESA (será hasheada)
   // Outros campos como CNPJ, telefone, endereço poderiam entrar aqui
-  usuarios        Usuario[]  // Usuários (Admins) pertencentes a esta empresa
-  created_at      DateTime   @default(now())
-  updated_at      DateTime   @updatedAt
+  usuarios         Usuario[] // Usuários (Admins) pertencentes a esta empresa
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
 
   @@map("empresas")
 }
 
 // MODELO USUARIO MODIFICADO
 model Usuario {
-  id            Int            @id @default(autoincrement())
-  nome          String?
-  email         String         @unique // Email para login do Admin ou do Cliente da Plataforma
-  senha         String         // Senha do Admin ou do Cliente da Plataforma (será hasheada)
-  tipo          TipoUsuario    // ADMIN_EMPRESA ou CLIENTE_PLATAFORMA
+  id    Int         @id @default(autoincrement())
+  nome  String?
+  email String      @unique // Email para login do Admin ou do Cliente da Plataforma
+  senha String // Senha do Admin ou do Cliente da Plataforma (será hasheada)
+  tipo  TipoUsuario // ADMIN_EMPRESA ou CLIENTE_PLATAFORMA
 
-  empresaId     Int?           // OPCIONAL: Só preenchido se tipo for ADMIN_EMPRESA
-  empresa       Empresa?       @relation(fields: [empresaId], references: [id]) // Relação opcional
+  empresaId Int? // OPCIONAL: Só preenchido se tipo for ADMIN_EMPRESA
+  empresa   Empresa? @relation(fields: [empresaId], references: [id]) // Relação opcional
 
   questionariosCriados Questionario[] @relation("CriadorQuestionario")
-  avaliacoesCriadas   Avaliacao[]    @relation("CriadorAvaliacao")
-  usuAval             UsuAval[]      // Respostas dadas por este usuário (se for CLIENTE_PLATAFORMA logado)
+  avaliacoesCriadas    Avaliacao[]    @relation("CriadorAvaliacao")
+  usuAval              UsuAval[] // Respostas dadas por este usuário (se for CLIENTE_PLATAFORMA logado)
 
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("usuarios")
 }
 
 // MODELO QUESTIONARIO MODIFICADO
 model Questionario {
-  id            Int            @id @default(autoincrement())
-  titulo        String
-  
-  criadorId     Int            // ID do Usuario (ADMIN_EMPRESA) que criou
-  criador       Usuario        @relation("CriadorQuestionario", fields: [criadorId], references: [id])
+  id     Int    @id @default(autoincrement())
+  titulo String
+
+  criadorId Int // ID do Usuario (ADMIN_EMPRESA) que criou
+  criador   Usuario @relation("CriadorQuestionario", fields: [criadorId], references: [id])
   // Como 'criador' é um Usuario tipo ADMIN_EMPRESA, ele terá um 'empresaId', 
   // então o Questionario pertence implicitamente à empresa do seu criador.
 
-  perguntas     QuePerg[]
-  avaliacoes    Avaliacao[]
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+  perguntas  QuePerg[]
+  avaliacoes Avaliacao[]
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
 
   @@map("questionarios")
 }
 
 // MODELO AVALIACAO MODIFICADO
 model Avaliacao {
-  id             Int            @id @default(autoincrement())
-  semestre       String         
-  requerLoginCliente Boolean @default(false) // true = só cliente logado pode responder; false = anônimo também pode
-  questionarioId Int
-  questionario   Questionario   @relation(fields: [questionarioId], references: [id])
+  id                 Int          @id @default(autoincrement())
+  semestre           String
+  requerLoginCliente Boolean      @default(false) // true = só cliente logado pode responder; false = anônimo também pode
+  questionarioId     Int
+  questionario       Questionario @relation(fields: [questionarioId], references: [id])
 
-  criadorId      Int            // ID do Usuario (ADMIN_EMPRESA) que criou/agendou esta avaliação
-  criador        Usuario        @relation("CriadorAvaliacao", fields: [criadorId], references: [id])
+  criadorId Int // ID do Usuario (ADMIN_EMPRESA) que criou/agendou esta avaliação
+  criador   Usuario @relation("CriadorAvaliacao", fields: [criadorId], references: [id])
   // A Avaliacao pertence à empresa do 'criador'.
 
-  usuarios       UsuAval[]      // Quem está respondendo ou foi designado para responder
-  created_at     DateTime       @default(now())
-  updated_at     DateTime       @updatedAt
+  usuarios   UsuAval[] // Quem está respondendo ou foi designado para responder
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 
   @@map("avaliacao")
 }
 
 // MODELO USU_AVAL MODIFICADO
 model UsuAval {
-  id                 Int        @id @default(autoincrement())
-  
-  avaliacaoId        Int
-  avaliacao          Avaliacao  @relation(fields: [avaliacaoId], references: [id])
+  id Int @id @default(autoincrement())
+
+  avaliacaoId Int
+  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id])
 
   // Se o respondente for um CLIENTE_PLATAFORMA logado:
-  usuarioId          Int?       // Opcional
-  usuario            Usuario?   @relation(fields: [usuarioId], references: [id]) 
-  
+  usuarioId Int? // Opcional
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+
   // Se o respondente for anônimo:
-  anonymousSessionId String?    @unique // Para tentar controlar respostas anônimas
-  
-  status             String     // Ex: "PENDENTE", "EM_ANDAMENTO", "CONCLUIDO"
-  isFinalizado       Boolean    @default(false)
-  respostas          Resposta[]
-  created_at         DateTime   @default(now())
-  updated_at         DateTime   @updatedAt
+  anonymousSessionId String? @unique // Para tentar controlar respostas anônimas
+
+  status       String // Ex: "PENDENTE", "EM_ANDAMENTO", "CONCLUIDO"
+  isFinalizado Boolean    @default(false)
+  respostas    Resposta[]
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
 
   // Garante que ou temos um usuarioId ou um anonymousSessionId, mas não ambos ao mesmo tempo,
   // e que a combinação com avaliacaoId seja única para evitar múltiplas "tentativas" pela mesma entidade.
@@ -119,7 +119,6 @@ model UsuAval {
 
   @@map("usu_aval")
 }
-
 
 // --- SEUS MODELOS DE PERGUNTA, OPCAO, RESPOSTA, QUEPERG ---
 // (Presumindo que já estão corretos conforme nossa última interação)
@@ -139,40 +138,40 @@ model Opcao {
 }
 
 model Pergunta {
-  id            Int            @id @default(autoincrement())
+  id            Int          @id @default(autoincrement())
   enunciado     String
-  tipos         TipoPergunta   @default(TEXTO)
+  tipos         TipoPergunta @default(TEXTO)
   opcoes        Opcao[]
   questionarios QuePerg[]
   respostas     Resposta[]
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
 
   @@map("pergunta")
 }
 
 model QuePerg {
-  id             Int            @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   questionarioId Int
   perguntaId     Int
-  questionario   Questionario   @relation(fields: [questionarioId], references: [id])
-  pergunta       Pergunta       @relation(fields: [perguntaId], references: [id])
-  created_at     DateTime       @default(now())
-  updated_at     DateTime       @updatedAt
+  questionario   Questionario @relation(fields: [questionarioId], references: [id])
+  pergunta       Pergunta     @relation(fields: [perguntaId], references: [id])
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
 
   @@map("que_perg")
 }
 
 model Resposta {
-  id         Int        @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   usuAvalId  Int
   perguntaId Int
   resposta   String
-  usuAval    UsuAval    @relation(fields: [usuAvalId], references: [id])
-  pergunta   Pergunta   @relation(fields: [perguntaId], references: [id])
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
-  @@unique([usuAvalId, perguntaId])
+  usuAval    UsuAval  @relation(fields: [usuAvalId], references: [id])
+  pergunta   Pergunta @relation(fields: [perguntaId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
+  @@unique([usuAvalId, perguntaId])
   @@map("resposta")
 }
