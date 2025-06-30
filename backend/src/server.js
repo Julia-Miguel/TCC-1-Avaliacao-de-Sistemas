@@ -11,32 +11,32 @@ import { respostaRouter } from './routes/resposta.js';
 import { empresasRouter } from './routes/empresas.js';
 import { dashboardRouter } from './routes/dashboard.js';
 
-const server = express();
-const PORT = 4444;
+// Corrigido: renomeado de 'server' para 'app' para consistência
+const app = express();
 
 // Middleware para analisar o corpo das requisições JSON
-server.use(express.json());
-server.use(cors());
+app.use(express.json());
+app.use(cors());
 
-server.use(mainRouter);
-server.use(questionarioRouter);
-server.use(quePergRouter);
-server.use(perguntasRouter);
-server.use(avaliacaoRouter);
-server.use(usuarioRouter);
-server.use(usuAvalRouter);
-server.use(respostaRouter);
-server.use(empresasRouter);
-server.use(dashboardRouter);
+// Corrigido: usando 'app.use'
+app.use(mainRouter);
+app.use(questionarioRouter);
+app.use(quePergRouter);
+app.use(perguntasRouter);
+app.use(avaliacaoRouter);
+app.use(usuarioRouter);
+app.use(usuAvalRouter);
+app.use(respostaRouter);
+app.use(empresasRouter);
+app.use(dashboardRouter);
 
 
 // Routes
-server.get('/', (request, response) => {
+app.get('/', (request, response) => {
     response.json({
         message: 'Status: Server is running.'
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`[SERVER] Server is running on port ${PORT}`);
-});
+// Corrigido: exportando a variável 'app' que agora está definida
+export { app };
