@@ -1,5 +1,0 @@
-{
-  "/questionarios/page": "app/questionarios/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/questionarios/[id]/page": "app/questionarios/[id]/page.js"
-}

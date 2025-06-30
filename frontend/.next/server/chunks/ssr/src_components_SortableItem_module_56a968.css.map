@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Nova%20pasta/TCC-1-Avaliacao-de-Sistemas/frontend/src/components/SortableItem.module.css"],"sourcesContent":["/* SortableItem.module.css */\r\n\r\n.sortableItem {\r\n  transition: transform 250ms ease, box-shadow 200ms ease, opacity 200ms ease;\r\n  will-change: transform;\r\n  opacity: 1;\r\n  z-index: 0;\r\n  position: relative;\r\n}\r\n\r\n.dragging {\r\n  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);\r\n  opacity: 0.95;\r\n  z-index: 10;\r\n  transform: scale(1.02);\r\n  cursor: grabbing;\r\n}\r\n\r\n.sortable-item-container {\r\n  display: flex;\r\n  align-items: flex-start;\r\n  gap: 8px;\r\n}\r\n\r\n.drag-handle {\r\n  cursor: grab;\r\n  -webkit-user-select: none;\r\n  user-select: none;\r\n  padding: 4px;\r\n  color: #999;\r\n  flex-shrink: 0;\r\n}\r\n"],"names":[],"mappings":"AAEA;;;;;;;;AAQA;;;;;;;;AAQA;;;;;;AAMA"}},
-    {"offset": {"line": 31, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
-}
