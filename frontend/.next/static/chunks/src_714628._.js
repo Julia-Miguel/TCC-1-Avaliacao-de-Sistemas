@@ -706,26 +706,33 @@ function EditQuestionarioFormContent() {
     };
     const handleTipoChange = (qIndex, novoTipo)=>{
         setQuePergs((prevQuePergs)=>prevQuePergs.map((qp, index)=>{
-                if (index === qIndex) {
-                    const perguntaAtual = qp.pergunta;
-                    const novasOpcoes = novoTipo === 'TEXTO' ? [] : perguntaAtual.opcoes.length === 0 ? [
+                if (index !== qIndex) {
+                    return qp;
+                }
+                const perguntaAtual = qp.pergunta;
+                let novasOpcoes;
+                if (novoTipo === 'TEXTO') {
+                    novasOpcoes = [];
+                } else if (perguntaAtual.opcoes.length === 0) {
+                    novasOpcoes = [
                         {
                             texto: '',
                             tempId: `temp-opt-${Date.now()}`
                         }
-                    ] : perguntaAtual.opcoes.map((o)=>({
+                    ];
+                } else {
+                    novasOpcoes = perguntaAtual.opcoes.map((o)=>({
                             ...o
                         }));
-                    return {
-                        ...qp,
-                        pergunta: {
-                            ...perguntaAtual,
-                            tipos: novoTipo,
-                            opcoes: novasOpcoes
-                        }
-                    };
                 }
-                return qp;
+                return {
+                    ...qp,
+                    pergunta: {
+                        ...perguntaAtual,
+                        tipos: novoTipo,
+                        opcoes: novasOpcoes
+                    }
+                };
             }));
     };
     const handleOptionChange = (qIndex, oIndex, novoTexto)=>{
@@ -801,40 +808,51 @@ function EditQuestionarioFormContent() {
     const handleSaveChanges = async (e)=>{
         e.preventDefault();
         setIsLoading(true);
+        setError(null);
+        // Transformando o estado do frontend para o formato que o backend espera
+        const perguntasParaEnviar = quePergs.map((qp, index)=>({
+                id: qp.pergunta.id,
+                // Garantindo que estamos usando os nomes corretos
+                enunciado: qp.pergunta.enunciado,
+                tipos: qp.pergunta.tipos,
+                ordem: index,
+                opcoes: qp.pergunta.opcoes.map((opt)=>({
+                        id: opt.id,
+                        texto: opt.texto
+                    }))
+            }));
+        const payload = {
+            titulo: titulo,
+            perguntas: perguntasParaEnviar
+        };
         try {
-            // --- LÓGICA DE CORREÇÃO ---
-            // 1. Atualiza o título do questionário primeiro, como antes.
-            await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].patch(`/questionarios/${params.id}`, {
-                titulo
-            });
-            // 2. Separa as perguntas em duas listas: as que JÁ TÊM um ID (precisam de update)
-            //    e as que SÃO NOVAS (precisam ser criadas).
-            const perguntasExistentes = quePergs.filter((qp)=>qp.pergunta.id && !qp.pergunta.tempId);
-            const perguntasNovas = quePergs.filter((qp)=>!qp.pergunta.id || qp.pergunta.tempId);
-            // 3. Atualiza as perguntas que já existem no banco de dados.
-            //    O Promise.all executa todas as atualizações em paralelo.
-            await Promise.all(perguntasExistentes.map((qp)=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].patch(`/perguntas/${qp.pergunta.id}`, {
-                    ...qp.pergunta
-                })));
-            // 4. CRIA apenas as perguntas que são realmente novas.
-            //    Esta é a correção principal para o erro 400.
-            if (perguntasNovas.length > 0) {
-                await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].post(`/perguntas/create-many`, {
-                    questionarioId: params.id,
-                    perguntas: perguntasNovas.map((qp)=>qp.pergunta)
-                });
-            }
+            // 3. Enviamos TUDO em uma única requisição, como o backend agora espera.
+            const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].patch(`/questionarios/${questionarioId}`, payload);
+            // 4. (Opcional, mas recomendado) Atualiza o estado local com os dados que
+            //    o backend retornou. Isso garante que IDs de novas perguntas e outras
+            //    informações fiquem sincronizadas sem precisar recarregar a página.
+            setTitulo(response.data.titulo);
+            // Mapeia a resposta de volta para o formato que o frontend usa (QuePerg)
+            const sanitizedQuePergs = response.data.perguntas.map((p)=>({
+                    id: p.questionarioPerguntaId,
+                    questionarioId: p.questionarioId,
+                    pergunta: {
+                        id: p.id,
+                        enunciado: p.enunciado,
+                        tipos: p.tipos,
+                        opcoes: p.opcoes || []
+                    }
+                }));
+            setQuePergs(sanitizedQuePergs);
             alert("Questionário salvo com sucesso!");
-            router.push('/questionarios'); // Ou recarrega os dados
+        // Em vez de redirecionar, você pode querer apenas mostrar o alerta, 
+        // já que o estado já está sincronizado.
+        // router.push('/questionarios'); 
         } catch (error) {
-            if (typeof error === 'object' && error !== null && 'response' in error && typeof error.response === 'object') {
-                const response = error.response;
-                console.error("Erro ao salvar:", response?.data ?? error);
-                alert(`Erro ao salvar: ${response?.data?.message ?? 'Ocorreu um problema.'}`);
-            } else {
-                console.error("Erro ao salvar:", error);
-                alert('Erro ao salvar: Ocorreu um problema.');
-            }
+            console.error("Erro ao salvar:", error.response?.data || error);
+            const errorMessage = error.response?.data?.error || 'Ocorreu um problema ao salvar.';
+            setError(errorMessage);
+            alert(`Erro ao salvar: ${errorMessage}`);
         } finally{
             setIsLoading(false);
         }
@@ -910,12 +928,12 @@ function EditQuestionarioFormContent() {
                 children: "Carregando dados do questionário..."
             }, void 0, false, {
                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                lineNumber: 389,
+                lineNumber: 406,
                 columnNumber: 63
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-            lineNumber: 389,
+            lineNumber: 406,
             columnNumber: 16
         }, this);
     }
@@ -930,7 +948,7 @@ function EditQuestionarioFormContent() {
                     children: error
                 }, void 0, false, {
                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                    lineNumber: 394,
+                    lineNumber: 411,
                     columnNumber: 17
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -942,13 +960,13 @@ function EditQuestionarioFormContent() {
                     children: "Voltar para Lista de Questionários"
                 }, void 0, false, {
                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                    lineNumber: 395,
+                    lineNumber: 412,
                     columnNumber: 17
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-            lineNumber: 393,
+            lineNumber: 410,
             columnNumber: 13
         }, this);
     }
@@ -967,7 +985,7 @@ function EditQuestionarioFormContent() {
                         children: "Configurar Perguntas"
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 405,
+                        lineNumber: 422,
                         columnNumber: 17
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -979,7 +997,7 @@ function EditQuestionarioFormContent() {
                         children: "Visualizar Respostas"
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 411,
+                        lineNumber: 428,
                         columnNumber: 17
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -988,13 +1006,13 @@ function EditQuestionarioFormContent() {
                         children: "Análise / Dashboard"
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 417,
+                        lineNumber: 434,
                         columnNumber: 17
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                lineNumber: 404,
+                lineNumber: 421,
                 columnNumber: 13
             }, this),
             viewMode === 'editar' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -1012,7 +1030,7 @@ function EditQuestionarioFormContent() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 429,
+                                lineNumber: 446,
                                 columnNumber: 25
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1026,7 +1044,7 @@ function EditQuestionarioFormContent() {
                                         children: "Cancelar"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 431,
+                                        lineNumber: 448,
                                         columnNumber: 29
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1036,19 +1054,19 @@ function EditQuestionarioFormContent() {
                                         children: isLoading ? "Salvando..." : "Salvar Alterações"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 432,
+                                        lineNumber: 449,
                                         columnNumber: 29
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 430,
+                                lineNumber: 447,
                                 columnNumber: 25
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 428,
+                        lineNumber: 445,
                         columnNumber: 21
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1060,7 +1078,7 @@ function EditQuestionarioFormContent() {
                                 children: "Título do Questionário"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 439,
+                                lineNumber: 456,
                                 columnNumber: 25
                             }, this),
                             " ",
@@ -1075,13 +1093,13 @@ function EditQuestionarioFormContent() {
                                 required: true
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 440,
+                                lineNumber: 457,
                                 columnNumber: 25
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 438,
+                        lineNumber: 455,
                         columnNumber: 21
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1092,7 +1110,7 @@ function EditQuestionarioFormContent() {
                                 children: "Perguntas do Questionário"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 452,
+                                lineNumber: 469,
                                 columnNumber: 25
                             }, this),
                             " ",
@@ -1111,7 +1129,7 @@ function EditQuestionarioFormContent() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                    lineNumber: 456,
+                                                    lineNumber: 473,
                                                     columnNumber: 37
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -1126,7 +1144,7 @@ function EditQuestionarioFormContent() {
                                                     required: true
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                    lineNumber: 457,
+                                                    lineNumber: 474,
                                                     columnNumber: 37
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1141,7 +1159,7 @@ function EditQuestionarioFormContent() {
                                                                     children: "Tipo"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                    lineNumber: 470,
+                                                                    lineNumber: 487,
                                                                     columnNumber: 45
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1156,7 +1174,7 @@ function EditQuestionarioFormContent() {
                                                                             children: "Texto"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                            lineNumber: 480,
+                                                                            lineNumber: 497,
                                                                             columnNumber: 49
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1164,19 +1182,19 @@ function EditQuestionarioFormContent() {
                                                                             children: "Múltipla Escolha"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                            lineNumber: 481,
+                                                                            lineNumber: 498,
                                                                             columnNumber: 49
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                    lineNumber: 473,
+                                                                    lineNumber: 490,
                                                                     columnNumber: 45
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                            lineNumber: 469,
+                                                            lineNumber: 486,
                                                             columnNumber: 41
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1190,18 +1208,18 @@ function EditQuestionarioFormContent() {
                                                                 size: 18
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 493,
+                                                                lineNumber: 510,
                                                                 columnNumber: 45
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                            lineNumber: 486,
+                                                            lineNumber: 503,
                                                             columnNumber: 41
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                    lineNumber: 467,
+                                                    lineNumber: 484,
                                                     columnNumber: 37
                                                 }, this),
                                                 qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1212,7 +1230,7 @@ function EditQuestionarioFormContent() {
                                                             children: "Opções de Resposta"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                            lineNumber: 499,
+                                                            lineNumber: 516,
                                                             columnNumber: 45
                                                         }, this),
                                                         qp.pergunta.opcoes.map((opt, oIndex)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1227,7 +1245,7 @@ function EditQuestionarioFormContent() {
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                        lineNumber: 502,
+                                                                        lineNumber: 519,
                                                                         columnNumber: 53
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1242,7 +1260,7 @@ function EditQuestionarioFormContent() {
                                                                         required: qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                        lineNumber: 503,
+                                                                        lineNumber: 520,
                                                                         columnNumber: 53
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1256,18 +1274,18 @@ function EditQuestionarioFormContent() {
                                                                             size: 18
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                            lineNumber: 520,
+                                                                            lineNumber: 537,
                                                                             columnNumber: 57
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                        lineNumber: 513,
+                                                                        lineNumber: 530,
                                                                         columnNumber: 53
                                                                     }, this)
                                                                 ]
                                                             }, opt.id ?? opt.tempId ?? `q${qIndex}-o${oIndex}`, true, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 501,
+                                                                lineNumber: 518,
                                                                 columnNumber: 49
                                                             }, this)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1282,26 +1300,26 @@ function EditQuestionarioFormContent() {
                                                                     className: "mr-1"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                    lineNumber: 530,
+                                                                    lineNumber: 547,
                                                                     columnNumber: 49
                                                                 }, this),
                                                                 " Adicionar Opção"
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                            lineNumber: 524,
+                                                            lineNumber: 541,
                                                             columnNumber: 45
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                    lineNumber: 498,
+                                                    lineNumber: 515,
                                                     columnNumber: 41
                                                 }, this)
                                             ]
                                         }, qp.pergunta.id ?? qp.pergunta.tempId, true, {
                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                            lineNumber: 455,
+                                            lineNumber: 472,
                                             columnNumber: 33
                                         }, this)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1320,32 +1338,32 @@ function EditQuestionarioFormContent() {
                                                 className: "mr-2"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 543,
+                                                lineNumber: 560,
                                                 columnNumber: 33
                                             }, this),
                                             " Adicionar Nova Pergunta"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 536,
+                                        lineNumber: 553,
                                         columnNumber: 29
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 453,
+                                lineNumber: 470,
                                 columnNumber: 25
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 451,
+                        lineNumber: 468,
                         columnNumber: 21
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                lineNumber: 426,
+                lineNumber: 443,
                 columnNumber: 17
             }, this),
             viewMode === 'respostas' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1361,13 +1379,13 @@ function EditQuestionarioFormContent() {
                                 children: titulo
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 554,
+                                lineNumber: 571,
                                 columnNumber: 56
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 553,
+                        lineNumber: 570,
                         columnNumber: 21
                     }, this),
                     isLoadingRespostas && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1377,12 +1395,12 @@ function EditQuestionarioFormContent() {
                             children: "Carregando respostas..."
                         }, void 0, false, {
                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                            lineNumber: 557,
+                            lineNumber: 574,
                             columnNumber: 79
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 557,
+                        lineNumber: 574,
                         columnNumber: 44
                     }, this),
                     error && !isLoadingRespostas && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1392,12 +1410,12 @@ function EditQuestionarioFormContent() {
                             children: error
                         }, void 0, false, {
                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                            lineNumber: 558,
+                            lineNumber: 575,
                             columnNumber: 89
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 558,
+                        lineNumber: 575,
                         columnNumber: 54
                     }, this),
                     !isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length === 0 && !error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1408,7 +1426,7 @@ function EditQuestionarioFormContent() {
                                 strokeWidth: 1.5
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 562,
+                                lineNumber: 579,
                                 columnNumber: 29
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1416,13 +1434,13 @@ function EditQuestionarioFormContent() {
                                 children: "Nenhuma avaliação utilizando este questionário foi encontrada ou nenhuma resposta foi submetida ainda."
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 563,
+                                lineNumber: 580,
                                 columnNumber: 29
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 561,
+                        lineNumber: 578,
                         columnNumber: 25
                     }, this),
                     selectedAvaliacaoDetalhes && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1447,19 +1465,19 @@ function EditQuestionarioFormContent() {
                                             d: "M19 12H5M12 19l-7-7 7-7"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                            lineNumber: 576,
+                                            lineNumber: 593,
                                             columnNumber: 228
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 576,
+                                        lineNumber: 593,
                                         columnNumber: 33
                                     }, this),
                                     "Voltar para Lista de Avaliações"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 572,
+                                lineNumber: 589,
                                 columnNumber: 29
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
@@ -1467,7 +1485,7 @@ function EditQuestionarioFormContent() {
                                 children: selectedAvaliacaoDetalhes.semestre
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 579,
+                                lineNumber: 596,
                                 columnNumber: 29
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1480,7 +1498,7 @@ function EditQuestionarioFormContent() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 582,
+                                lineNumber: 599,
                                 columnNumber: 29
                             }, this),
                             selectedAvaliacaoDetalhes.usuarios.length === 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1488,7 +1506,7 @@ function EditQuestionarioFormContent() {
                                 children: "Nenhuma resposta submetida para esta avaliação."
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 587,
+                                lineNumber: 604,
                                 columnNumber: 33
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1504,7 +1522,7 @@ function EditQuestionarioFormContent() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 593,
+                                                lineNumber: 610,
                                                 columnNumber: 41
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1519,7 +1537,7 @@ function EditQuestionarioFormContent() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 596,
+                                                lineNumber: 613,
                                                 columnNumber: 41
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -1532,7 +1550,7 @@ function EditQuestionarioFormContent() {
                                                                 children: resp.pergunta.enunciado
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 602,
+                                                                lineNumber: 619,
                                                                 columnNumber: 53
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1540,35 +1558,35 @@ function EditQuestionarioFormContent() {
                                                                 children: resp.resposta
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 603,
+                                                                lineNumber: 620,
                                                                 columnNumber: 53
                                                             }, this)
                                                         ]
                                                     }, resp.id, true, {
                                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                        lineNumber: 601,
+                                                        lineNumber: 618,
                                                         columnNumber: 49
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 599,
+                                                lineNumber: 616,
                                                 columnNumber: 41
                                             }, this)
                                         ]
                                     }, respondente.id, true, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 592,
+                                        lineNumber: 609,
                                         columnNumber: 37
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 590,
+                                lineNumber: 607,
                                 columnNumber: 29
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 571,
+                        lineNumber: 588,
                         columnNumber: 25
                     }, this),
                     !isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length > 0 && !selectedAvaliacaoId && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1590,7 +1608,7 @@ function EditQuestionarioFormContent() {
                                                         className: "mr-2 text-primary/80"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                        lineNumber: 625,
+                                                        lineNumber: 642,
                                                         columnNumber: 45
                                                     }, this),
                                                     "Semestre: ",
@@ -1598,26 +1616,26 @@ function EditQuestionarioFormContent() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 624,
+                                                lineNumber: 641,
                                                 columnNumber: 41
                                             }, this),
                                             semestresExpandidos.has(semestre) ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$up$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronUp$3e$__["ChevronUp"], {
                                                 size: 20
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 628,
+                                                lineNumber: 645,
                                                 columnNumber: 78
                                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
                                                 size: 20
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 628,
+                                                lineNumber: 645,
                                                 columnNumber: 104
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 618,
+                                        lineNumber: 635,
                                         columnNumber: 37
                                     }, this),
                                     semestresExpandidos.has(semestre) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1643,13 +1661,13 @@ function EditQuestionarioFormContent() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 643,
+                                                                lineNumber: 660,
                                                                 columnNumber: 57
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                        lineNumber: 641,
+                                                        lineNumber: 658,
                                                         columnNumber: 53
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1660,7 +1678,7 @@ function EditQuestionarioFormContent() {
                                                                 className: "mr-1.5 text-text-muted/80"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 648,
+                                                                lineNumber: 665,
                                                                 columnNumber: 57
                                                             }, this),
                                                             av._count?.usuarios ?? 0,
@@ -1670,7 +1688,7 @@ function EditQuestionarioFormContent() {
                                                                 children: "|"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 650,
+                                                                lineNumber: 667,
                                                                 columnNumber: 57
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1680,41 +1698,41 @@ function EditQuestionarioFormContent() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 651,
+                                                                lineNumber: 668,
                                                                 columnNumber: 57
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                        lineNumber: 647,
+                                                        lineNumber: 664,
                                                         columnNumber: 53
                                                     }, this)
                                                 ]
                                             }, av.id, true, {
                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                lineNumber: 634,
+                                                lineNumber: 651,
                                                 columnNumber: 49
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 632,
+                                        lineNumber: 649,
                                         columnNumber: 41
                                     }, this)
                                 ]
                             }, semestre, true, {
                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                lineNumber: 617,
+                                lineNumber: 634,
                                 columnNumber: 33
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 615,
+                        lineNumber: 632,
                         columnNumber: 25
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                lineNumber: 552,
+                lineNumber: 569,
                 columnNumber: 17
             }, this),
             viewMode === 'analise' && (()=>{
@@ -1724,7 +1742,7 @@ function EditQuestionarioFormContent() {
                         children: "Carregando análise..."
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 666,
+                        lineNumber: 683,
                         columnNumber: 28
                     }, this);
                 }
@@ -1734,7 +1752,7 @@ function EditQuestionarioFormContent() {
                         children: "Não há dados para analisar."
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 669,
+                        lineNumber: 686,
                         columnNumber: 28
                     }, this);
                 }
@@ -1746,12 +1764,12 @@ function EditQuestionarioFormContent() {
                             children: "Analisando textos..."
                         }, void 0, false, {
                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                            lineNumber: 676,
+                            lineNumber: 693,
                             columnNumber: 29
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 675,
+                        lineNumber: 692,
                         columnNumber: 25
                     }, this);
                 } else if (wordCloudData && wordCloudData.length > 0) {
@@ -1759,7 +1777,7 @@ function EditQuestionarioFormContent() {
                         words: wordCloudData
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 680,
+                        lineNumber: 697,
                         columnNumber: 40
                     }, this);
                 } else {
@@ -1769,12 +1787,12 @@ function EditQuestionarioFormContent() {
                             children: "Nenhum dado de texto para exibir."
                         }, void 0, false, {
                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                            lineNumber: 684,
+                            lineNumber: 701,
                             columnNumber: 29
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                        lineNumber: 683,
+                        lineNumber: 700,
                         columnNumber: 25
                     }, this);
                 }
@@ -1790,13 +1808,13 @@ function EditQuestionarioFormContent() {
                                     children: titulo
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                    lineNumber: 691,
+                                    lineNumber: 708,
                                     columnNumber: 116
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                            lineNumber: 691,
+                            lineNumber: 708,
                             columnNumber: 25
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1810,7 +1828,7 @@ function EditQuestionarioFormContent() {
                                     bgColor: "bg-indigo-50 dark:bg-indigo-700/30"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                    lineNumber: 694,
+                                    lineNumber: 711,
                                     columnNumber: 29
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$dashboard$2f$StatCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["StatCard"], {
@@ -1821,7 +1839,7 @@ function EditQuestionarioFormContent() {
                                     bgColor: "bg-blue-50 dark:bg-blue-700/30"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                    lineNumber: 695,
+                                    lineNumber: 712,
                                     columnNumber: 29
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$dashboard$2f$StatCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["StatCard"], {
@@ -1832,7 +1850,7 @@ function EditQuestionarioFormContent() {
                                     bgColor: "bg-green-50 dark:bg-green-700/30"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                    lineNumber: 696,
+                                    lineNumber: 713,
                                     columnNumber: 29
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$dashboard$2f$StatCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["StatCard"], {
@@ -1843,13 +1861,13 @@ function EditQuestionarioFormContent() {
                                     bgColor: "bg-amber-50 dark:bg-amber-700/30"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                    lineNumber: 697,
+                                    lineNumber: 714,
                                     columnNumber: 29
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                            lineNumber: 693,
+                            lineNumber: 710,
                             columnNumber: 25
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1860,7 +1878,7 @@ function EditQuestionarioFormContent() {
                                         data: grafico.respostas
                                     }, grafico.perguntaId, false, {
                                         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                        lineNumber: 702,
+                                        lineNumber: 719,
                                         columnNumber: 33
                                     }, this)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1874,7 +1892,7 @@ function EditQuestionarioFormContent() {
                                                     children: "Analisar Pergunta de Texto:"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                    lineNumber: 707,
+                                                    lineNumber: 724,
                                                     columnNumber: 37
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1888,7 +1906,7 @@ function EditQuestionarioFormContent() {
                                                             children: "Selecione uma pergunta"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                            lineNumber: 714,
+                                                            lineNumber: 731,
                                                             columnNumber: 41
                                                         }, this),
                                                         quePergs.filter((qp)=>qp.pergunta.tipos === 'TEXTO').map((qp)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1896,19 +1914,19 @@ function EditQuestionarioFormContent() {
                                                                 children: qp.pergunta.enunciado
                                                             }, qp.pergunta.id, false, {
                                                                 fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                                lineNumber: 715,
+                                                                lineNumber: 732,
                                                                 columnNumber: 105
                                                             }, this))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                                    lineNumber: 708,
+                                                    lineNumber: 725,
                                                     columnNumber: 37
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                            lineNumber: 706,
+                                            lineNumber: 723,
                                             columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1916,32 +1934,32 @@ function EditQuestionarioFormContent() {
                                             children: wordCloudContent
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                            lineNumber: 718,
+                                            lineNumber: 735,
                                             columnNumber: 33
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                                    lineNumber: 705,
+                                    lineNumber: 722,
                                     columnNumber: 29
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                            lineNumber: 700,
+                            lineNumber: 717,
                             columnNumber: 25
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-                    lineNumber: 690,
+                    lineNumber: 707,
                     columnNumber: 21
                 }, this);
             })()
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/questionarios/[id]/page.tsx",
-        lineNumber: 403,
+        lineNumber: 420,
         columnNumber: 9
     }, this);
 }

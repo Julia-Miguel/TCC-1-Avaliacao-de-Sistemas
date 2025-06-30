@@ -61,8 +61,7 @@ model Questionario {
   
   criadorId     Int            // ID do Usuario (ADMIN_EMPRESA) que criou
   criador       Usuario        @relation("CriadorQuestionario", fields: [criadorId], references: [id])
-  // Como 'criador' é um Usuario tipo ADMIN_EMPRESA, ele terá um 'empresaId', 
-  // então o Questionario pertence implicitamente à empresa do seu criador.
+  ordem     Int      @default(0)
 
   perguntas     QuePerg[]
   avaliacoes    Avaliacao[]
@@ -139,16 +138,17 @@ model Opcao {
 }
 
 model Pergunta {
-  id            Int            @id @default(autoincrement())
-  enunciado     String
-  tipos         TipoPergunta   @default(TEXTO)
-  opcoes        Opcao[]
-  questionarios QuePerg[]
-  respostas     Resposta[]
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+  id               Int      @id @default(autoincrement())
+  enunciado        String
+  tipos            TipoPergunta
+  ordem            Int      @default(0) // Campo para guardar a ordem da pergunta
 
-  @@map("pergunta")
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  opcoes           Opcao[]
+  questionarios    QuePerg[]
+  respostas        Resposta[]
 }
 
 model QuePerg {

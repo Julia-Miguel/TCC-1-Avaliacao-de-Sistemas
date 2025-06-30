@@ -1,0 +1,34 @@
+/* [project]/src/components/SortableItem.module.css [app-client] (css) */
+.SortableItem-module__2ATgDW__sortableItem {
+  transition: transform .25s, box-shadow .2s, opacity .2s;
+  will-change: transform;
+  opacity: 1;
+  z-index: 0;
+  position: relative;
+}
+
+.SortableItem-module__2ATgDW__dragging {
+  box-shadow: 0 12px 24px #00000026;
+  opacity: .95;
+  z-index: 10;
+  transform: scale(1.02);
+  cursor: grabbing;
+}
+
+.SortableItem-module__2ATgDW__sortable-item-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.SortableItem-module__2ATgDW__drag-handle {
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+  padding: 4px;
+  color: #999;
+  flex-shrink: 0;
+}
+
+
+/*# sourceMappingURL=src_components_SortableItem_module_56a968.css.map*/

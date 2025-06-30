@@ -1,56 +1,111 @@
 // backend/src/controller/questionarios/UpdateQuestionarioController.js
+
 import { prisma } from '../../database/client.js';
 
 export class UpdateQuestionarioController {
   async handle(request, response) {
-    const { id: questionarioIdFromBody, titulo } = request.body;
-    
-    // Verificando se request.user e suas propriedades esperadas existem
-    if (!request.user || !request.user.empresaId || !request.user.usuarioId) { // <<< CORREÇÃO AQUI: request.user.usuarioId
-        return response.status(401).json({ error: "Usuário não autenticado ou dados de usuário incompletos no token." });
-    }
-    // Usando os dados do usuário logado (fornecidos pelo authMiddleware)
-    const { usuarioId: adminUserId, empresaId } = request.user; // <<< CORREÇÃO AQUI: usuarioId renomeado para adminUserId
+    const { id: questionarioIdParam } = request.params;
+    const { titulo, perguntas } = request.body;
+    const questionarioId = parseInt(questionarioIdParam);
 
-    const questionarioId = parseInt(questionarioIdFromBody);
-
-    if (isNaN(questionarioId)) {
-      return response.status(400).json({ error: "ID do questionário inválido." });
-    }
-    if (!titulo) {
-      return response.status(400).json({ error: "Título é obrigatório." });
+    // ... (as validações iniciais continuam as mesmas)
+    if (isNaN(questionarioId) || !titulo || !Array.isArray(perguntas) || !request.user) {
+        return response.status(400).json({ error: 'Dados inválidos ou usuário não autenticado.' });
     }
 
     try {
-      // Verifica se o questionário existe E pertence à empresa do admin logado
-      const questionarioExistente = await prisma.questionario.findFirst({
-        where: {
-          id: questionarioId,
-          criador: { 
-            empresaId: parseInt(empresaId), // Garante que empresaId seja número
-            // Se você quisesse que apenas o CRIADOR ORIGINAL pudesse editar:
-            // id: parseInt(adminUserId) 
+      await prisma.$transaction(async (tx) => {
+        // --- 1. DELETAR PERGUNTAS REMOVIDAS ---
+        const questionarioAtual = await tx.questionario.findUnique({
+          where: { id: questionarioId },
+          select: { perguntas: { select: { perguntaId: true } } }
+        });
+
+        if (!questionarioAtual) {
+          // Lança um erro para que a transação inteira seja revertida
+          throw new Error('Questionário não encontrado.'); 
+        }
+
+        const idsPerguntasAtuais = questionarioAtual.perguntas.map(qp => qp.perguntaId);
+        const idsPerguntasRecebidas = perguntas.map(p => p.id).filter(id => id);
+        const idsParaDeletar = idsPerguntasAtuais.filter(id => !idsPerguntasRecebidas.includes(id));
+
+        if (idsParaDeletar.length > 0) {
+          await tx.quePerg.deleteMany({ where: { perguntaId: { in: idsParaDeletar } } });
+          await tx.opcao.deleteMany({ where: { perguntaId: { in: idsParaDeletar } } });
+          await tx.pergunta.deleteMany({ where: { id: { in: idsParaDeletar } } });
+        }
+
+        // --- 2. ATUALIZAR O TÍTULO ---
+        await tx.questionario.update({
+          where: { id: questionarioId },
+          data: { titulo },
+        });
+
+        // --- 3. ATUALIZAR PERGUNTAS EXISTENTES E CRIAR NOVAS ---
+        for (const pergunta of perguntas) {
+          if (pergunta.id) {
+            // LÓGICA DE ATUALIZAÇÃO para uma pergunta que JÁ EXISTE
+            await tx.pergunta.update({
+              where: { id: pergunta.id },
+              data: {
+                enunciado: pergunta.enunciado,
+                tipos: pergunta.tipos,
+                ordem: pergunta.ordem,
+                opcoes: {
+                  // AQUI SIM, deleteMany é válido para limpar as opções antigas
+                  deleteMany: {}, 
+                  create: pergunta.opcoes?.map(opt => ({ texto: opt.texto })) || [],
+                },
+              },
+            });
+          } else {
+            // LÓGICA DE CRIAÇÃO para uma pergunta NOVA
+            await tx.pergunta.create({
+              data: {
+                enunciado: pergunta.enunciado,
+                tipos: pergunta.tipos,
+                ordem: pergunta.ordem,
+                opcoes: {
+                  // AQUI NÃO PODE TER deleteMany, apenas o create
+                  create: pergunta.opcoes?.map(opt => ({ texto: opt.texto })) || [],
+                },
+                // Cria o "link" com o questionário na tabela QuePerg
+                questionarios: {
+                  create: [{ questionarioId: questionarioId }],
+                },
+              },
+            });
           }
         }
       });
 
-      if (!questionarioExistente) {
-        return response.status(404).json({ error: "Questionário não encontrado, não pertence à sua empresa ou você não tem permissão para editá-lo." });
-      }
-
-      const questionarioAtualizado = await prisma.questionario.update({
-        where: { 
-            id: questionarioId 
-        },
-        data: {
-          titulo,
-        },
+      // --- 4. BUSCAR E RETORNAR O RESULTADO FINAL ---
+      const questionarioFinal = await prisma.questionario.findUnique({
+        where: { id: questionarioId },
+        include: { 
+            perguntas: {
+                include: {
+                    pergunta: {
+                        include: { opcoes: true }
+                    }
+                },
+                orderBy: {
+                    pergunta: { ordem: 'asc' }
+                }
+            }
+         },
       });
 
-      return response.json(questionarioAtualizado);
+      return response.json(questionarioFinal);
+
     } catch (error) {
-      console.error("Erro ao atualizar questionário:", error);
-      return response.status(500).json({ error: "Erro ao atualizar questionário: " + error.message });
+      console.error('Erro ao sincronizar questionário:', error);
+      // Verifica se o erro foi o que nós lançamos (Questionário não encontrado)
+      if (error.message === 'Questionário não encontrado.') {
+        return response.status(404).json({ error: error.message });
+      }
+      return response.status(500).json({ error: 'Erro interno ao salvar o questionário.' });
     }
   }
 }

@@ -4,28 +4,24 @@ export class GetAllQuePergController {
   async handle(request, response) {
     const { questionarioId } = request.query;
 
-    const where = {};
-    if (questionarioId) {
-      where.questionarioId = parseInt(questionarioId, 10);
-    }
-
-    const quePerg = await prisma.quePerg.findMany({
-      where: where,
+    const quePergs = await prisma.quePerg.findMany({
+      where: {
+        questionarioId: parseInt(questionarioId)
+      },
       include: {
-        questionario: {
-          select: {
-            titulo: true,
-          },
-        },
-        // A MÁGICA ACONTECE AQUI
         pergunta: {
           include: {
-            opcoes: true, // Dizemos ao Prisma para INCLUIR as opções da pergunta
-          },
-        },
+            opcoes: true
+          }
+        }
       },
+      orderBy: {
+        pergunta: {
+          ordem: 'asc'
+        }
+      }
     });
 
-    return response.json(quePerg);
+    return response.json(quePergs);
   }
 }

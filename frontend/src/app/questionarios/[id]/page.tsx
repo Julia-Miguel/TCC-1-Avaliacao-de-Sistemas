@@ -11,6 +11,23 @@ import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, Tre
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
 import { WordCloud } from "@/components/dashboard/WordCloud";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+
+import { SortableItem } from '@/components/SortableItem';
 
 interface KpiData {
     totalAvaliacoes: number;
@@ -107,6 +124,31 @@ function EditQuestionarioFormContent() {
     const [isLoadingWordCloud, setIsLoadingWordCloud] = useState(false);
 
     const [semestresExpandidos, setSemestresExpandidos] = useState<Set<string>>(new Set());
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                delay: 150,
+                tolerance: 5,
+            },
+        })
+    );
+
+    const handleDragStart = (event: any) => {
+        const interactiveElements = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'];
+        if (interactiveElements.includes(event?.active?.event?.target?.tagName)) {
+            event.cancel(); // evita o drag em campos interativos
+        }
+    };
+
+    const handleDragEnd = (event: any) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        const oldIndex = quePergs.findIndex(q => (q.pergunta.id || q.pergunta.tempId) === active.id);
+        const newIndex = quePergs.findIndex(q => (q.pergunta.id || q.pergunta.tempId) === over.id);
+        const novos = arrayMove(quePergs, oldIndex, newIndex);
+        setQuePergs(novos);
+    };
 
     // useEffect para carregar dados do dashboard quando o modo muda para 'analise'
     useEffect(() => {
@@ -223,17 +265,22 @@ function EditQuestionarioFormContent() {
         setQuePergs(novasPerguntas);
     };
 
-    const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => { /* ... seu código ... */
+    const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
-                if (index === qIndex) {
-                    const perguntaAtual = qp.pergunta;
-                    const novasOpcoes = novoTipo === 'TEXTO'
-                        ? []
-                        : (perguntaAtual.opcoes.length === 0 ? [{ texto: '', tempId: `temp-opt-${Date.now()}` }] : perguntaAtual.opcoes.map(o => ({ ...o })));
-                    return { ...qp, pergunta: { ...perguntaAtual, tipos: novoTipo, opcoes: novasOpcoes } };
+                if (index !== qIndex) {
+                    return qp;
                 }
-                return qp;
+                const perguntaAtual = qp.pergunta;
+                let novasOpcoes: Opcao[];
+                if (novoTipo === 'TEXTO') {
+                    novasOpcoes = [];
+                } else if (perguntaAtual.opcoes.length === 0) {
+                    novasOpcoes = [{ texto: '', tempId: `temp-opt-${Date.now()}` }];
+                } else {
+                    novasOpcoes = perguntaAtual.opcoes.map(o => ({ ...o }));
+                }
+                return { ...qp, pergunta: { ...perguntaAtual, tipos: novoTipo, opcoes: novasOpcoes } };
             })
         );
     };
@@ -286,53 +333,52 @@ function EditQuestionarioFormContent() {
         setQuePergs(prevQuePergs => [...prevQuePergs, novoQuePerg]);
     };
     const handleSaveChanges = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
 
-    try {
-        // --- LÓGICA DE CORREÇÃO ---
-        
-        // 1. Atualiza o título do questionário primeiro, como antes.
-        await api.patch(`/questionarios/${params.id}`, { titulo });
+        // Transformando o estado do frontend para o formato que o backend espera
+        const perguntasParaEnviar = quePergs.map((qp, index) => ({
+            id: qp.pergunta.id,
+            enunciado: qp.pergunta.enunciado,
+            tipos: qp.pergunta.tipos,
+            ordem: index,
+            opcoes: qp.pergunta.opcoes.map(opt => ({
+                id: opt.id,
+                texto: opt.texto
+            }))
+        }));
 
-        // 2. Separa as perguntas em duas listas: as que JÁ TÊM um ID (precisam de update)
-        //    e as que SÃO NOVAS (precisam ser criadas).
-        const perguntasExistentes = quePergs.filter(qp => qp.pergunta.id && !qp.pergunta.tempId);
-        const perguntasNovas = quePergs.filter(qp => !qp.pergunta.id || qp.pergunta.tempId);
+        const payload = {
+            titulo: titulo,
+            perguntas: perguntasParaEnviar,
+        };
 
-        // 3. Atualiza as perguntas que já existem no banco de dados.
-        //    O Promise.all executa todas as atualizações em paralelo.
-        await Promise.all(
-            perguntasExistentes.map(qp => 
-                api.patch(`/perguntas/${qp.pergunta.id}`, { ...qp.pergunta })
-            )
-        );
-
-        // 4. CRIA apenas as perguntas que são realmente novas.
-        //    Esta é a correção principal para o erro 400.
-        if (perguntasNovas.length > 0) {
-            await api.post(`/perguntas/create-many`, {
-                questionarioId: params.id,
-                perguntas: perguntasNovas.map(qp => qp.pergunta)
-            });
+        try {
+            const response = await api.patch(`/questionarios/${questionarioId}`, payload);
+            setTitulo(response.data.titulo);
+            const sanitizedQuePergs = response.data.perguntas.map((p: any) => ({
+                id: p.questionarioPerguntaId,
+                questionarioId: p.questionarioId,
+                pergunta: {
+                    id: p.id,
+                    enunciado: p.enunciado,
+                    tipos: p.tipos,
+                    opcoes: p.opcoes ?? []
+                }
+            }));
+            setQuePergs(sanitizedQuePergs);
+            alert("Questionário salvo com sucesso!");
+            router.push('/questionarios');
+        } catch (error: any) {
+            console.error("Erro ao salvar:", error.response?.data ?? error);
+            const errorMessage = error.response?.data?.error ?? 'Ocorreu um problema ao salvar.';
+            setError(errorMessage);
+            alert(`Erro ao salvar: ${errorMessage}`);
+        } finally {
+            setIsLoading(false);
         }
-        
-        alert("Questionário salvo com sucesso!");
-        router.push('/questionarios'); // Ou recarrega os dados
-
-    } catch (error) {
-        if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {
-            const response = (error as any).response;
-            console.error("Erro ao salvar:", response?.data ?? error);
-            alert(`Erro ao salvar: ${response?.data?.message ?? 'Ocorreu um problema.'}`);
-        } else {
-            console.error("Erro ao salvar:", error);
-            alert('Erro ao salvar: Ocorreu um problema.');
-        }
-    } finally {
-        setIsLoading(false);
-    }
-};
+    };
 
     // NOVO: Agrupamento e ordenação das avaliações por semestre
     const avaliacoesAgrupadasPorSemestre = useMemo(() => {
@@ -451,88 +497,101 @@ function EditQuestionarioFormContent() {
                     <div className="display-section">
                         <label className="form-label">Perguntas do Questionário</label> {/* Usando form-label */}
                         <div className="perguntas-edit-list">
-                            {quePergs.map((qp, qIndex) => (
-                                <div key={qp.pergunta.id ?? qp.pergunta.tempId} className="pergunta-editor-item">
-                                    <label htmlFor={`enunciado-pergunta-${qIndex}`} className="form-label sr-only">Enunciado da Pergunta {qIndex + 1}</label>
-                                    <textarea
-                                        id={`enunciado-pergunta-${qIndex}`}
-                                        value={qp.pergunta.enunciado}
-                                        onChange={(e) => handlePerguntaChange(qIndex, e.target.value)}
-                                        className="input-edit-mode question-textarea" // Sua classe ou a global para textareas
-                                        rows={2}
-                                        placeholder={`Enunciado da Pergunta ${qIndex + 1}`}
-                                        disabled={isLoading}
-                                        required
-                                    />
-                                    <div className="mt-4 flex items-end gap-x-3">
-                                        {/* Contêiner para o seletor de tipo, que ocupará o espaço disponível */}
-                                        <div className="flex-grow">
-                                            <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label">
-                                                Tipo
-                                            </label>
-                                            <select
-                                                id={`tipo-pergunta-${qIndex}`}
-                                                value={qp.pergunta.tipos}
-                                                onChange={(e) => handleTipoChange(qIndex, e.target.value as 'TEXTO' | 'MULTIPLA_ESCOLHA')}
-                                                className="input-edit-mode w-full"
-                                                disabled={isLoading}
-                                            >
-                                                <option value="TEXTO">Texto</option>
-                                                <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
-                                            </select>
-                                        </div>
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                                onDragStart={handleDragStart}
+                            >
+                                <SortableContext
+                                    items={quePergs.map(qp => qp.pergunta.id ?? qp.pergunta.tempId).filter((id): id is string | number => id !== undefined)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    {quePergs.map((qp, qIndex) => (
+                                        <SortableItem key={qp.pergunta.id ?? qp.pergunta.tempId} id={qp.pergunta.id ?? qp.pergunta.tempId}>
+                                            <div className="pergunta-editor-item">
+                                                <label htmlFor={`enunciado-pergunta-${qIndex}`} className="form-label sr-only">Enunciado da Pergunta {qIndex + 1}</label>
+                                                <textarea
+                                                    id={`enunciado-pergunta-${qIndex}`}
+                                                    value={qp.pergunta.enunciado}
+                                                    onChange={(e) => handlePerguntaChange(qIndex, e.target.value)}
+                                                    className="input-edit-mode question-textarea"
+                                                    rows={2}
+                                                    placeholder={`Enunciado da Pergunta ${qIndex + 1}`}
+                                                    required
+                                                />
+                                                <div className="mt-4 flex items-end gap-x-3">
+                                                    {/* Contêiner para o seletor de tipo, que ocupará o espaço disponível */}
+                                                    <div className="flex-grow">
+                                                        <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label">
+                                                            Tipo
+                                                        </label>
+                                                        <select
+                                                            id={`tipo-pergunta-${qIndex}`}
+                                                            value={qp.pergunta.tipos}
+                                                            onChange={(e) => handleTipoChange(qIndex, e.target.value as 'TEXTO' | 'MULTIPLA_ESCOLHA')}
+                                                            className="input-edit-mode w-full"
+                                                            disabled={isLoading}
+                                                        >
+                                                            <option value="TEXTO">Texto</option>
+                                                            <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
+                                                        </select>
+                                                    </div>
 
-                                        {/* Botão de lixeira */}
-                                        <button
-                                            type="button"
-                                            onClick={() => removePergunta(qIndex)}
-                                            className="btn btn-danger p-2.5" // Reutiliza suas classes de botão para consistência
-                                            title="Remover Pergunta"
-                                            disabled={isLoading}
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-
-                                    {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
-                                        <div className="opcoes-editor-container">
-                                            <label className="form-label">Opções de Resposta</label>
-                                            {qp.pergunta.opcoes.map((opt, oIndex) => (
-                                                <div key={opt.id ?? opt.tempId ?? `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
-                                                    <label htmlFor={`opcao-q${qIndex}-o${oIndex}`} className="sr-only">Opção {oIndex + 1}</label>
-                                                    <input
-                                                        id={`opcao-q${qIndex}-o${oIndex}`}
-                                                        type="text"
-                                                        value={opt.texto}
-                                                        onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
-                                                        placeholder={`Texto da Opção ${oIndex + 1}`}
-                                                        className="input-edit-mode" // Sua classe ou a global para inputs
-                                                        disabled={isLoading}
-                                                        required={qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'} // Obrigatório se for múltipla escolha
-                                                    />
+                                                    {/* Botão de lixeira */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => removeOption(qIndex, oIndex)}
-                                                        className="btn-remover-opcao" // Estilo para este botão específico
-                                                        title="Remover Opção"
+                                                        onClick={() => removePergunta(qIndex)}
+                                                        className="btn btn-danger p-2.5" // Reutiliza suas classes de botão para consistência
+                                                        title="Remover Pergunta"
                                                         disabled={isLoading}
                                                     >
                                                         <Trash2 size={18} />
                                                     </button>
                                                 </div>
-                                            ))}
-                                            <button
-                                                type="button"
-                                                onClick={() => addOptionToList(qIndex)}
-                                                className="btn btn-outline btn-sm mt-2 flex items-center self-start" // Usando classes de botão genéricas
-                                                disabled={isLoading}
-                                            >
-                                                <PlusIcon size={16} className="mr-1" /> Adicionar Opção
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+
+                                                {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
+                                                    <div className="opcoes-editor-container">
+                                                        <label className="form-label">Opções de Resposta</label>
+                                                        {qp.pergunta.opcoes.map((opt, oIndex) => (
+                                                            <div key={opt.id ?? opt.tempId ?? `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
+                                                                <label htmlFor={`opcao-q${qIndex}-o${oIndex}`} className="sr-only">Opção {oIndex + 1}</label>
+                                                                <input
+                                                                    id={`opcao-q${qIndex}-o${oIndex}`}
+                                                                    type="text"
+                                                                    value={opt.texto}
+                                                                    onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
+                                                                    placeholder={`Texto da Opção ${oIndex + 1}`}
+                                                                    className="input-edit-mode" // Sua classe ou a global para inputs
+                                                                    disabled={isLoading}
+                                                                    required={qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'} // Obrigatório se for múltipla escolha
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeOption(qIndex, oIndex)}
+                                                                    className="btn-remover-opcao" // Estilo para este botão específico
+                                                                    title="Remover Opção"
+                                                                    disabled={isLoading}
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => addOptionToList(qIndex)}
+                                                            className="btn btn-outline btn-sm mt-2 flex items-center self-start" // Usando classes de botão genéricas
+                                                            disabled={isLoading}
+                                                        >
+                                                            <PlusIcon size={16} className="mr-1" /> Adicionar Opção
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </SortableItem>
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
                             <button
                                 type="button"
                                 onClick={handleAddNewPergunta}

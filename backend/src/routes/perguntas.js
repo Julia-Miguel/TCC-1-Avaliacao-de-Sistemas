@@ -8,6 +8,7 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const perguntasRouter = Router();
 
+
 // Create
 const createPerguntasController = new CreatePerguntasController();
 perguntasRouter.post('/perguntas', authMiddleware, createPerguntasController.handle);
@@ -22,7 +23,7 @@ perguntasRouter.get('/perguntas/:id', authMiddleware, getByIdPerguntasController
 
 //UPDATE
 const updatePerguntasController = new UpdatePerguntasController();
-perguntasRouter.put('/perguntas', authMiddleware, updatePerguntasController.handle);
+perguntasRouter.patch('/perguntas/:id', authMiddleware, updatePerguntasController.handle);
 
 //DELETE
 const deletePerguntasController = new DeletePerguntasController();

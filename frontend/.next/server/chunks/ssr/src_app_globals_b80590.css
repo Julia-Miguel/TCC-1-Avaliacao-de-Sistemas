@@ -583,6 +583,14 @@ img, video {
   height: 2rem;
 }
 
+.h-\[400px\] {
+  height: 400px;
+}
+
+.h-\[calc\(100\%-2rem\)\] {
+  height: calc(100% - 2rem);
+}
+
 .h-full {
   height: 100%;
 }
@@ -729,6 +737,10 @@ img, video {
   align-items: flex-start;
 }
 
+.items-end {
+  align-items: flex-end;
+}
+
 .items-center {
   align-items: center;
 }
@@ -759,6 +771,10 @@ img, video {
 
 .gap-8 {
   gap: 2rem;
+}
+
+.gap-x-3 {
+  column-gap: .75rem;
 }
 
 .space-x-1 > :not([hidden]) ~ :not([hidden]) {

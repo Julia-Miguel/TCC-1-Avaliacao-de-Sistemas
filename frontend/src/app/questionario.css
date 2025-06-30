@@ -203,3 +203,32 @@
   align-items: center;
   margin-top: 0.5rem;
 }
+
+
+
+
+
+
+.drag-handle {
+    position: absolute;
+    top: 50%; /* Centraliza verticalmente */
+    left: -12px; /* Posiciona um pouco fora do card */
+    transform: translateY(-50%);
+    padding: 8px;
+    cursor: grab;
+    color: hsl(var(--muted-foreground)); /* Cor suave do seu tema */
+    z-index: 20;
+    touch-action: none; /* Otimização para dispositivos de toque */
+    opacity: 0.5;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Mostra a alça de forma mais clara quando o mouse está sobre o card */
+.questionario-card:hover + .drag-handle, /* Para quando o card em si tem o hover */
+.drag-handle:hover {
+    opacity: 1;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
