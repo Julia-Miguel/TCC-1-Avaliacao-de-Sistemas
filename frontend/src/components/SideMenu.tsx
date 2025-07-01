@@ -1,30 +1,36 @@
-// frontend/src/components/SideMenu.tsx
 "use client";
 
-import { Home, User, Settings, GrabIcon } from "lucide-react"; //
+import { Home, User, Settings, GrabIcon, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import "./SideMenu.css"; //
+import { useState } from "react";
+import "./SideMenu.css";
 
 const menuItems = [
   { label: "Início", icon: Home, href: "/" },
-  { label: "Usuários", icon: User, href: "/usuario" }, //
-  // Adicione outros itens conforme sua navbar
-  { label: "Perguntas", icon: Settings /* Trocar ícone */, href: "/perguntas" },
-  { label: "Questionários", icon: Settings /* Trocar ícone */, href: "/questionarios" },
-  { label: "Dashboards", icon: GrabIcon /* Trocar ícone */, href: "/dashboard" },
-  // ... etc
+  { label: "Usuários", icon: User, href: "/usuario" },
+  { label: "Perguntas", icon: Settings, href: "/perguntas" },
+  { label: "Questionários", icon: Settings, href: "/questionarios" },
+  { label: "Dashboards", icon: GrabIcon, href: "/dashboard" },
   { label: "Configurações", icon: Settings, href: "/config" },
 ];
 
 export default function SideMenu() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    // Aplicar a classe gradient-border aqui se desejado
-    <aside className="side-menu"> {/* Removido gradient-border para simplificar, adicione se quiser */}
+    <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
       <div className="side-menu-header">
-        Painel
+        <button
+          className="hamburger-toggle"
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? "Abrir menu" : "Fechar menu"}
+          aria-label={collapsed ? "Abrir menu" : "Fechar menu"}
+        >
+          <Menu />
+        </button>
+        {!collapsed && <span className="side-menu-title">Painel</span>}
       </div>
 
       <nav className="side-menu-nav">
@@ -37,15 +43,14 @@ export default function SideMenu() {
               className={`side-menu-link ${isActive ? "active" : ""}`}
             >
               <Icon className="side-menu-icon" />
-              <span className="side-menu-label">{label}</span>
+              {!collapsed && <span className="side-menu-label">{label}</span>}
             </Link>
           );
         })}
       </nav>
 
       <div className="side-menu-footer">
-        {/* Melhor usar <p> ou <span> para direitos autorais */}
-        <p>Todos os direitos reservados a Juju™</p>
+        {!collapsed && <p>Todos os direitos reservados a Juju™</p>}
       </div>
     </aside>
   );

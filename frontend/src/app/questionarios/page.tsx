@@ -45,7 +45,7 @@ interface QuestionarioInterface {
   perguntas: QuePergItemInterface[];
   criador?: { nome: string; email: string };
   _count?: { avaliacoes: number };
-  ordem?: number; // Adicionado campo ordem
+  ordem?: number;
 }
 // --- FIM DAS INTERFACES ---
 
@@ -65,7 +65,7 @@ function ListQuestionariosContent() {
       .then(response => {
         const data = response.data as QuestionarioInterface[];
         setQuestionarios(data);
-        setOrdem(data.map(q => q.id)); // Usa os IDs, mas pode ser ajustado para ordem se o backend a fornecer
+        setOrdem(data.map(q => q.id));
       })
       .catch(err => {
         console.error("Erro ao buscar questionários:", err);
@@ -129,10 +129,8 @@ function ListQuestionariosContent() {
       const novaOrdem = arrayMove(ordem, oldIndex, newIndex);
       setOrdem(novaOrdem);
 
-      // Atualize a ordem no backend
       try {
-        await api.patch("/reorder", { orderedIds: novaOrdem }); // Ajustado para /reorder e orderedIds
-        // Sincroniza o estado local com a nova ordem
+        await api.patch("/reorder", { orderedIds: novaOrdem });
         const updatedQuestionarios = novaOrdem.map(id =>
           questionarios.find(q => q.id === id)
         ).filter((q): q is QuestionarioInterface => q !== undefined);
@@ -140,7 +138,6 @@ function ListQuestionariosContent() {
       } catch (err) {
         console.error("Erro ao salvar ordem:", err);
         alert("Erro ao salvar ordem!");
-        // Reverte a ordem local em caso de erro
         setOrdem(prevOrdem => prevOrdem);
       }
     }
@@ -196,18 +193,20 @@ function ListQuestionariosContent() {
                       className="questionario-card"
                     >
                       <div className="card-header">
+                        <div className="title-container">
+                          <button
+                            type="button"
+                            className="btn btn-card-title w-full text-left"
+                            onClick={() => handleEditQuestionario(q.id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); }}}
+                            aria-label={`Editar questionário ${q.titulo}`}
+                          >
+                            <h4>{q.titulo}</h4>
+                          </button>
+                        </div>
                         <button
                           type="button"
-                          className="btn btn-card-title w-full text-left flex items-center justify-between"
-                          onClick={() => handleEditQuestionario(q.id)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); }}}
-                          aria-label={`Editar questionário ${q.titulo}`}
-                        >
-                          <span className="flex-1"><h4>{q.titulo}</h4></span>
-                        </button>
-                        <button
-                          type="button"
-                          className="botao icon-button ml-2"
+                          className="botao icon-button"
                           title="Opções"
                           onClick={(e) => { e.stopPropagation(); toggleMenu(q.id, e); }}
                           aria-label="Opções do questionário"

@@ -3,238 +3,265 @@
 /* Grid de questionários */
 .questionarios-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Cards com largura mínima de 280px */
-  gap: var(--spacing-lg); /* Espaçamento entre os cards (24px) */
-  margin-top: var(--spacing-lg); /* Espaçamento acima da grid */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
 }
 
 /* Card do questionário */
 .questionario-card {
   position: relative;
-  background-color: var(--color-background-element); /* Fundo branco/claro do card */
-  border: 1px solid var(--color-border); /* Borda sutil */
-  border-radius: var(--border-radius-lg); /* Cantos arredondados (8px) */
-  padding: var(--spacing-lg); /* Espaçamento interno do card (24px) */
-  box-shadow: var(--shadow-md); /* Sombra suave definida no globals.css */
+  background-color: var(--color-background-element);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
   transition: transform var(--transition-std), box-shadow var(--transition-std);
   display: flex;
   flex-direction: column;
-  height: 100%; /* Para cards na mesma linha terem a mesma altura */
-  cursor: pointer; /* Indica que o card é clicável */
+  height: 100%;
+  cursor: pointer;
+  overflow: hidden;
 }
 
 .questionario-card:hover {
-  transform: translateY(-4px); /* Efeito de elevação no hover */
-  box-shadow: var(--shadow-lg); /* Sombra mais pronunciada no hover */
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Cabeçalho do card */
 .card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start; /* Alinha itens no topo para títulos longos */
-  padding-bottom: var(--spacing-md); /* Espaçamento abaixo do header (16px) */
-  margin-bottom: var(--spacing-md); /* Espaçamento para separar da lista de perguntas */
+  align-items: center;
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
+  gap: var(--spacing-sm);
+  position: relative;
 }
 
-.card-header h4 { /* Título do questionário dentro do card */
-  margin: 0;
-  font-size: 1.125rem; /* ~18px - text-lg Tailwind */
-  font-weight: 600; /* semibold */
-  color: var(--color-primary); /* Título do card com a cor primária */
-  line-height: 1.4;
-  flex-grow: 1; /* Para o título ocupar espaço */
-  /* Para evitar que títulos muito longos quebrem o layout do botão de menu: */
+.card-header .title-container {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
-  /* text-overflow: ellipsis; - Pode ser usado se quiser "..." para títulos de uma linha */
-  /* white-space: nowrap; - Usar com text-overflow: ellipsis se o título for sempre uma linha */
 }
 
-/* Botão de menu no card (⋮) */
+.card-header h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100%); /* Reserva espaço para o botão */
+}
+
 .card-header .botao {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-muted); /* Cor suave para o ícone do menu */
-  font-size: 1.25rem; /* Tamanho do ícone */
-  padding: var(--spacing-xs); /* Área de clique pequena e sutil */
-  line-height: 1; /* Para alinhar melhor o ícone */
-  border-radius: var(--border-radius-full, 50%); /* Botão redondo no hover */
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-  margin-left: var(--spacing-sm); /* Espaço para não colar no título */
+  flex-shrink: 0;
+  width: 20px;
+  display: flex;
+  justify-content: center;
+  margin-left: auto;
 }
 
 .card-header .botao:hover {
   color: var(--color-primary);
-  background-color: rgba(var(--color-primary-rgb), 0.1); /* Fundo sutil no hover */
+  background-color: rgba(var(--color-primary-rgb), 0.1);
 }
 
 /* Lista de perguntas dentro do card */
 .perguntas-list {
   margin-top: 0;
-  flex-grow: 1; /* Ocupa o espaço restante no card */
-  overflow-y: auto; /* Adiciona scroll se as perguntas excederem a altura */
-  max-height: 120px; /* Altura máxima para a lista de perguntas, ajuste conforme necessário */
-  color: var(--color-text-muted); /* Cor suave para a lista de perguntas */
-  font-size: 0.875rem; /* text-sm */
+  flex-grow: 1;
+  overflow-y: hidden;
+  max-height: 120px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
   line-height: 1.6;
-  padding-right: var(--spacing-sm); /* Para a barra de rolagem não colar */
+  padding-right: var(--spacing-sm);
 }
-/* Estilizando a barra de rolagem (opcional, mas melhora a estética) */
+
 .perguntas-list::-webkit-scrollbar {
   width: 6px;
 }
+
 .perguntas-list::-webkit-scrollbar-thumb {
-  background-color: rgba(var(--color-text-muted-rgb, 123, 135, 148), 0.5); /* Use var rgb para muted text */
+  background-color: rgba(var(--color-text-muted-rgb, 123, 135, 148), 0.5);
   border-radius: var(--border-radius-sm);
 }
+
 .perguntas-list::-webkit-scrollbar-track {
   background: transparent;
 }
 
-
-.enunciado-pergunta { /* Cada pergunta na lista */
+.enunciado-pergunta {
   margin: 0 0 var(--spacing-sm) 0;
   padding: 0;
   border: none;
   background-color: transparent;
-  /* Herda cor, tamanho e line-height de .perguntas-list */
 }
+
 .enunciado-pergunta:last-child {
   margin-bottom: 0;
 }
 
-.no-perguntas { /* Mensagem se não houver perguntas */
+.no-perguntas {
   font-style: italic;
   color: var(--color-text-muted);
   font-size: 0.875rem;
-  padding: var(--spacing-md) 0; /* Espaçamento para a mensagem */
+  padding: var(--spacing-md) 0;
   text-align: center;
 }
 
 /* Menu dropdown (ações do card: Deletar, Detalhes) */
 .menu-dropdown {
   position: absolute;
-  top: calc(var(--spacing-lg) + var(--spacing-md) + 10px); /* Ajustar para ficar abaixo do botão de menu */
+  top: calc(var(--spacing-lg) + var(--spacing-md) + 10px);
   right: var(--spacing-md);
   background-color: var(--color-background-element);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-lg); /* Sombra mais pronunciada para o dropdown */
-  z-index: 20; /* Acima do card, mas abaixo da navbar principal se necessário */
-  width: 160px; /* Largura do dropdown */
-  padding: var(--spacing-sm) 0; /* Padding vertical */
-  overflow: hidden; /* Garante que os itens respeitem o border-radius */
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+  width: 160px;
+  padding: var(--spacing-sm) 0;
+  overflow: hidden;
 }
 
-.menu-dropdown button.botao, /* Reutilizando .botao ou crie .dropdown-item */
-.menu-dropdown a.botao { /* Para links no dropdown */
+.menu-dropdown button.botao,
+.menu-dropdown a.botao {
   display: block;
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md); /* py-2 px-4 */
+  padding: var(--spacing-sm) var(--spacing-md);
   text-align: left;
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text-base); /* Cor base do texto para itens de dropdown */
-  font-size: 0.875rem; /* text-sm */
-  font-weight: 400; /* normal */
-  border-radius: 0; /* Itens não precisam de borda arredondada individual */
+  color: var(--color-text-base);
+  font-size: 0.875rem;
+  font-weight: 400;
+  border-radius: 0;
   line-height: 1.5;
 }
 
 .menu-dropdown button.botao:hover,
 .menu-dropdown a.botao:hover {
-  background-color: rgba(var(--color-primary-rgb), 0.08); /* Fundo primário sutil no hover */
+  background-color: rgba(var(--color-primary-rgb), 0.08);
   color: var(--color-primary);
 }
-/* Para o botão de deletar no dropdown, pode ter uma cor específica no hover */
-.menu-dropdown button.botao.delete-action:hover {
-    background-color: rgba(var(--color-error-rgb, 220, 53, 69), 0.1); /* Use var rgb para error */
-    color: var(--color-error);
-}
 
+.menu-dropdown button.botao.delete-action:hover {
+  background-color: rgba(var(--color-error-rgb, 220, 53, 69), 0.1);
+  color: var(--color-error);
+}
 
 /* Detalhes do card (quando visíveis) */
 .detalhes {
-  margin-top: auto; /* Empurra para o final do card se o card tiver altura flexível */
+  margin-top: auto;
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border);
-  font-size: 0.75rem; /* text-xs */
+  font-size: 0.75rem;
   color: var(--color-text-muted);
 }
 
 .detalhes p {
   margin: var(--spacing-xs) 0;
-  color: inherit; /* Herda a cor de .detalhes */
+  color: inherit;
 }
 
-.detalhes button { /* Botão "Fechar" em Detalhes */
+.detalhes button {
   margin-top: var(--spacing-sm);
-  /* Aplicar classes .btn .btn-sm .btn-outline */
 }
-
-
 
 .btn-remover-pergunta {
   background-color: transparent;
   border: none;
-  color: #ef4444; /* Cor vermelha para indicar exclusão */
+  color: #ef4444;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 50%;
   transition: background-color 0.2s, color 0.2s;
-  margin-left: 1rem; /* Adiciona um espaço à esquerda */
+  margin-left: 1rem;
 }
 
 .btn-remover-pergunta:hover {
-  background-color: rgba(239, 68, 68, 0.1); /* Fundo vermelho claro no hover */
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .btn-remover-pergunta:disabled {
-  color: #9ca3af; /* Cor cinza quando desabilitado */
+  color: #9ca3af;
   cursor: not-allowed;
 }
 
-/* Para alinhar o botão com o seletor de "Tipo" */
 .pergunta-meta-editor {
   display: flex;
   align-items: center;
   margin-top: 0.5rem;
 }
 
-
-
-
-
-
 .drag-handle {
-    position: absolute;
-    top: 50%; /* Centraliza verticalmente */
-    left: -12px; /* Posiciona um pouco fora do card */
-    transform: translateY(-50%);
-    padding: 8px;
-    cursor: grab;
-    color: hsl(var(--muted-foreground)); /* Cor suave do seu tema */
-    z-index: 20;
-    touch-action: none; /* Otimização para dispositivos de toque */
-    opacity: 0.5;
-    transition: opacity 0.2s ease-in-out;
+  position: absolute;
+  top: 50%;
+  left: -12px;
+  transform: translateY(-50%);
+  padding: 8px;
+  cursor: grab;
+  color: hsl(var(--muted-foreground));
+  z-index: 20;
+  touch-action: none;
+  opacity: 0.5;
+  transition: opacity 0.2s ease-in-out;
 }
 
-/* Mostra a alça de forma mais clara quando o mouse está sobre o card */
-.questionario-card:hover + .drag-handle, /* Para quando o card em si tem o hover */
+.questionario-card:hover+.drag-handle,
 .drag-handle:hover {
-    opacity: 1;
+  opacity: 1;
 }
 
 .drag-handle:active {
-    cursor: grabbing;
+  cursor: grabbing;
 }
 
-/* Exemplo para garantir alinhamento */
 .botao {
   display: flex;
   align-items: center;
+}
+
+@media (max-width: 768px) {
+  .questionarios-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-xs);
+  }
+
+  .card-header .title-container {
+    width: 100%;
+  }
+
+  .card-header h4 {
+    white-space: nowrap;
+    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .card-header .botao {
+    align-self: flex-end;
+    margin-left: 0;
+    width: auto;
+  }
+
+  .questionario-card {
+    padding: var(--spacing-md);
+  }
+}
+
+.page-container {
+  overflow-x: hidden;
 }

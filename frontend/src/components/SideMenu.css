@@ -12,17 +12,20 @@
   border-right: 1px solid var(--color-border); /* Borda sutil à direita */
   color: var(--color-text-base);
   z-index: 40; /* Abaixo da Navbar (que pode ser z-50) */
-  transition: background-color var(--transition-slow), border-color var(--transition-slow), color var(--transition-slow);
+  transition: background-color var(--transition-slow), border-color var(--transition-slow), color var(--transition-slow), width 0.3s ease;
   padding-bottom: var(--spacing-md); /* Espaço no final do menu */
 }
 
 .side-menu-header {
-  padding: var(--spacing-lg) var(--spacing-lg); /* Espaçamento interno */
-  font-size: 1.125rem; /* text-lg */
-  font-weight: 600; /* semibold */
-  color: var(--color-text-base);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  font-size: 1.125rem;
+  font-weight: 600;
   border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0; /* Evita que o header encolha */
+  flex-shrink: 0;
 }
 
 .side-menu-nav {
@@ -91,7 +94,69 @@
 }
 
 
-/* Remoção dos estilos de .gradient-border e ::before, pois a imagem de referência
-   usa uma borda simples e sombras para profundidade, não gradientes na borda do menu.
-   Se quiser manter o gradiente, pode ajustar as cores dele para combinar com a nova paleta.
-*/
+/* Botão hamburger visível apenas em telas pequenas */
+.hamburger-button {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 50;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-base);
+}
+
+@media (max-width: 768px) {
+  .side-menu {
+    top: 0;
+    height: 100vh;
+    padding-top: 4rem;
+  }
+}
+
+.side-menu.collapsed {
+  width: 4rem; /* Exibe só ícones */
+}
+
+.side-menu-label,
+.side-menu-header,
+.side-menu-footer {
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.side-menu.collapsed .side-menu-label,
+.side-menu.collapsed .side-menu-title,
+.side-menu.collapsed .side-menu-footer {
+  opacity: 0;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
+
+
+.side-menu.collapsed .side-menu-link {
+  justify-content: center;
+  margin: 0 auto;
+  padding: var(--spacing-sm); /* menos padding */
+}
+
+.side-menu.collapsed .side-menu-icon {
+  margin: 0;
+}
+
+.hamburger-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.25rem;
+}
+
+.side-menu-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
