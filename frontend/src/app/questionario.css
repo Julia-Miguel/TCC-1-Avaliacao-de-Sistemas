@@ -232,3 +232,9 @@
 .drag-handle:active {
     cursor: grabbing;
 }
+
+/* Exemplo para garantir alinhamento */
+.botao {
+  display: flex;
+  align-items: center;
+}

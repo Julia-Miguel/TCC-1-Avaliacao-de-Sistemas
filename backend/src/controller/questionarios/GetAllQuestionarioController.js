@@ -20,12 +20,12 @@ export class GetAllQuestionarioController {
                 },
                 include: {
                     criador: { select: { id: true, nome: true, email: true } },
-                    perguntas: { // Relação QuePerg
+                    perguntas: {
                         orderBy: { perguntaId: 'asc' }, // Opcional: ordenar as perguntas
                         include: {
-                            pergunta: { // O modelo Pergunta dentro de QuePerg
+                            pergunta: {
                                 include: {
-                                    opcoes: { // Inclui as opções da pergunta
+                                    opcoes: {
                                         orderBy: { id: 'asc' } // Opcional: ordenar as opções
                                     }
                                 }
@@ -34,9 +34,10 @@ export class GetAllQuestionarioController {
                     },
                     _count: { select: { avaliacoes: true } }
                 },
-                orderBy: {
-                    updated_at: 'desc' // Exemplo de ordenação dos questionários
-                }
+                orderBy: [
+                    { ordem: 'asc' }, // Prioriza a ordem definida pelo usuário
+                    { updated_at: 'desc' } // Fallback para ordenação por data de atualização
+                ]
             });
             return response.json(questionarios);
         } catch (error) {

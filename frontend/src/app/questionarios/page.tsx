@@ -1,16 +1,29 @@
-// frontend/src/app/questionarios/page.tsx
 'use client';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import AdminAuthGuard from '../../components/auth/AdminAuthGuard'; // Ajuste o caminho se necessário
+import AdminAuthGuard from '../../components/auth/AdminAuthGuard';
 import api from "@/services/api";
 import Link from "next/link";
 import "../globals.css";
 import "../questionario.css";
-import { MoreVertical, Trash2, Edit3, Info, PlusIcon } from 'lucide-react'; // Ícones
+import { MoreVertical, Trash2, Edit3, Info, PlusIcon } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-// --- INTERFACES (Mantidas da sua versão funcional) ---
+// --- INTERFACES ---
 interface OpcaoInterface {
   id: number;
   texto: string;
@@ -32,6 +45,7 @@ interface QuestionarioInterface {
   perguntas: QuePergItemInterface[];
   criador?: { nome: string; email: string };
   _count?: { avaliacoes: number };
+  ordem?: number; // Adicionado campo ordem
 }
 // --- FIM DAS INTERFACES ---
 
@@ -42,13 +56,16 @@ function ListQuestionariosContent() {
   const [detalhesVisiveis, setDetalhesVisiveis] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ordem, setOrdem] = useState<number[]>([]);
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
-    api.get("/questionarios") // Backend deve filtrar por empresa e incluir perguntas/opções
+    api.get("/questionarios")
       .then(response => {
-        setQuestionarios(response.data);
+        const data = response.data as QuestionarioInterface[];
+        setQuestionarios(data);
+        setOrdem(data.map(q => q.id)); // Usa os IDs, mas pode ser ajustado para ordem se o backend a fornecer
       })
       .catch(err => {
         console.error("Erro ao buscar questionários:", err);
@@ -100,6 +117,35 @@ function ListQuestionariosContent() {
     setMenuAberto(null);
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = ordem.indexOf(active.id);
+      const newIndex = ordem.indexOf(over.id);
+      const novaOrdem = arrayMove(ordem, oldIndex, newIndex);
+      setOrdem(novaOrdem);
+
+      // Atualize a ordem no backend
+      try {
+        await api.patch("/reorder", { orderedIds: novaOrdem }); // Ajustado para /reorder e orderedIds
+        // Sincroniza o estado local com a nova ordem
+        const updatedQuestionarios = novaOrdem.map(id =>
+          questionarios.find(q => q.id === id)
+        ).filter((q): q is QuestionarioInterface => q !== undefined);
+        setQuestionarios(updatedQuestionarios);
+      } catch (err) {
+        console.error("Erro ao salvar ordem:", err);
+        alert("Erro ao salvar ordem!");
+        // Reverte a ordem local em caso de erro
+        setOrdem(prevOrdem => prevOrdem);
+      }
+    }
+  };
+
   if (isLoading) {
     return <div className="page-container center-content"><p>Carregando questionários...</p></div>;
   }
@@ -109,13 +155,13 @@ function ListQuestionariosContent() {
   }
 
   return (
-    <div className="page-container"> {/* Use sua classe de container global ou defina .page-container */}
-      <div className="table-header-actions"> {/* Classe do layout dela */}
-        <h3 className="text-xl sm:text-2xl font-semibold text-foreground"> {/* Classe do layout dela */}
+    <div className="page-container">
+      <div className="table-header-actions">
+        <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
           Meus Questionários
         </h3>
-        <div className="button-group flex space-x-2"> {/* Classe do layout dela */}
-          <Link href="/questionarios/create" className="btn btn-primary"> {/* Classe do layout dela */}
+        <div className="button-group flex space-x-2">
+          <Link href="/questionarios/create" className="btn btn-primary">
             <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             Novo Questionário
           </Link>
@@ -123,7 +169,7 @@ function ListQuestionariosContent() {
       </div>
 
       {questionarios.length === 0 ? (
-        <div className="text-center py-10 px-4 bg-element-bg rounded-lg shadow-md mt-6"> {/* Estilo "nenhum item" dela */}
+        <div className="text-center py-10 px-4 bg-element-bg rounded-lg shadow-md mt-6">
           <svg className="mx-auto h-12 w-12 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
           </svg>
@@ -137,120 +183,128 @@ function ListQuestionariosContent() {
           </div>
         </div>
       ) : (
-        <div className="questionarios-grid">
-          {questionarios.map((q) => (
-            <div
-              key={q.id}
-              className="questionario-card" // Mantém o card visual
-            >
-              <div className="card-header">
-                <button
-                  className="btn btn-card-title w-full text-left flex items-center justify-between" // Nova classe para o botão principal
-                  onClick={() => handleEditQuestionario(q.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); }}}
-                  aria-label={`Editar questionário ${q.titulo}`}
-                >
-                  <span className="flex-1"><h4>{q.titulo}</h4></span>
-                  <span>
-                    <button
-                      type="button"
-                      className="botao icon-button ml-2" // Classe do layout dela
-                      title="Opções"
-                      onClick={(e) => { e.stopPropagation(); toggleMenu(q.id, e); }}
-                      aria-label="Opções do questionário"
-                      tabIndex={0}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={ordem} strategy={verticalListSortingStrategy}>
+            <div className="questionarios-grid">
+              {ordem.map((id) => {
+                const q = questionarios.find(q => q.id === id);
+                if (!q) return null;
+                return (
+                  <SortableCard key={q.id} q={q}>
+                    <div
+                      key={q.id}
+                      className="questionario-card"
                     >
-                      <MoreVertical size={20} /> {/* Ícone do layout dela */}
-                    </button>
-                  </span>
-                </button>
-              </div>
+                      <div className="card-header">
+                        <button
+                          type="button"
+                          className="btn btn-card-title w-full text-left flex items-center justify-between"
+                          onClick={() => handleEditQuestionario(q.id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); }}}
+                          aria-label={`Editar questionário ${q.titulo}`}
+                        >
+                          <span className="flex-1"><h4>{q.titulo}</h4></span>
+                        </button>
+                        <button
+                          type="button"
+                          className="botao icon-button ml-2"
+                          title="Opções"
+                          onClick={(e) => { e.stopPropagation(); toggleMenu(q.id, e); }}
+                          aria-label="Opções do questionário"
+                          tabIndex={0}
+                        >
+                          <MoreVertical size={20} />
+                        </button>
+                      </div>
 
-              <div className="perguntas-list">
-                {q.perguntas && q.perguntas.length > 0 ? (
-                  // Mostra até 3 perguntas, como na versão dela
-                  q.perguntas.slice(0, 3).map((quePergItem) => (
-                    <p
-                      key={quePergItem.pergunta.id}
-                      className="enunciado-pergunta truncate" // Classe do layout dela
-                      title={quePergItem.pergunta.enunciado} // Mostrar completo no hover
-                    >
-                      {quePergItem.pergunta.enunciado}
-                    </p>
-                  ))
-                ) : (
-                  <p className="no-perguntas">Nenhuma pergunta adicionada.</p> 
-                )}
-                {q.perguntas && q.perguntas.length > 3 && (
-                  <p className="text-xs text-text-muted mt-1"> 
-                    ...e mais {q.perguntas.length - 3}.
-                  </p>
-                )}
-              </div>
+                      <div className="perguntas-list">
+                        {q.perguntas && q.perguntas.length > 0 ? (
+                          q.perguntas.slice(0, 3).map((quePergItem) => (
+                            <p
+                              key={quePergItem.pergunta.id}
+                              className="enunciado-pergunta truncate"
+                              title={quePergItem.pergunta.enunciado}
+                            >
+                              {quePergItem.pergunta.enunciado}
+                            </p>
+                          ))
+                        ) : (
+                          <p className="no-perguntas">Nenhuma pergunta adicionada.</p>
+                        )}
+                        {q.perguntas && q.perguntas.length > 3 && (
+                          <p className="text-xs text-text-muted mt-1">
+                            ...e mais {q.perguntas.length - 3}.
+                          </p>
+                        )}
+                      </div>
 
-              {menuAberto === q.id && (
-                <div
-                  className="menu-dropdown"
-                  role="menu"
-                  tabIndex={0}
-                  aria-label="Opções do questionário"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape' || e.key === 'Tab') {
-                      setMenuAberto(null);
-                    }
-                  }}
-                >
-                  <button
-                    className="botao edit-action w-full flex items-center" // Estilo dela
-                    onClick={(e) => { e.stopPropagation(); handleEditQuestionario(q.id); }}
-                  >
-                    <Edit3 size={16} className="mr-2" /> Editar
-                  </button>
-                  <button
-                    className="botao details-action w-full flex items-center" // Estilo dela
-                    onClick={(e) => toggleDetalhes(q.id, e)}
-                  >
-                    <Info size={16} className="mr-2" /> Detalhes
-                  </button>
-                  <button
-                    className="botao delete-action w-full flex items-center" // Estilo dela
-                    onClick={(e) => { e.stopPropagation(); handleDeleteQuestionario(q.id);}}
-                  >
-                    <Trash2 size={16} className="mr-2" /> Excluir
-                  </button>
-                </div>
-              )}
+                      {menuAberto === q.id && (
+                        <div
+                          className="menu-dropdown"
+                          role="menu"
+                          tabIndex={0}
+                          aria-label="Opções do questionário"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape' || e.key === 'Tab') {
+                              setMenuAberto(null);
+                            }
+                          }}
+                        >
+                          <button
+                            className="botao edit-action w-full flex items-center"
+                            onClick={(e) => { e.stopPropagation(); handleEditQuestionario(q.id); }}
+                          >
+                            <Edit3 size={16} className="mr-2" /> Editar
+                          </button>
+                          <button
+                            className="botao details-action w-full flex items-center"
+                            onClick={(e) => toggleDetalhes(q.id, e)}
+                          >
+                            <Info size={16} className="mr-2" /> Detalhes
+                          </button>
+                          <button
+                            className="botao delete-action w-full flex items-center"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteQuestionario(q.id);}}
+                          >
+                            <Trash2 size={16} className="mr-2" /> Excluir
+                          </button>
+                        </div>
+                      )}
 
-              {detalhesVisiveis === q.id && (
-                <dialog
-                  className="detalhes" // Você pode precisar estilizar esta classe
-                  open
-                  aria-modal="true"
-                >
-                  <div>
-                    <p><strong>ID:</strong> {q.id}</p>
-                    {q.criador && <p><strong>Criador:</strong> {q.criador.nome} ({q.criador.email})</p>}
-                    <p><strong>Criado em:</strong> {formatDate(q.created_at)}</p>
-                    <p><strong>Última modificação:</strong> {formatDate(q.updated_at)}</p>
-                    {q._count && <p><strong>Nº de Avaliações Associadas:</strong> {q._count.avaliacoes}</p>}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setDetalhesVisiveis(null); }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-                          setDetalhesVisiveis(null);
-                        }
-                      }}
-                      className="btn btn-sm btn-outline mt-2 w-full" // Classe do layout dela
-                    >
-                      Fechar Detalhes
-                    </button>
-                  </div>
-                </dialog>
-              )}
+                      {detalhesVisiveis === q.id && (
+                        <dialog
+                          className="detalhes"
+                          open
+                          aria-modal="true"
+                        >
+                          <div>
+                            <p><strong>ID:</strong> {q.id}</p>
+                            {q.criador && <p><strong>Criador:</strong> {q.criador.nome} ({q.criador.email})</p>}
+                            <p><strong>Criado em:</strong> {formatDate(q.created_at)}</p>
+                            <p><strong>Última modificação:</strong> {formatDate(q.updated_at)}</p>
+                            {q._count && <p><strong>Nº de Avaliações Associadas:</strong> {q._count.avaliacoes}</p>}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDetalhesVisiveis(null); }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                                  setDetalhesVisiveis(null);
+                                }
+                              }}
+                              className="btn btn-sm btn-outline mt-2 w-full"
+                            >
+                              Fechar Detalhes
+                            </button>
+                          </div>
+                        </dialog>
+                      )}
+                    </div>
+                  </SortableCard>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
@@ -264,11 +318,17 @@ export default function ProtectedListQuestionariosPage() {
   );
 }
 
-// Ícone Plus que estava na versão dela, pode ser usado se preferir ao invés do da lucide-react
-// function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
-//   return (
-//     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-//       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-//     </svg>
-//   );
-// }
+function SortableCard({ q, ...props }: Readonly<{ q: QuestionarioInterface; [key: string]: any }>) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: q.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: "grab",
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} {...props}>
+      {props.children}
+    </div>
+  );
+}
