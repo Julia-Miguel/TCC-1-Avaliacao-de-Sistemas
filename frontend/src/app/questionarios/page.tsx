@@ -1,8 +1,8 @@
 // frontend/src/app/questionarios/page.tsx
 'use client';
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import AdminAuthGuard from '../../components/auth/AdminAuthGuard'; // Ajuste o caminho se necessário
 import api from "@/services/api";
 import Link from "next/link";
@@ -141,21 +141,28 @@ function ListQuestionariosContent() {
           {questionarios.map((q) => (
             <div
               key={q.id}
-              className="questionario-card" // Mantém o card clicável
-              role="button" // Para acessibilidade
-              tabIndex={0}  // Para acessibilidade
-              onClick={() => handleEditQuestionario(q.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); }}}
+              className="questionario-card" // Mantém o card visual
             >
               <div className="card-header">
-                <h4>{q.titulo}</h4>
                 <button
-                  className="botao icon-button" // Classe do layout dela
-                  title="Opções"
-                  onClick={(e) => toggleMenu(q.id, e)}
-                  aria-label="Opções do questionário"
+                  className="btn btn-card-title w-full text-left flex items-center justify-between" // Nova classe para o botão principal
+                  onClick={() => handleEditQuestionario(q.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); }}}
+                  aria-label={`Editar questionário ${q.titulo}`}
                 >
-                  <MoreVertical size={20} /> {/* Ícone do layout dela */}
+                  <span className="flex-1"><h4>{q.titulo}</h4></span>
+                  <span>
+                    <button
+                      type="button"
+                      className="botao icon-button ml-2" // Classe do layout dela
+                      title="Opções"
+                      onClick={(e) => { e.stopPropagation(); toggleMenu(q.id, e); }}
+                      aria-label="Opções do questionário"
+                      tabIndex={0}
+                    >
+                      <MoreVertical size={20} /> {/* Ícone do layout dela */}
+                    </button>
+                  </span>
                 </button>
               </div>
 
@@ -184,7 +191,15 @@ function ListQuestionariosContent() {
               {menuAberto === q.id && (
                 <div
                   className="menu-dropdown"
+                  role="menu"
+                  tabIndex={0}
+                  aria-label="Opções do questionário"
                   onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape' || e.key === 'Tab') {
+                      setMenuAberto(null);
+                    }
+                  }}
                 >
                   <button
                     className="botao edit-action w-full flex items-center" // Estilo dela
@@ -208,22 +223,30 @@ function ListQuestionariosContent() {
               )}
 
               {detalhesVisiveis === q.id && (
-                <div
+                <dialog
                   className="detalhes" // Você pode precisar estilizar esta classe
-                  onClick={(e) => e.stopPropagation()}
+                  open
+                  aria-modal="true"
                 >
-                  <p><strong>ID:</strong> {q.id}</p>
-                  {q.criador && <p><strong>Criador:</strong> {q.criador.nome} ({q.criador.email})</p>}
-                  <p><strong>Criado em:</strong> {formatDate(q.created_at)}</p>
-                  <p><strong>Última modificação:</strong> {formatDate(q.updated_at)}</p>
-                  {q._count && <p><strong>Nº de Avaliações Associadas:</strong> {q._count.avaliacoes}</p>}
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setDetalhesVisiveis(null); }}
-                    className="btn btn-sm btn-outline mt-2 w-full" // Classe do layout dela
-                  >
-                    Fechar Detalhes
-                  </button>
-                </div>
+                  <div>
+                    <p><strong>ID:</strong> {q.id}</p>
+                    {q.criador && <p><strong>Criador:</strong> {q.criador.nome} ({q.criador.email})</p>}
+                    <p><strong>Criado em:</strong> {formatDate(q.created_at)}</p>
+                    <p><strong>Última modificação:</strong> {formatDate(q.updated_at)}</p>
+                    {q._count && <p><strong>Nº de Avaliações Associadas:</strong> {q._count.avaliacoes}</p>}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setDetalhesVisiveis(null); }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                          setDetalhesVisiveis(null);
+                        }
+                      }}
+                      className="btn btn-sm btn-outline mt-2 w-full" // Classe do layout dela
+                    >
+                      Fechar Detalhes
+                    </button>
+                  </div>
+                </dialog>
               )}
             </div>
           ))}

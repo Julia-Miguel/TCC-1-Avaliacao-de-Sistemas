@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import api from '@/services/api';
 import Link from 'next/link';
 import { CheckSquare } from 'lucide-react'; // Assumindo que você tem lucide-react
@@ -56,7 +56,6 @@ function ResponderAvaliacaoContent() {
     const router = useRouter();
     // useSearchParams é útil para pegar o redirectTo caso o usuário venha da página de login, mas não é usado neste fluxo.
     // Manter ele aqui não causa problemas.
-    const searchParams = useSearchParams(); 
     const avaliacaoId = params.avaliacaoId ? parseInt(params.avaliacaoId as string) : null;
 
     // --- Estados (sem alteração) ---

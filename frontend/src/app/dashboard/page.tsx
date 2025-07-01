@@ -8,7 +8,6 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { QuestionResponseChart } from '@/components/dashboard/QuestionResponseChart';
 import { FileText, ClipboardList, Users } from 'lucide-react';
 
-// Tipagem para os dados que virão da API
 interface DashboardStats {
   geral: {
     totalQuestionarios: number;
@@ -48,7 +47,7 @@ function DashboardPageContent() {
   }
 
   if (error || !stats) {
-    return <div className="text-center py-20 text-red-500">{error || 'Dados não encontrados.'}</div>;
+    return <div className="text-center py-20 text-red-500">{error ?? 'Dados não encontrados.'}</div>;
   }
 
   return (
@@ -57,9 +56,27 @@ function DashboardPageContent() {
 
       {/* Seção de Estatísticas Gerais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        <StatCard title="Total de Questionários" value={stats.geral.totalQuestionarios} Icon={FileText} />
-        <StatCard title="Total de Avaliações" value={stats.geral.totalAvaliacoes} Icon={ClipboardList} />
-        <StatCard title="Respostas Finalizadas" value={stats.geral.totalRespostasCompletas} Icon={Users} />
+        <StatCard
+          title="Total de Questionários"
+          value={stats.geral.totalQuestionarios}
+          icon={FileText}
+          color="text-blue-600"
+          bgColor="bg-blue-100"
+        />
+        <StatCard
+          title="Total de Avaliações"
+          value={stats.geral.totalAvaliacoes}
+          icon={ClipboardList}
+          color="text-green-600"
+          bgColor="bg-green-100"
+        />
+        <StatCard
+          title="Respostas Finalizadas"
+          value={stats.geral.totalRespostasCompletas}
+          icon={Users}
+          color="text-purple-600"
+          bgColor="bg-purple-100"
+        />
       </div>
 
       {/* Seção de Gráficos */}

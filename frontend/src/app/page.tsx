@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { CheckSquare, Users, FileText, TrendingUp, AlertCircle } from 'lucide-react';
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { useAuth } from "@/contexts/AuthContext";
 import "./globals.css";
 
 // Dados mock para os cards
@@ -53,7 +52,7 @@ const summaryCardsData = [
 
 // Componente que contém o layout do seu dashboard
 function HomePageDashboardContent() {
-    const { loggedInAdmin } = useAuth(); // Você pode usar os dados do admin aqui se precisar
+    // Você pode usar os dados do admin aqui se precisar
 
     return (
         <div className="page-container">
@@ -69,8 +68,8 @@ function HomePageDashboardContent() {
             <section className="mb-10">
                 <h2 className="text-xl font-semibold text-foreground mb-4">Sumário Rápido</h2>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                    {summaryCardsData.map((card, index) => (
-                        <Link href={card.detailsLink || "#"} key={index} className="block group">
+                    {summaryCardsData.map((card) => (
+                        <Link href={card.detailsLink || "#"} key={card.detailsLink || card.title} className="block group">
                             <div className="bg-element-bg p-5 rounded-xl shadow-md border border-main-border hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
                                 <div className="flex items-start justify-between">
                                     <div className={`p-2 rounded-lg ${card.bgColor}`}>
@@ -83,13 +82,21 @@ function HomePageDashboardContent() {
                                 </div>
                                 {card.change && (
                                     <div className="mt-auto pt-3 text-xs">
-                                        <span className={`font-medium ${
-                                            card.changeType === 'positive' ? 'text-green-600 dark:text-green-400' :
-                                            card.changeType === 'negative' ? 'text-red-600 dark:text-red-400' :
-                                            'text-text-muted'
-                                        }`}>
-                                            {card.change}
-                                        </span>
+                                        {(() => {
+                                            let changeClass = '';
+                                            if (card.changeType === 'positive') {
+                                                changeClass = 'text-green-600 dark:text-green-400';
+                                            } else if (card.changeType === 'negative') {
+                                                changeClass = 'text-red-600 dark:text-red-400';
+                                            } else {
+                                                changeClass = 'text-text-muted';
+                                            }
+                                            return (
+                                                <span className={`font-medium ${changeClass}`}>
+                                                    {card.change}
+                                                </span>
+                                            );
+                                        })()}
                                         <span className="text-text-muted"> em relação ao período anterior</span>
                                     </div>
                                 )}

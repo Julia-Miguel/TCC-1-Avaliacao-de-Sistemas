@@ -1,21 +1,21 @@
 // frontend/src/contexts/AuthContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface AdminUser {
   id: number;
   nome: string;
   email: string;
-  tipo: 'ADMIN_EMPRESA' | string; // Pode ser mais específico se tiver outros tipos de admin
+  tipo: string;
   empresaId: number;
 }
 
 interface AuthContextType {
   loggedInAdmin: AdminUser | null;
   adminToken: string | null;
-  isLoadingAuth: boolean; // Para saber se o auth ainda está carregando do localStorage
+  isLoadingAuth: boolean;
   loginAdmin: (user: AdminUser, token: string) => void;
   logoutAdmin: () => void;
 }
@@ -25,11 +25,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loggedInAdmin, setLoggedInAdmin] = useState<AdminUser | null>(null);
   const [adminToken, setAdminToken] = useState<string | null>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true); // Começa true até verificarmos o localStorage
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Tenta carregar o usuário e o token do localStorage ao iniciar
     if (typeof window !== "undefined") {
       const storedToken = localStorage.getItem('adminToken');
       const storedUserString = localStorage.getItem('adminUser');
@@ -44,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.removeItem('adminUser');
         }
       }
-      setIsLoadingAuth(false); // Finaliza o carregamento inicial do auth
+      setIsLoadingAuth(false);
     }
   }, []);
 
@@ -55,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setLoggedInAdmin(user);
     setAdminToken(token);
-    router.push('/questionarios'); // Ou para o dashboard do admin
+    router.push('/questionarios');
   };
 
   const logoutAdmin = () => {
@@ -68,8 +67,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/empresas/login'); // Redireciona para o login da empresa
   };
 
+  const contextValue = useMemo(
+    () => ({
+      loggedInAdmin,
+      adminToken,
+      isLoadingAuth,
+      loginAdmin,
+      logoutAdmin,
+    }),
+    [loggedInAdmin, adminToken, isLoadingAuth, loginAdmin, logoutAdmin]
+  );
+
   return (
-    <AuthContext.Provider value={{ loggedInAdmin, adminToken, isLoadingAuth, loginAdmin, logoutAdmin }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
@@ -82,3 +92,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

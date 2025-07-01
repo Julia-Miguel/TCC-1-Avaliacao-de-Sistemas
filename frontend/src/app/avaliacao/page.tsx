@@ -124,6 +124,12 @@ function ListAvaliacaoContent() {
   };
 
   const handleCopyLink = () => {
+    if (!navigator.clipboard) {
+      console.error("Clipboard API não suportada!");
+      alert("Seu navegador não suporta copiar automaticamente. Por favor, copie manualmente.");
+      return;
+    }
+
     navigator.clipboard.writeText(shareableLink).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -194,8 +200,8 @@ function ListAvaliacaoContent() {
                   </td>
                   <td data-label="Login Cliente?">
                     <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${av.requerLoginCliente
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                       {av.requerLoginCliente ? 'Sim' : 'Não'}
                     </span>
@@ -252,62 +258,62 @@ function ListAvaliacaoContent() {
           <form method="dialog" className="bg-element-bg dark:bg-gray-800 rounded-lg shadow-2xl w-[90vw] max-w-md">
             {/* Header */}
             <header className="flex items-center justify-between p-6 border-b border-border">
-                <div>
-                    <h4 className="text-xl font-semibold text-foreground">
-                        Compartilhar Avaliação
-                    </h4>
-                    <p className="text-sm text-text-muted mt-1">
-                        {selectedAvaliacaoForShare.semestre} - {selectedAvaliacaoForShare.questionario.titulo}
-                    </p>
-                </div>
-                <button
-                    type="button"
-                    onClick={handleCloseShareModal}
-                    className="text-text-muted hover:text-foreground p-1 rounded-full hover:bg-page-bg dark:hover:bg-gray-700 transition-colors"
-                    aria-label="Fechar modal"
-                >
-                    <X size={22} />
-                </button>
+              <div>
+                <h4 className="text-xl font-semibold text-foreground">
+                  Compartilhar Avaliação
+                </h4>
+                <p className="text-sm text-text-muted mt-1">
+                  {selectedAvaliacaoForShare.semestre} - {selectedAvaliacaoForShare.questionario.titulo}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseShareModal}
+                className="text-text-muted hover:text-foreground p-1 rounded-full hover:bg-page-bg dark:hover:bg-gray-700 transition-colors"
+                aria-label="Fechar modal"
+              >
+                <X size={22} />
+              </button>
             </header>
 
             {/* Content (sem alterações aqui, já estava bom) */}
             <main className="p-6 space-y-6">
-                <div>
-                    <label htmlFor="share-link" className="form-label text-xs uppercase tracking-wider text-text-muted">Link Público:</label>
-                    <div className="flex items-center gap-2 mt-1">
-                        <input
-                            id="share-link"
-                            type="text"
-                            value={shareableLink}
-                            readOnly
-                            className="input-edit-mode text-sm flex-grow bg-input-background dark:bg-gray-700"
-                            onFocus={(e) => e.target.select()}
-                        />
-                        <button
-                            type="button"
-                            onClick={handleCopyLink}
-                            className="btn btn-primary btn-sm p-2.5"
-                            title="Copiar Link"
-                        >
-                            {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
-                        </button>
-                    </div>
-                    {copied && <p className="text-xs text-green-600 dark:text-green-400 mt-1.5">Link copiado!</p>}
+              <div>
+                <label htmlFor="share-link" className="form-label text-xs uppercase tracking-wider text-text-muted">Link Público:</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    id="share-link"
+                    type="text"
+                    value={shareableLink}
+                    readOnly
+                    className="input-edit-mode text-sm flex-grow bg-input-background dark:bg-gray-700"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="btn btn-primary btn-sm p-2.5"
+                    title="Copiar Link"
+                  >
+                    {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+                  </button>
                 </div>
-                
-                <div className="text-center space-y-2">
-                    <p className="form-label text-xs uppercase tracking-wider text-text-muted block">Ou escaneie o QR Code:</p>
-                    <div className="bg-white p-3 inline-block rounded-md shadow border border-border mx-auto">
-                        {shareableLink && <QRCode value={shareableLink} size={192} level="M" bgColor="#FFFFFF" fgColor="#000000" />}
-                    </div>
+                {copied && <p className="text-xs text-green-600 dark:text-green-400 mt-1.5">Link copiado!</p>}
+              </div>
+
+              <div className="text-center space-y-2">
+                <p className="form-label text-xs uppercase tracking-wider text-text-muted block">Ou escaneie o QR Code:</p>
+                <div className="bg-white p-3 inline-block rounded-md shadow border border-border mx-auto">
+                  {shareableLink && <QRCode value={shareableLink} size={192} level="M" bgColor="#FFFFFF" fgColor="#000000" />}
                 </div>
+              </div>
             </main>
 
             {/* Footer */}
             <footer className="px-6 py-4 bg-page-bg dark:bg-gray-900/50 border-t border-border text-right">
-                <button type="submit" className="btn btn-outline">
-                    Fechar
-                </button>
+              <button type="submit" className="btn btn-outline">
+                Fechar
+              </button>
             </footer>
           </form>
         )}

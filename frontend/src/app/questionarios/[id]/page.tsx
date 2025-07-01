@@ -14,7 +14,6 @@ import { WordCloud } from "@/components/dashboard/WordCloud";
 import {
     DndContext,
     closestCenter,
-    KeyboardSensor,
     PointerSensor,
     useSensor,
     useSensors,
@@ -23,7 +22,6 @@ import {
 import {
     arrayMove,
     SortableContext,
-    sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
@@ -144,8 +142,8 @@ function EditQuestionarioFormContent() {
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
-        const oldIndex = quePergs.findIndex(q => (q.pergunta.id || q.pergunta.tempId) === active.id);
-        const newIndex = quePergs.findIndex(q => (q.pergunta.id || q.pergunta.tempId) === over.id);
+        const oldIndex = quePergs.findIndex(q => (q.pergunta.id ?? q.pergunta.tempId) === active.id);
+        const newIndex = quePergs.findIndex(q => (q.pergunta.id ?? q.pergunta.tempId) === over.id);
         const novos = arrayMove(quePergs, oldIndex, newIndex);
         setQuePergs(novos);
     };
@@ -187,7 +185,16 @@ function EditQuestionarioFormContent() {
         }
     }, [viewMode, selectedTextQuestion, questionarioId]);
 
-    // --- Lógica de carregamento inicial (sem mudanças significativas) ---
+    function sanitizeQuePergs(data: QuePerg[]): QuePerg[] {
+        return data.map(qp => ({
+            ...qp,
+            pergunta: {
+                ...qp.pergunta,
+                opcoes: (qp.pergunta.opcoes || []).map(opt => ({ ...opt }))
+            }
+        }));
+    }
+
     useEffect(() => {
         if (!questionarioId) {
             setError("ID do Questionário não encontrado na URL.");
@@ -201,13 +208,7 @@ function EditQuestionarioFormContent() {
                 const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
                 setTitulo(respQuestionario.data.titulo);
                 const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`);
-                const sanitizedQuePergs = respQuePerg.data.map(qp => ({
-                    ...qp,
-                    pergunta: {
-                        ...qp.pergunta,
-                        opcoes: (qp.pergunta.opcoes || []).map(opt => ({ ...opt }))
-                    }
-                }));
+                const sanitizedQuePergs = sanitizeQuePergs(respQuePerg.data);
                 setQuePergs(sanitizedQuePergs);
             } catch (err: any) { /* ... (tratamento de erro existente) ... */
                 console.error("Erro ao carregar dados do questionário:", err);
@@ -265,6 +266,16 @@ function EditQuestionarioFormContent() {
         setQuePergs(novasPerguntas);
     };
 
+    function getNovasOpcoes(perguntaAtual: PerguntaAninhada, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA'): Opcao[] {
+        if (novoTipo === 'TEXTO') {
+            return [];
+        } else if (perguntaAtual.opcoes.length === 0) {
+            return [{ texto: '', tempId: `temp-opt-${Date.now()}` }];
+        } else {
+            return perguntaAtual.opcoes.map(o => ({ ...o }));
+        }
+    }
+
     const handleTipoChange = (qIndex: number, novoTipo: 'TEXTO' | 'MULTIPLA_ESCOLHA') => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
@@ -272,29 +283,25 @@ function EditQuestionarioFormContent() {
                     return qp;
                 }
                 const perguntaAtual = qp.pergunta;
-                let novasOpcoes: Opcao[];
-                if (novoTipo === 'TEXTO') {
-                    novasOpcoes = [];
-                } else if (perguntaAtual.opcoes.length === 0) {
-                    novasOpcoes = [{ texto: '', tempId: `temp-opt-${Date.now()}` }];
-                } else {
-                    novasOpcoes = perguntaAtual.opcoes.map(o => ({ ...o }));
-                }
+                const novasOpcoes = getNovasOpcoes(perguntaAtual, novoTipo);
                 return { ...qp, pergunta: { ...perguntaAtual, tipos: novoTipo, opcoes: novasOpcoes } };
             })
         );
     };
-    const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => { /* ... seu código ... */
+    function updateOptionText(qp: QuePerg, oIndex: number, novoTexto: string): QuePerg {
+        const novasOpcoes = qp.pergunta.opcoes.map((opt, optIdx) =>
+            optIdx === oIndex ? { ...opt, texto: novoTexto } : opt
+        );
+        return { ...qp, pergunta: { ...qp.pergunta, opcoes: novasOpcoes } };
+    }
+
+    const handleOptionChange = (qIndex: number, oIndex: number, novoTexto: string) => {
         setQuePergs(prevQuePergs =>
-            prevQuePergs.map((qp, index) => {
-                if (index === qIndex) {
-                    const novasOpcoes = qp.pergunta.opcoes.map((opt, optIdx) =>
-                        optIdx === oIndex ? { ...opt, texto: novoTexto } : opt
-                    );
-                    return { ...qp, pergunta: { ...qp.pergunta, opcoes: novasOpcoes } };
-                }
-                return qp;
-            })
+            prevQuePergs.map((qp, index) =>
+                index === qIndex
+                    ? updateOptionText(qp, oIndex, novoTexto)
+                    : qp
+            )
         );
     };
     const addOptionToList = (qIndex: number) => { /* ... seu código ... */
@@ -308,11 +315,15 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-    const removeOption = (qIndex: number, oIndex: number) => { /* ... seu código ... */
+    function getOpcoesRemovendo(qp: QuePerg, oIndex: number) {
+        return qp.pergunta.opcoes.filter((_, optIdx) => optIdx !== oIndex);
+    }
+
+    const removeOption = (qIndex: number, oIndex: number) => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
-                    const novasOpcoes = qp.pergunta.opcoes.filter((_, optIdx) => optIdx !== oIndex);
+                    const novasOpcoes = getOpcoesRemovendo(qp, oIndex);
                     return { ...qp, pergunta: { ...qp.pergunta, opcoes: novasOpcoes } };
                 }
                 return qp;
@@ -437,7 +448,7 @@ function EditQuestionarioFormContent() {
     if (error && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */
         return (
             <div className="page-container center-content">
-                <p style={{ color: 'red' }}>{error}</p>
+                <p className="error-message">{error}</p>
                 <Link href="/questionarios" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
                     Voltar para Lista de Questionários
                 </Link>
@@ -495,8 +506,8 @@ function EditQuestionarioFormContent() {
                     </div>
 
                     <div className="display-section">
-                        <label className="form-label">Perguntas do Questionário</label> {/* Usando form-label */}
-                        <div className="perguntas-edit-list">
+                        <label className="form-label" htmlFor="perguntas-edit-list">Perguntas do Questionário</label> {/* Usando form-label */}
+                        <div id="perguntas-edit-list" className="perguntas-edit-list">
                             <DndContext
                                 sensors={sensors}
                                 collisionDetection={closestCenter}
@@ -507,8 +518,13 @@ function EditQuestionarioFormContent() {
                                     items={quePergs.map(qp => qp.pergunta.id ?? qp.pergunta.tempId).filter((id): id is string | number => id !== undefined)}
                                     strategy={verticalListSortingStrategy}
                                 >
-                                    {quePergs.map((qp, qIndex) => (
-                                        <SortableItem key={qp.pergunta.id ?? qp.pergunta.tempId} id={qp.pergunta.id ?? qp.pergunta.tempId}>
+                                    {quePergs
+                                        .filter(qp => qp.pergunta.id !== undefined || qp.pergunta.tempId !== undefined)
+                                        .map((qp, qIndex) => (
+                                        <SortableItem
+                                            key={qp.pergunta.id ?? qp.pergunta.tempId}
+                                            id={(qp.pergunta.id ?? qp.pergunta.tempId) as string | number}
+                                        >
                                             <div className="pergunta-editor-item">
                                                 <label htmlFor={`enunciado-pergunta-${qIndex}`} className="form-label sr-only">Enunciado da Pergunta {qIndex + 1}</label>
                                                 <textarea
@@ -552,7 +568,12 @@ function EditQuestionarioFormContent() {
 
                                                 {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
                                                     <div className="opcoes-editor-container">
-                                                        <label className="form-label">Opções de Resposta</label>
+                                                        <label
+                                                            className="form-label"
+                                                            htmlFor={`opcao-q${qIndex}-o0`}
+                                                        >
+                                                            Opções de Resposta
+                                                        </label>
                                                         {qp.pergunta.opcoes.map((opt, oIndex) => (
                                                             <div key={opt.id ?? opt.tempId ?? `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
                                                                 <label htmlFor={`opcao-q${qIndex}-o${oIndex}`} className="sr-only">Opção {oIndex + 1}</label>
@@ -595,8 +616,7 @@ function EditQuestionarioFormContent() {
                             <button
                                 type="button"
                                 onClick={handleAddNewPergunta}
-                                className="btn btn-primary mt-4 flex items-center" // Botão primário para ação principal
-                                style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }} // Estilo inline mantido, pode virar classe
+                                className="btn btn-primary mt-4 flex items-center add-pergunta-btn" // Botão primário para ação principal
                                 disabled={isLoading}
                             >
                                 <PlusIcon size={20} className="mr-2" /> Adicionar Nova Pergunta
@@ -650,7 +670,7 @@ function EditQuestionarioFormContent() {
                                 {selectedAvaliacaoDetalhes.usuarios.map(respondente => (
                                     <div key={respondente.id} className="p-4 border border-border rounded-md bg-page-bg dark:bg-gray-800/50">
                                         <p className="text-md font-medium text-foreground">
-                                            Respondente: {respondente.usuario?.nome || respondente.usuario?.email || `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
+                                            Respondente: {respondente.usuario?.nome ?? respondente.usuario?.email ?? `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
                                         </p>
                                         <p className="text-xs text-text-muted mb-3">
                                             Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}
@@ -690,12 +710,11 @@ function EditQuestionarioFormContent() {
                                     {semestresExpandidos.has(semestre) && (
                                         <div className="mt-4 space-y-3 pl-2 border-l-2 border-primary/30">
                                             {avaliacoesDoSemestre.map(av => (
-                                                <div key={av.id}
-                                                    className="p-3 border border-border rounded-md hover:bg-page-bg dark:hover:bg-gray-700/40 cursor-pointer transition-colors duration-150"
+                                                <button
+                                                    key={av.id}
+                                                    type="button"
+                                                    className="p-3 border border-border rounded-md hover:bg-page-bg dark:hover:bg-gray-700/40 cursor-pointer transition-colors duration-150 w-full text-left"
                                                     onClick={() => setSelectedAvaliacaoId(av.id)}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onKeyDown={(e) => e.key === 'Enter' && setSelectedAvaliacaoId(av.id)}
                                                 >
                                                     <p className="font-medium text-foreground">
                                                         Avaliação ID: {av.id}
@@ -709,7 +728,7 @@ function EditQuestionarioFormContent() {
                                                         <span className="mx-2">|</span>
                                                         <span>Requer Login: {av.requerLoginCliente ? "Sim" : "Não"}</span>
                                                     </div>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
