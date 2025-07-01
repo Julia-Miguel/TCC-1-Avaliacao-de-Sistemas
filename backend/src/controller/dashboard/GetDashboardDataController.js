@@ -1,9 +1,11 @@
 // backend/src/controller/dashboard/GetDashboardDataController.js
+
 import { prisma } from '../../database/client.js';
 
 export class GetDashboardDataController {
     async handle(request, response) {
         const { empresaId } = request.user;
+        const { questionarioId } = request.query;
 
         try {
             // --- Global KPIs for the entire company ---
@@ -11,7 +13,6 @@ export class GetDashboardDataController {
                 where: { criador: { empresaId: parseInt(empresaId) } }
             });
 
-            // Adicione esta linha para definir globalTotalAvaliacoes
             const globalTotalAvaliacoes = await prisma.avaliacao.count({
                 where: {
                     questionario: {
@@ -35,40 +36,47 @@ export class GetDashboardDataController {
             const globalTotalFinalizados = globalAvaliacoesComRespostas.filter(r => r.isFinalizado).length;
             const globalTaxaDeConclusao = globalTotalRespondentes > 0 ? (globalTotalFinalizados / globalTotalRespondentes) * 100 : 0;
 
-            // --- Most Recently Updated Questionario for the company ---
-            const mostRecentQuestionario = await prisma.questionario.findFirst({
-                where: {
-                    criador: {
-                        empresaId: parseInt(empresaId)
+            // --- Determine the target questionnaire for specific data ---
+            let targetQuestionario = null;
+            if (questionarioId) {
+                targetQuestionario = await prisma.questionario.findUnique({
+                    where: {
+                        id: parseInt(questionarioId)
+                    },
+                    include: {
+                        _count: { select: { avaliacoes: true } }
                     }
-                },
-                orderBy: { updated_at: 'desc' }, // Order by most recent update
-                include: {
-                    _count: { select: { avaliacoes: true } },
-                    perguntas: { // Get related questions to identify text types
-                        where: {
-                            pergunta: { tipos: 'TEXTO' }
-                        },
-                        select: {
-                            pergunta: {
-                                select: { id: true, enunciado: true, tipos: true }
-                            }
-                        }
-                    }
+                });
+
+                if (targetQuestionario && targetQuestionario.criadorId !== parseInt(empresaId)) {
+                    targetQuestionario = null;
                 }
-            });
+            } else {
+                targetQuestionario = await prisma.questionario.findFirst({
+                    where: {
+                        criador: {
+                            empresaId: parseInt(empresaId)
+                        }
+                    },
+                    orderBy: { updated_at: 'desc' },
+                    include: {
+                        _count: { select: { avaliacoes: true } }
+                    }
+                });
+            }
+
 
             let specificQuestionnaireData = null;
-            if (mostRecentQuestionario) {
-                const recentQuestionarioId = mostRecentQuestionario.id;
+            if (targetQuestionario) {
+                const currentQuestionarioId = targetQuestionario.id;
 
-                // --- KPIs specific to the most recent questionnaire ---
+                // --- KPIs specific to the target questionnaire ---
                 const specificAvaliacoesCount = await prisma.avaliacao.count({
-                    where: { questionarioId: recentQuestionarioId }
+                    where: { questionarioId: currentQuestionarioId }
                 });
 
                 const specificUsuAvalRecords = await prisma.usuAval.findMany({
-                    where: { avaliacao: { questionarioId: recentQuestionarioId } },
+                    where: { avaliacao: { questionarioId: currentQuestionarioId } },
                     select: { isFinalizado: true }
                 });
 
@@ -76,10 +84,10 @@ export class GetDashboardDataController {
                 const specificTotalFinalizados = specificUsuAvalRecords.filter(r => r.isFinalizado).length;
                 const specificTaxaDeConclusao = specificTotalRespondentes > 0 ? (specificTotalFinalizados / specificTotalRespondentes) * 100 : 0;
 
-                // --- Aggregated data for charts (multiple choice) specific to the most recent questionnaire ---
+                // --- Aggregated data for charts (multiple choice) specific to the target questionnaire ---
                 const specificRespostasMultiplaEscolha = await prisma.resposta.findMany({
                     where: {
-                        usuAval: { avaliacao: { questionarioId: recentQuestionarioId } },
+                        usuAval: { avaliacao: { questionarioId: currentQuestionarioId } },
                         pergunta: { tipos: 'MULTIPLA_ESCOLHA' }
                     },
                     select: {
@@ -111,13 +119,52 @@ export class GetDashboardDataController {
                     respostas: Object.entries(p.respostas).map(([name, value]) => ({ name, value }))
                 }));
 
+                const textQuestionsData = await prisma.quePerg.findMany({
+                    where: {
+                        questionarioId: currentQuestionarioId,
+                        pergunta: {
+                            tipos: 'TEXTO'
+                        }
+                    },
+                    select: {
+                        pergunta: {
+                            select: {
+                                id: true,
+                                enunciado: true,
+                                tipos: true
+                            }
+                        }
+                    }
+                });
+                const textQuestions = textQuestionsData.map(qp => qp.pergunta);
+
+                // NOVO: Agregação de todas as respostas de múltipla escolha para um gráfico geral
+                const allMultiChoiceResponses = await prisma.resposta.findMany({
+                    where: {
+                        usuAval: { avaliacao: { questionarioId: currentQuestionarioId } },
+                        pergunta: { tipos: 'MULTIPLA_ESCOLHA' }
+                    },
+                    select: {
+                        resposta: true // Precisamos apenas do texto da resposta
+                    }
+                });
+
+                const overallDistribution = allMultiChoiceResponses.reduce((acc, current) => {
+                    acc[current.resposta] = (acc[current.resposta] || 0) + 1;
+                    return acc;
+                }, {});
+
+                // Formatar para o gráfico (ex: { name: 'Muito Satisfeito', value: 100 })
+                const overallDistributionFormatted = Object.entries(overallDistribution).map(([name, value]) => ({ name, value }));
+                // FIM NOVO
+
                 specificQuestionnaireData = {
                     info: {
-                        id: mostRecentQuestionario.id,
-                        titulo: mostRecentQuestionario.titulo,
-                        avaliacoesCount: mostRecentQuestionario._count.avaliacoes,
-                        updated_at: mostRecentQuestionario.updated_at,
-                        textQuestions: mostRecentQuestionario.perguntas.map(qp => qp.pergunta)
+                        id: targetQuestionario.id,
+                        titulo: targetQuestionario.titulo,
+                        avaliacoesCount: targetQuestionario._count.avaliacoes,
+                        updated_at: targetQuestionario.updated_at,
+                        textQuestions: textQuestions
                     },
                     kpis: {
                         totalAvaliacoes: specificAvaliacoesCount,
@@ -125,7 +172,8 @@ export class GetDashboardDataController {
                         totalFinalizados: specificTotalFinalizados,
                         taxaDeConclusao: parseFloat(specificTaxaDeConclusao.toFixed(1))
                     },
-                    graficos: specificDadosGraficosFormatados
+                    graficos: specificDadosGraficosFormatados,
+                    overallMultiChoiceDistribution: overallDistributionFormatted // NOVO: Adiciona ao objeto de resposta
                 };
             }
 
@@ -133,7 +181,7 @@ export class GetDashboardDataController {
             // --- Final Response Structure ---
             return response.json({
                 globalKpis: {
-                    totalAvaliacoes: globalTotalAvaliacoes, // Agora globalTotalAvaliacoes está definido
+                    totalAvaliacoes: globalTotalAvaliacoes,
                     totalRespondentes: globalTotalRespondentes,
                     totalFinalizados: globalTotalFinalizados,
                     taxaDeConclusao: parseFloat(globalTaxaDeConclusao.toFixed(1)),
@@ -144,6 +192,9 @@ export class GetDashboardDataController {
 
         } catch (error) {
             console.error('[GetDashboardDataController]', error);
+            if (error.name === 'PrismaClientValidationError') {
+                 console.error("PrismaClientValidationError details:", error.message);
+            }
             return response.status(500).json({ message: "Erro ao buscar dados do dashboard." });
         }
     }

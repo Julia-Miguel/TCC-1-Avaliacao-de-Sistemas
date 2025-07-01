@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckSquare, Users, FileText, TrendingUp, AlertCircle, Loader2, CalendarDays, BarChart as BarChartIcon, Plus } from 'lucide-react';
+import { CheckSquare, Users, FileText, TrendingUp, AlertCircle, Loader2, BarChart as BarChartIcon, Plus } from 'lucide-react';
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
 import api from '@/services/api';
 import "./globals.css";
@@ -283,7 +283,7 @@ function HomePageDashboardContent() {
                                         <select
                                             id="text-question-select-homepage"
                                             className="input-edit-mode"
-                                            value={selectedTextQuestionId || ''}
+                                            value={selectedTextQuestionId ?? ''}
                                             onChange={e => setSelectedTextQuestionId(Number(e.target.value))}
                                             disabled={!latestQuestionnaireData.textQuestions.length}
                                         >

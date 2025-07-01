@@ -53,7 +53,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: calc(100%); /* Reserva espaço para o botão */
+  max-width: calc(100%);
+  /* Reserva espaço para o botão */
 }
 
 .card-header .botao {
@@ -73,7 +74,7 @@
 .perguntas-list {
   margin-top: 0;
   flex-grow: 1;
-  overflow-y: hidden;
+  overflow-y: auto;
   max-height: 120px;
   color: var(--color-text-muted);
   font-size: 0.875rem;
@@ -234,9 +235,18 @@
   }
 
   .card-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--spacing-xs);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .card-header .boldly-container {
+    flex-grow: 1;
+    width: auto;
   }
 
   .card-header .title-container {
@@ -244,24 +254,83 @@
   }
 
   .card-header h4 {
-    white-space: nowrap;
+    white-space: normal;
     word-break: break-word;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
     max-width: 100%;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0;
   }
 
   .card-header .botao {
     align-self: flex-end;
-    margin-left: 0;
-    width: auto;
+    margin-left: var(--spacing-sm);
+    width: 24px;
   }
 
   .questionario-card {
     padding: var(--spacing-md);
+  }
+
+  .perguntas-list {
+    max-height: 150px;
+  }
+
+  .enunciado-pergunta {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    margin: 0 0 var(--spacing-sm) 0;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+  }
+
+  .drag-handle {
+    opacity: 1;
+  }
+
+  .btn.btn-primary {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.875rem;
+    /* Smaller text */
+  }
+
+  .table-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-md);
+  }
+
+  .table-header-actions .button-group {
+    margin-top: var(--spacing-md);
+  }
+
+  .menu-dropdown {
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .detalhes {
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
   }
 }
 
 .page-container {
   overflow-x: hidden;
 }
+
+
+
+
+

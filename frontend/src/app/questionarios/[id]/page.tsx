@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import "../../globals.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, FileText, CheckSquare, Users } from "lucide-react"; // Adicionado ícones
+import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, FileText, CheckSquare, Users } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
 import { WordCloud } from "@/components/dashboard/WordCloud";
@@ -87,7 +87,23 @@ interface AvaliacaoComDetalhes {
     _count?: { usuarios: number };
     created_at: string; // Adicionado para ordenação se necessário
 }
-// --- Fim das Interfaces ---
+
+// NOVO: Interface para os dados do dashboard específicos para um questionário
+// Esta interface deve corresponder à estrutura de `latestQuestionnaire` do backend
+interface SpecificQuestionnaireDashboardData {
+    info: {
+        id: number;
+        titulo: string;
+        avaliacoesCount: number;
+        updated_at: string;
+        textQuestions: { id: number; enunciado: string; tipos: 'TEXTO' | 'MULTIPLA_ESCOLHA' }[];
+    };
+    kpis: KpiData;
+    graficos: GraficoData[];
+    overallMultiChoiceDistribution?: { name: string; value: number }[]; // NOVO: Gráfico geral
+}
+
+
 
 // Componente exportado da página (sem mudanças)
 export default function EditQuestionarioPage() {
@@ -115,13 +131,15 @@ function EditQuestionarioFormContent() {
     const [isLoadingRespostas, setIsLoadingRespostas] = useState(false);
     const [selectedAvaliacaoId, setSelectedAvaliacaoId] = useState<number | null>(null);
 
-    const [dashboardData, setDashboardData] = useState<{ kpis: KpiData, graficos: GraficoData[] } | null>(null);
+    // ALTERADO: O tipo de dashboardData agora é a nova interface criada ou null
+    const [dashboardData, setDashboardData] = useState<SpecificQuestionnaireDashboardData | null>(null);
     const [wordCloudData, setWordCloudData] = useState<{ text: string; value: number }[]>([]);
     const [selectedTextQuestion, setSelectedTextQuestion] = useState('');
     const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
     const [isLoadingWordCloud, setIsLoadingWordCloud] = useState(false);
 
     const [semestresExpandidos, setSemestresExpandidos] = useState<Set<string>>(new Set());
+    const [chartVisibility, setChartVisibility] = useState<{ [key: string]: boolean }>({});
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -154,11 +172,37 @@ function EditQuestionarioFormContent() {
             setIsLoadingDashboard(true);
             api.get(`/dashboard?questionarioId=${questionarioId}`)
                 .then(response => {
-                    setDashboardData(response.data);
+                    if (response.data.latestQuestionnaire && response.data.latestQuestionnaire.info.id === questionarioId) {
+                        setDashboardData(response.data.latestQuestionnaire);
+
+                        // NOVO: Inicializa a visibilidade dos gráficos individuais (todos visíveis por padrão)
+                        const initialVisibility: { [key: string]: boolean } = {};
+                        response.data.latestQuestionnaire.graficos.forEach((g: GraficoData) => {
+                            initialVisibility[g.perguntaId.toString()] = true; // Usa o ID da pergunta como chave
+                        });
+                        setChartVisibility(initialVisibility);
+                        // FIM NOVO
+
+                        if (response.data.latestQuestionnaire.info.textQuestions.length > 0) {
+                            setSelectedTextQuestion(response.data.latestQuestionnaire.info.textQuestions[0].id.toString());
+                        } else {
+                            setSelectedTextQuestion('');
+                            setWordCloudData([]);
+                        }
+                    } else {
+                        setDashboardData(null);
+                        setChartVisibility({}); // NOVO: Limpa a visibilidade se não houver dados do dashboard
+                        setSelectedTextQuestion('');
+                        setWordCloudData([]);
+                    }
                 })
                 .catch(err => {
                     console.error("Erro ao buscar dados do dashboard específico:", err);
-                    // Lidar com erro
+                    setError("Erro ao carregar dados de análise do questionário.");
+                    setDashboardData(null);
+                    setChartVisibility({}); // NOVO: Limpa a visibilidade em caso de erro
+                    setSelectedTextQuestion('');
+                    setWordCloudData([]);
                 })
                 .finally(() => {
                     setIsLoadingDashboard(false);
@@ -168,22 +212,25 @@ function EditQuestionarioFormContent() {
 
     // useEffect para carregar dados da nuvem de palavras
     useEffect(() => {
-        if (viewMode === 'analise' && selectedTextQuestion) {
+        if (viewMode === 'analise' && selectedTextQuestion && questionarioId) { // Adicionado questionarioId na dependência
             const fetchWordCloud = async () => {
                 try {
                     setIsLoadingWordCloud(true);
-                    // Passa o questionarioId para filtrar a análise
-                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}&questionarioId=${questionarioId}`);
+                    // Passa o questionarioId para filtrar a análise corretamente no backend
+                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}&questionarioId=${questionarioId}`); //
                     setWordCloudData(response.data.wordCloud);
                 } catch (error) {
                     console.error("Erro ao carregar nuvem de palavras:", error);
+                    setWordCloudData([]); // Limpa em caso de erro
                 } finally {
                     setIsLoadingWordCloud(false);
                 }
             };
             fetchWordCloud();
+        } else if (viewMode === 'analise' && !selectedTextQuestion) {
+            setWordCloudData([]); // Limpa a nuvem se nenhuma pergunta for selecionada
         }
-    }, [viewMode, selectedTextQuestion, questionarioId]);
+    }, [viewMode, selectedTextQuestion, questionarioId]); // Adicionado questionarioId como dependência
 
     function sanitizeQuePergs(data: QuePerg[]): QuePerg[] {
         return data.map(qp => ({
@@ -205,9 +252,9 @@ function EditQuestionarioFormContent() {
         setError(null);
         const loadData = async () => {
             try {
-                const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
+                const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`); //
                 setTitulo(respQuestionario.data.titulo);
-                const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`);
+                const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`); //
                 const sanitizedQuePergs = sanitizeQuePergs(respQuePerg.data);
                 setQuePergs(sanitizedQuePergs);
             } catch (err: any) { /* ... (tratamento de erro existente) ... */
@@ -246,7 +293,7 @@ function EditQuestionarioFormContent() {
     }, [viewMode, questionarioId]);
 
     // --- Funções de manipulação de perguntas e opções (sem mudanças) ---
-    const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => { /* ... seu código ... */
+    const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) =>
                 index === qIndex
@@ -366,7 +413,7 @@ function EditQuestionarioFormContent() {
         };
 
         try {
-            const response = await api.patch(`/questionarios/${questionarioId}`, payload);
+            const response = await api.patch(`/questionarios/${questionarioId}`, payload); //
             setTitulo(response.data.titulo);
             const sanitizedQuePergs = response.data.perguntas.map((p: any) => ({
                 id: p.questionarioPerguntaId,
@@ -442,10 +489,10 @@ function EditQuestionarioFormContent() {
     }, [selectedAvaliacaoId, avaliacoesComRespostas]);
 
     // --- Renderização do Loading e Erro Inicial ---
-    if (isLoading && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */
+    if (isLoading && quePergs.length === 0 && !titulo) {
         return <div className="page-container center-content"><p>Carregando dados do questionário...</p></div>;
     }
-    if (error && quePergs.length === 0 && !titulo) { /* ... (sem mudança) ... */
+    if (error && quePergs.length === 0 && !titulo) {
         return (
             <div className="page-container center-content">
                 <p className="error-message">{error}</p>
@@ -493,20 +540,20 @@ function EditQuestionarioFormContent() {
                     </div>
 
                     <div className="display-section">
-                        <label htmlFor="titulo-input" className="form-label">Título do Questionário</label> {/* Usando form-label */}
+                        <label htmlFor="titulo-input" className="form-label">Título do Questionário</label>
                         <input
                             id="titulo-input"
                             type="text"
                             value={titulo}
                             onChange={(e) => setTitulo(e.target.value)}
-                            className="input-edit-mode title-input" // Sua classe ou a global para inputs
+                            className="input-edit-mode title-input"
                             disabled={isLoading}
                             required
                         />
                     </div>
 
                     <div className="display-section">
-                        <label className="form-label" htmlFor="perguntas-edit-list">Perguntas do Questionário</label> {/* Usando form-label */}
+                        <label className="form-label" htmlFor="perguntas-edit-list">Perguntas do Questionário</label>
                         <div id="perguntas-edit-list" className="perguntas-edit-list">
                             <DndContext
                                 sensors={sensors}
@@ -521,102 +568,102 @@ function EditQuestionarioFormContent() {
                                     {quePergs
                                         .filter(qp => qp.pergunta.id !== undefined || qp.pergunta.tempId !== undefined)
                                         .map((qp, qIndex) => (
-                                        <SortableItem
-                                            key={qp.pergunta.id ?? qp.pergunta.tempId}
-                                            id={(qp.pergunta.id ?? qp.pergunta.tempId) as string | number}
-                                        >
-                                            <div className="pergunta-editor-item">
-                                                <label htmlFor={`enunciado-pergunta-${qIndex}`} className="form-label sr-only">Enunciado da Pergunta {qIndex + 1}</label>
-                                                <textarea
-                                                    id={`enunciado-pergunta-${qIndex}`}
-                                                    value={qp.pergunta.enunciado}
-                                                    onChange={(e) => handlePerguntaChange(qIndex, e.target.value)}
-                                                    className="input-edit-mode question-textarea"
-                                                    rows={2}
-                                                    placeholder={`Enunciado da Pergunta ${qIndex + 1}`}
-                                                    required
-                                                />
-                                                <div className="mt-4 flex items-end gap-x-3">
-                                                    {/* Contêiner para o seletor de tipo, que ocupará o espaço disponível */}
-                                                    <div className="flex-grow">
-                                                        <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label">
-                                                            Tipo
-                                                        </label>
-                                                        <select
-                                                            id={`tipo-pergunta-${qIndex}`}
-                                                            value={qp.pergunta.tipos}
-                                                            onChange={(e) => handleTipoChange(qIndex, e.target.value as 'TEXTO' | 'MULTIPLA_ESCOLHA')}
-                                                            className="input-edit-mode w-full"
-                                                            disabled={isLoading}
-                                                        >
-                                                            <option value="TEXTO">Texto</option>
-                                                            <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
-                                                        </select>
-                                                    </div>
+                                            <SortableItem
+                                                key={qp.pergunta.id ?? qp.pergunta.tempId}
+                                                id={(qp.pergunta.id ?? qp.pergunta.tempId) as string | number}
+                                            >
+                                                <div className="pergunta-editor-item">
+                                                    <label htmlFor={`enunciado-pergunta-${qIndex}`} className="form-label sr-only">Enunciado da Pergunta {qIndex + 1}</label>
+                                                    <textarea
+                                                        id={`enunciado-pergunta-${qIndex}`}
+                                                        value={qp.pergunta.enunciado}
+                                                        onChange={(e) => handlePerguntaChange(qIndex, e.target.value)}
+                                                        className="input-edit-mode question-textarea"
+                                                        rows={2}
+                                                        placeholder={`Enunciado da Pergunta ${qIndex + 1}`}
+                                                        required
+                                                    />
+                                                    <div className="mt-4 flex items-end gap-x-3">
+                                                        {/* Contêiner para o seletor de tipo, que ocupará o espaço disponível */}
+                                                        <div className="flex-grow">
+                                                            <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label">
+                                                                Tipo
+                                                            </label>
+                                                            <select
+                                                                id={`tipo-pergunta-${qIndex}`}
+                                                                value={qp.pergunta.tipos}
+                                                                onChange={(e) => handleTipoChange(qIndex, e.target.value as 'TEXTO' | 'MULTIPLA_ESCOLHA')}
+                                                                className="input-edit-mode w-full"
+                                                                disabled={isLoading}
+                                                            >
+                                                                <option value="TEXTO">Texto</option>
+                                                                <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
+                                                            </select>
+                                                        </div>
 
-                                                    {/* Botão de lixeira */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removePergunta(qIndex)}
-                                                        className="btn btn-danger p-2.5" // Reutiliza suas classes de botão para consistência
-                                                        title="Remover Pergunta"
-                                                        disabled={isLoading}
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
-
-                                                {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
-                                                    <div className="opcoes-editor-container">
-                                                        <label
-                                                            className="form-label"
-                                                            htmlFor={`opcao-q${qIndex}-o0`}
-                                                        >
-                                                            Opções de Resposta
-                                                        </label>
-                                                        {qp.pergunta.opcoes.map((opt, oIndex) => (
-                                                            <div key={opt.id ?? opt.tempId ?? `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
-                                                                <label htmlFor={`opcao-q${qIndex}-o${oIndex}`} className="sr-only">Opção {oIndex + 1}</label>
-                                                                <input
-                                                                    id={`opcao-q${qIndex}-o${oIndex}`}
-                                                                    type="text"
-                                                                    value={opt.texto}
-                                                                    onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
-                                                                    placeholder={`Texto da Opção ${oIndex + 1}`}
-                                                                    className="input-edit-mode" // Sua classe ou a global para inputs
-                                                                    disabled={isLoading}
-                                                                    required={qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'} // Obrigatório se for múltipla escolha
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeOption(qIndex, oIndex)}
-                                                                    className="btn-remover-opcao" // Estilo para este botão específico
-                                                                    title="Remover Opção"
-                                                                    disabled={isLoading}
-                                                                >
-                                                                    <Trash2 size={18} />
-                                                                </button>
-                                                            </div>
-                                                        ))}
+                                                        {/* Botão de lixeira */}
                                                         <button
                                                             type="button"
-                                                            onClick={() => addOptionToList(qIndex)}
-                                                            className="btn btn-outline btn-sm mt-2 flex items-center self-start" // Usando classes de botão genéricas
+                                                            onClick={() => removePergunta(qIndex)}
+                                                            className="btn btn-danger p-2.5"
+                                                            title="Remover Pergunta"
                                                             disabled={isLoading}
                                                         >
-                                                            <PlusIcon size={16} className="mr-1" /> Adicionar Opção
+                                                            <Trash2 size={18} />
                                                         </button>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </SortableItem>
-                                    ))}
+
+                                                    {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
+                                                        <div className="opcoes-editor-container">
+                                                            <label
+                                                                className="form-label"
+                                                                htmlFor={`opcao-q${qIndex}-o0`}
+                                                            >
+                                                                Opções de Resposta
+                                                            </label>
+                                                            {qp.pergunta.opcoes.map((opt, oIndex) => (
+                                                                <div key={opt.id ?? opt.tempId ?? `q${qIndex}-o${oIndex}`} className="opcao-editor-item">
+                                                                    <label htmlFor={`opcao-q${qIndex}-o${oIndex}`} className="sr-only">Opção {oIndex + 1}</label>
+                                                                    <input
+                                                                        id={`opcao-q${qIndex}-o${oIndex}`}
+                                                                        type="text"
+                                                                        value={opt.texto}
+                                                                        onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
+                                                                        placeholder={`Texto da Opção ${oIndex + 1}`}
+                                                                        className="input-edit-mode"
+                                                                        disabled={isLoading}
+                                                                        required={qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeOption(qIndex, oIndex)}
+                                                                        className="btn-remover-opcao"
+                                                                        title="Remover Opção"
+                                                                        disabled={isLoading}
+                                                                    >
+                                                                        <Trash2 size={18} />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addOptionToList(qIndex)}
+                                                                className="btn btn-outline btn-sm mt-2 flex items-center self-start"
+                                                                disabled={isLoading}
+                                                            >
+                                                                <PlusIcon size={16} className="mr-1" /> Adicionar Opção
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </SortableItem>
+                                        ))}
                                 </SortableContext>
                             </DndContext>
                             <button
                                 type="button"
                                 onClick={handleAddNewPergunta}
-                                className="btn btn-primary mt-4 flex items-center add-pergunta-btn" // Botão primário para ação principal
+                                className="btn btn-primary mt-4 flex items-center add-pergunta-btn"
                                 disabled={isLoading}
                             >
                                 <PlusIcon size={20} className="mr-2" /> Adicionar Nova Pergunta
@@ -628,7 +675,7 @@ function EditQuestionarioFormContent() {
 
             {/* // --- SEÇÃO DE VISUALIZAÇÃO DE RESPOSTAS MODIFICADA --- */}
             {viewMode === 'respostas' && (
-                <div className="respostas-view-container mt-6"> {/* Adiciona margem no topo */}
+                <div className="respostas-view-container mt-6">
                     <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-6">
                         Respostas para o Questionário: <span className="text-primary">{titulo}</span>
                     </h3>
@@ -743,8 +790,8 @@ function EditQuestionarioFormContent() {
                 if (isLoadingDashboard) {
                     return <div className="text-center p-10">Carregando análise...</div>;
                 }
-                if (!dashboardData) {
-                    return <div className="text-center p-10">Não há dados para analisar.</div>;
+                if (!dashboardData?.kpis || !dashboardData?.graficos) {
+                    return <div className="text-center p-10">Não há dados para analisar ou os dados estão incompletos.</div>;
                 }
 
                 let wordCloudContent: React.ReactNode;
@@ -769,17 +816,71 @@ function EditQuestionarioFormContent() {
                         <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Análise do Questionário: <span className="text-primary">{titulo}</span></h3>
 
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                            {/* StatCards existentes */}
                             <StatCard title="Total de Avaliações" value={dashboardData.kpis.totalAvaliacoes} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
                             <StatCard title="Total de Respondentes" value={dashboardData.kpis.totalRespondentes} icon={Users} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
                             <StatCard title="Respostas Finalizadas" value={dashboardData.kpis.totalFinalizados} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
                             <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
                         </div>
 
+                        {/* NOVO: Gráfico Geral (Overall Multi-Choice Distribution) */}
+                        {dashboardData.overallMultiChoiceDistribution && dashboardData.overallMultiChoiceDistribution.length > 0 && (
+                            <div className="bg-card-background dark:bg-gray-800 p-4 rounded-lg shadow border border-border">
+                                <h4 className="text-lg font-semibold text-foreground mb-4">Visão Geral das Respostas de Múltipla Escolha</h4>
+                                <QuestionBarChart
+                                    title="Distribuição Agregada de Respostas"
+                                    data={dashboardData.overallMultiChoiceDistribution}
+                                />
+                            </div>
+                        )}
+
+                        {/* NOVO: Controles de visibilidade do gráfico */}
+                        <div className="form-group flex justify-end items-center gap-4">
+                            <label htmlFor="chart-visibility-select" className="form-label text-sm font-medium whitespace-nowrap">Mostrar Gráficos:</label>
+                            <select
+                                id="chart-visibility-select"
+                                className="input-edit-mode w-full max-w-xs"
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === 'all') {
+                                        const newVisibility: { [key: string]: boolean } = {};
+                                        dashboardData.graficos.forEach(g => newVisibility[g.perguntaId.toString()] = true);
+                                        setChartVisibility(newVisibility);
+                                    } else if (value === 'none') {
+                                        setChartVisibility({});
+                                    } else {
+                                        // Alternar visibilidade de gráfico individual
+                                        setChartVisibility(prev => ({
+                                            ...prev,
+                                            [value]: !prev[value]
+                                        }));
+                                    }
+                                }}
+                                value="" // Reseta o valor selecionado para que o 'onChange' seja disparado novamente se a mesma opção for clicada
+                            >
+                                <option value="">Selecione para configurar</option>
+                                <option value="all">Mostrar Todas as Perguntas</option>
+                                <option value="none">Esconder Todas as Perguntas</option>
+                                <optgroup label="Perguntas Individuais">
+                                    {dashboardData.graficos.map(g => (
+                                        <option key={g.perguntaId} value={g.perguntaId.toString()}>
+                                            {chartVisibility[g.perguntaId.toString()] ? '✅ ' : '⬜ '} {g.enunciado.substring(0, 50)}...
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                        </div>
+
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Renderização condicional dos gráficos de perguntas individuais */}
                             {dashboardData.graficos.map(grafico => (
-                                <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
+                                chartVisibility[grafico.perguntaId.toString()] && (
+                                    <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
+                                )
                             ))}
 
+                            {/* Seção da nuvem de palavras existente */}
                             <div>
                                 <div className="form-group">
                                     <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
@@ -790,7 +891,7 @@ function EditQuestionarioFormContent() {
                                         onChange={e => setSelectedTextQuestion(e.target.value)}
                                     >
                                         <option value="">Selecione uma pergunta</option>
-                                        {quePergs.filter(qp => qp.pergunta.tipos === 'TEXTO').map(qp => <option key={qp.pergunta.id} value={qp.pergunta.id}>{qp.pergunta.enunciado}</option>)}
+                                        {dashboardData.info.textQuestions.filter(qp => qp.tipos === 'TEXTO').map(qp => <option key={qp.id} value={qp.id}>{qp.enunciado}</option>)}
                                     </select>
                                 </div>
                                 <div className="mt-4 h-[400px]">
