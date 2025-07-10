@@ -2,8 +2,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { GenericChartContainer } from './GenericChartContainer';
-
 // A importação dinâmica continua sendo a melhor prática para componentes de visualização
 const WordCloudComponent = dynamic(() => import('react-d3-cloud'), {
   ssr: false, // Garantimos que ele só rode no navegador

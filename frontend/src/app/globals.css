@@ -7,66 +7,41 @@
   /* Família de Fontes (garanta que estejam carregadas via layout.tsx ou aqui) */
   --font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   --font-family-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  /* Adicionando fallbacks comuns */
   --auth-card-max-width: 28rem;
-  /* ou 448px */
 
   /* Paleta de Cores Inspirada na Imagem de Referência (Tema Claro como padrão) */
   --color-primary: #4A90E2;
-  /* Azul principal da imagem de referência */
   --color-primary-hover: #357ABD;
-  /* Um tom mais escuro para hover */
   --color-primary-rgb: 74, 144, 226;
-  /* Para usar com opacidade (ex: box-shadow) */
 
   --color-text-base: #2D3748;
-  /* Cinza escuro para texto principal (Tailwind gray-800) */
   --color-text-muted: #718096;
-  /* Cinza médio para texto secundário (Tailwind gray-600) */
   --color-text-on-primary: #FFFFFF;
-  /* Texto branco sobre fundos com cor primária */
 
   --color-background-page: #F7FAFC;
-  /* Fundo da página (Tailwind gray-100) */
   --color-background-element: #FFFFFF;
-  /* Fundo de cards, sidebar, navbar (Branco) */
 
   --color-border: #E2E8F0;
-  /* Borda sutil (Tailwind gray-300) */
   --color-border-input: #CBD5E0;
-  /* Borda para inputs (Tailwind gray-400) */
 
   /* Cores de Feedback */
   --color-success: #38A169;
-  /* Verde (Tailwind green-600) */
   --color-error: #E53E3E;
-  /* Vermelho (Tailwind red-600) */
   --color-warning: #DD6B20;
-  /* Laranja (Tailwind orange-600) */
 
-  /* Espaçamentos (consistentes com Tailwind ou customizados) */
+  /* Espaçamentos */
   --spacing-xs: 0.25rem;
-  /* 4px */
   --spacing-sm: 0.5rem;
-  /* 8px */
   --spacing-md: 1rem;
-  /* 16px */
   --spacing-lg: 1.5rem;
-  /* 24px */
   --spacing-xl: 2rem;
-  /* 32px */
   --spacing-2xl: 2.5rem;
-  /* 40px */
 
   /* Bordas Arredondadas */
   --border-radius-sm: 0.25rem;
-  /* 4px */
   --border-radius-md: 0.375rem;
-  /* 6px - rounded-md */
   --border-radius-lg: 0.5rem;
-  /* 8px - rounded-lg */
   --border-radius-xl: 0.75rem;
-  /* 12px - rounded-xl */
 
   /* Transições */
   --transition-fast: 0.15s ease-in-out;
@@ -76,18 +51,17 @@
   /* Sombras */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
-  /* Sombra mais suave */
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07);
   --shadow-focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.4);
 
-  /* Variáveis genéricas para Tailwind, para compatibilidade com ThemeProvider */
+  /* Variáveis genéricas para Tailwind */
   --background: var(--color-background-page);
   --foreground: var(--color-text-base);
   --card-background: var(--color-background-element);
   --border-color: var(--color-border);
   --input-background: var(--color-background-element);
 
-  /* Variáveis para botões (usadas pelas classes .btn-*) */
+  /* Variáveis para botões */
   --btn-primary-bg: var(--color-primary);
   --btn-primary-text: var(--color-text-on-primary);
   --btn-primary-hover-bg: var(--color-primary-hover);
@@ -102,44 +76,29 @@
 
 body.dark-mode {
   --color-primary: #60A5FA;
-  /* Azul Tailwind 400 */
   --color-primary-hover: #3B82F6;
-  /* Azul Tailwind 500 */
   --color-primary-rgb: 96, 165, 250;
 
   --color-text-base: #E5E7EB;
-  /* Cinza Tailwind 200 */
   --color-text-muted: #9CA3AF;
-  /* Cinza Tailwind 400 */
   --color-text-on-primary: #1A202C;
-  /* Cinza Tailwind 900 (para contraste com azul claro) */
 
   --color-background-page: #111827;
-  /* Cinza Tailwind 900 */
   --color-background-element: #1F2937;
-  /* Cinza Tailwind 800 */
 
-  --color-border: #374151;
-  /* Cinza Tailwind 700 */
+  --color-border: #4B5563; /* Updated for more visible borders */
   --color-border-input: #4B5563;
-  /* Cinza Tailwind 600 */
 
   --color-success: #34D399;
-  /* Verde Esmeralda 400 */
   --color-error: #F87171;
-  /* Vermelho 400 */
   --color-warning: #FBBF24;
-  /* Âmbar 400 */
 
-  /* Atualiza variáveis genéricas para modo escuro */
   --background: var(--color-background-page);
   --foreground: var(--color-text-base);
   --card-background: var(--color-background-element);
   --border-color: var(--color-border);
   --input-background: var(--color-background-element);
-  /* Ou um tom ligeiramente diferente, ex: #2D3748 (gray-700) */
 
-  /* Botões no modo escuro */
   --btn-primary-bg: var(--color-primary);
   --btn-primary-text: var(--color-text-on-primary);
   --btn-primary-hover-bg: var(--color-primary-hover);
@@ -152,16 +111,12 @@ body.dark-mode {
   --btn-secondary-hover-text: var(--color-primary-hover);
 }
 
-/* ========================================= */
-/* Estilos Globais Base                      */
-/* ========================================= */
+/* Estilos Globais Base */
 body {
   margin: 0;
   font-family: var(--font-family-sans);
   background-color: var(--background);
-  /* Usa variável genérica */
   color: var(--foreground);
-  /* Usa variável genérica */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 16px;
@@ -181,44 +136,23 @@ h6 {
   line-height: 1.3;
 }
 
-h1 {
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-/* Título da página/seção */
-h4 {
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-/* Título de card */
+h1 { font-size: 2rem; font-weight: 700; }
+h2 { font-size: 1.5rem; font-weight: 700; }
+h3 { font-size: 1.25rem; font-weight: 600; }
+h4 { font-size: 1.125rem; font-weight: 600; }
 
 p {
   margin-top: 0;
   margin-bottom: var(--spacing-md);
   color: var(--color-text-muted);
-  /* Parágrafos com cor suave por padrão */
 }
 
 strong {
   font-weight: 600;
   color: var(--foreground);
-  /* Destaque para strong */
 }
 
 a:not(.btn) {
-  /* Links que não são botões */
   color: var(--color-primary);
   text-decoration: none;
   transition: color var(--transition-fast);
@@ -229,11 +163,7 @@ a:not(.btn):hover {
   text-decoration: underline;
 }
 
-/* ========================================= */
-/* Estilos para Componentes Comuns           */
-/* ========================================= */
-
-/* Botões */
+/* Estilos para Componentes Comuns */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -248,7 +178,6 @@ a:not(.btn):hover {
   text-decoration: none;
   line-height: 1.5;
   white-space: nowrap;
-  /* Evita quebra de linha em botões */
 }
 
 .btn:focus-visible {
@@ -257,14 +186,8 @@ a:not(.btn):hover {
   box-shadow: var(--shadow-focus-ring);
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  /* Leve elevação no hover */
-}
-
-.btn:active {
-  transform: translateY(0);
-}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
 
 .btn-primary {
   background-color: var(--btn-primary-bg);
@@ -301,12 +224,10 @@ a:not(.btn):hover {
 
 .btn-danger:hover {
   background-color: #c53030;
-  /* Vermelho Tailwind 700 */
   box-shadow: var(--shadow-md);
 }
 
 .btn-reset {
-  /* Um estilo mais sutil para reset/limpar */
   background-color: transparent;
   color: var(--color-text-muted);
   border-color: transparent;
@@ -315,9 +236,7 @@ a:not(.btn):hover {
 .btn-reset:hover {
   color: var(--foreground);
   background-color: rgba(var(--gray-rgb, 107, 114, 128), 0.1);
-  /* Use uma var gray-rgb */
 }
-
 
 .btn-sm {
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -325,10 +244,7 @@ a:not(.btn):hover {
 }
 
 /* Formulários */
-.form-group {
-  margin-bottom: var(--spacing-lg);
-  /* Mais espaço entre grupos de formulário */
-}
+.form-group { margin-bottom: var(--spacing-lg); }
 
 .form-label {
   display: block;
@@ -345,7 +261,6 @@ select,
 textarea {
   width: 100%;
   padding: calc(var(--spacing-sm) + 2px) var(--spacing-md);
-  /* Ajuste para altura consistente */
   font-size: 0.875rem;
   line-height: 1.5;
   color: var(--foreground);
@@ -370,7 +285,6 @@ textarea:focus {
 select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23718096' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  /* Cor do ícone (gray-500) */
   background-position: right var(--spacing-md) center;
   background-repeat: no-repeat;
   background-size: 1em 1em;
@@ -379,13 +293,9 @@ select {
 
 body.dark-mode select {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  /* Cor do ícone (gray-400) */
 }
 
-
-textarea {
-  min-height: 120px;
-}
+textarea { min-height: 120px; }
 
 input[type="checkbox"] {
   width: 1rem;
@@ -393,7 +303,6 @@ input[type="checkbox"] {
   border-radius: var(--border-radius-sm);
   border: 1px solid var(--color-border-input);
   color: var(--color-primary);
-  /* Cor do checkmark */
   margin-right: var(--spacing-sm);
   box-shadow: none;
   vertical-align: middle;
@@ -415,17 +324,14 @@ input[type="checkbox"]:focus {
   font-weight: normal;
 }
 
-
-/* Estilos para as páginas .Create que usam tabela para layout de formulário */
+/* Estilos para as páginas .Create */
 .Create {
-  /* Container da página de criação/edição */
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
 }
 
 .Create h3 {
-  /* Título da página de criação/edição */
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: var(--spacing-lg);
@@ -442,7 +348,6 @@ input[type="checkbox"]:focus {
 .Create form table {
   border-collapse: separate;
   border-spacing: 0 var(--spacing-lg);
-  /* Aumenta o espaço entre as linhas do form */
   width: 100%;
   margin-top: 0;
   box-shadow: none;
@@ -451,20 +356,15 @@ input[type="checkbox"]:focus {
 
 .Create form td {
   padding: 0;
-  /* Padding será nos elementos internos */
   border: none;
   text-align: left;
   vertical-align: top;
-  /* Para labels e inputs multiline */
 }
 
 .Create form td:first-child {
-  /* Label cell */
   padding-right: var(--spacing-lg);
   width: 150px;
-  /* Largura fixa para labels, ajuste conforme necessário */
   padding-top: calc(var(--spacing-sm) / 2 + 2px);
-  /* Alinhamento vertical com input */
 }
 
 .Create form label {
@@ -472,7 +372,6 @@ input[type="checkbox"]:focus {
   font-weight: 500;
   color: var(--foreground);
   display: block;
-  /* Garante que o label ocupe a largura */
 }
 
 .form-actions {
@@ -500,12 +399,10 @@ table:not(.Create form table) {
 
 table:not(.Create form table) thead {
   background-color: var(--table-header-bg, #F9FAFB);
-  /* var para tema escuro */
 }
 
 body.dark-mode table:not(.Create form table) thead {
   --table-header-bg: #2D3748;
-  /* gray-800 */
 }
 
 table:not(.Create form table) th {
@@ -514,7 +411,6 @@ table:not(.Create form table) th {
   font-weight: 600;
   color: var(--color-text-muted);
   border-bottom: 1px solid var(--border-color);
-  /* Borda sutil no cabeçalho */
 }
 
 table:not(.Create form table) td {
@@ -533,7 +429,6 @@ table:not(.Create form table) tbody tr:hover {
 }
 
 table:not(.Create form table) td .btn {
-  /* Botões dentro de células de tabela */
   margin-right: var(--spacing-xs);
 }
 
@@ -541,15 +436,21 @@ table:not(.Create form table) td .btn:last-child {
   margin-right: 0;
 }
 
-
 /* Containers de Página */
 .page-container {
   padding: var(--spacing-lg) var(--spacing-xl);
   overflow-x: hidden;
+  margin-left: var(--side-menu-width);
+
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    margin-left: 0;
+  }
 }
 
 .table-header-actions {
-  /* Cabeçalho de páginas de listagem */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -563,7 +464,6 @@ table:not(.Create form table) td .btn:last-child {
 }
 
 @media (max-width: 768px) {
-
   table,
   thead,
   tbody,
@@ -605,8 +505,7 @@ table:not(.Create form table) td .btn:last-child {
   }
 }
 
-/* Estilos para a página de edição de questionário com modo de visualização/edição */
-/* frontend/src/app/questionarios/[id]/page.tsx */
+/* Estilos para a página de edição de questionário */
 .editor-form-card {
   width: 100%;
   background-color: var(--card-background);
@@ -629,7 +528,6 @@ table:not(.Create form table) td .btn:last-child {
 .form-header h3 {
   margin: 0;
   font-size: 1.125rem;
-  /* text-lg */
   font-weight: 600;
   color: var(--foreground);
 }
@@ -649,10 +547,8 @@ table:not(.Create form table) td .btn:last-child {
 }
 
 .display-section>label {
-  /* Label da seção (Título, Perguntas) */
   display: block;
   font-size: 0.75rem;
-  /* text-xs */
   font-weight: 600;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -661,7 +557,6 @@ table:not(.Create form table) td .btn:last-child {
 }
 
 .input-edit-mode {
-  /* Para inputs e textareas no modo de edição */
   width: 100%;
   border: 1px solid var(--color-border-input);
   border-radius: var(--border-radius-md);
@@ -678,18 +573,13 @@ table:not(.Create form table) td .btn:last-child {
 }
 
 .title-input {
-  /* Input para o título do questionário */
   font-size: 1.5rem;
-  /* text-2xl */
   font-weight: 700;
   padding: var(--spacing-md);
-  /* Mais padding para título */
 }
 
 .question-textarea {
-  /* Textarea para enunciado da pergunta */
   font-size: 1rem;
-  /* text-base */
   resize: vertical;
   min-height: 60px;
 }
@@ -698,12 +588,10 @@ table:not(.Create form table) td .btn:last-child {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  /* Espaço entre cada item de edição de pergunta */
 }
 
 .pergunta-editor-item {
   background-color: rgba(var(--gray-rgb, 0, 0, 0), 0.02);
-  /* Fundo sutil para cada pergunta */
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
@@ -714,7 +602,6 @@ table:not(.Create form table) td .btn:last-child {
 
 body.dark-mode .pergunta-editor-item {
   background-color: rgba(var(--gray-rgb-dark, 255, 255, 255), 0.03);
-  /* Ajustar para tema escuro */
 }
 
 .pergunta-meta-editor {
@@ -725,7 +612,6 @@ body.dark-mode .pergunta-editor-item {
 
 .pergunta-meta-editor label,
 .opcoes-editor-container>label {
-  /* Labels dentro do editor de pergunta */
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-text-muted);
@@ -748,7 +634,6 @@ body.dark-mode .pergunta-editor-item {
 
 .opcao-editor-item input[type="text"] {
   flex-grow: 1;
-  /* Input da opção ocupa o espaço */
 }
 
 .btn-remover-opcao,
@@ -766,12 +651,10 @@ body.dark-mode .pergunta-editor-item {
   border: none;
   color: var(--color-error);
   padding: calc(var(--spacing-sm) + 2px);
-  /* Para alinhar com altura do input */
 }
 
 .btn-remover-opcao:hover {
   color: #c53030;
-  /* Vermelho mais escuro */
 }
 
 .btn-adicionar-opcao {
@@ -786,4 +669,34 @@ body.dark-mode .pergunta-editor-item {
   background-color: rgba(var(--color-primary-rgb), 0.1);
   color: var(--color-primary-hover);
   border-style: solid;
+}
+
+/* Novas classes para o questionário recente */
+.questionnaire-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-xl);
+    transition: transform var(--transition-fast), box-shadow var(--transition-std);
+}
+
+body.dark-mode .questionnaire-card {
+    background-color: #1F2937;
+    border-color: #4B5563; /* Updated for visibility */
+}
+
+.questionnaire-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.stats-grid > div {
+    border: 1px solid var(--border-color);
 }

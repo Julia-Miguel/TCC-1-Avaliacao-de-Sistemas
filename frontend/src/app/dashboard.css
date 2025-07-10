@@ -1,0 +1,57 @@
+
+  .page-container {
+    max-width: 80rem; /* max-w-7xl */
+    margin-left: auto; /* mx-auto */
+    margin-right: auto; /* mx-auto */
+    padding-left: 1rem; /* px-4 */
+    padding-right: 1rem; /* px-4 */
+    padding-top: 2rem; /* py-8 */
+    padding-bottom: 2rem; /* py-8 */
+  }
+
+  /*
+   * Estilo base para botões.
+   * Define o tamanho, fonte, bordas arredondadas e transições.
+   */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition-property: all;
+    transition-duration: 200ms;
+    transition-timing-function: ease-in-out;
+    outline: none;
+  }
+  .btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 4px var(--color-primary);
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+    will-change: transform;
+  }
+
+  /*
+   * Variação de botão primário (ação principal).
+   * Usa as cores primárias definidas nas variáveis globais.
+   */
+  .btn-primary {
+    /* As variáveis --color-primary e --color-text-on-primary vêm do globals.css */
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+  }

@@ -2,16 +2,18 @@
 
 .side-menu {
   width: 16rem; /* 256px - w-64 no Tailwind */
-  position: fixed;
-  top: 4rem; /* Altura da Navbar (h-16 no Tailwind, que é 4rem ou 64px) */
+  position: relative; /* Alterado de fixed para relative */
+  top: 0;
   left: 0;
-  height: calc(100vh - 4rem); /* Altura restante abaixo da Navbar */
+  height: 100vh;
+  z-index: 1000; /* valor alto para garantir que fique acima */
+  box-shadow: 2px 0 16px rgba(0,0,0,0.15); /* profundidade visual */
+  background: #fff; /* ou a cor do seu tema */
   display: flex;
   flex-direction: column;
   background-color: var(--color-background-element); /* Fundo branco/claro */
   border-right: 1px solid var(--color-border); /* Borda sutil à direita */
   color: var(--color-text-base);
-  z-index: 40; /* Abaixo da Navbar (que pode ser z-50) */
   transition: background-color var(--transition-slow), border-color var(--transition-slow), color var(--transition-slow), width 0.3s ease;
   padding-bottom: var(--spacing-md); /* Espaço no final do menu */
 }

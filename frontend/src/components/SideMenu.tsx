@@ -1,23 +1,34 @@
 "use client";
 
-import { Home, User, Settings, GrabIcon, Menu } from "lucide-react";
+import {
+  Home,
+  Users,
+  HelpCircle,
+  FileText,
+  BarChart2,
+  Settings,
+  Menu,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import "./SideMenu.css";
 
 const menuItems = [
   { label: "Início", icon: Home, href: "/" },
-  { label: "Usuários", icon: User, href: "/usuario" },
-  { label: "Perguntas", icon: Settings, href: "/perguntas" },
-  { label: "Questionários", icon: Settings, href: "/questionarios" },
-  { label: "Dashboards", icon: GrabIcon, href: "/dashboard" },
+  { label: "Usuários", icon: Users, href: "/usuario" },
+  { label: "Perguntas", icon: HelpCircle, href: "/perguntas" },
+  { label: "Questionários", icon: FileText, href: "/questionarios" },
+  { label: "Dashboards", icon: BarChart2, href: "/dashboard" },
   { label: "Configurações", icon: Settings, href: "/config" },
 ];
 
-export default function SideMenu() {
+interface SideMenuProps {
+  collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
+}
+
+export default function SideMenu({ collapsed, setCollapsed }: SideMenuProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
