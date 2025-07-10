@@ -47,6 +47,7 @@ interface PerguntaAninhada {
     id?: number;
     enunciado: string;
     tipos: 'TEXTO' | 'MULTIPLA_ESCOLHA';
+    obrigatoria: boolean;
     opcoes: Opcao[];
     tempId?: string;
 }
@@ -381,6 +382,7 @@ function EditQuestionarioFormContent() {
         const novaPerguntaDefault: PerguntaAninhada = {
             tempId: `temp-perg-${Date.now()}`,
             enunciado: "",
+            obrigatoria: true,
             tipos: "TEXTO",
             opcoes: []
         };
@@ -400,6 +402,8 @@ function EditQuestionarioFormContent() {
             id: qp.pergunta.id,
             enunciado: qp.pergunta.enunciado,
             tipos: qp.pergunta.tipos,
+            // ✅ 1. ADICIONE ESTA LINHA PARA ENVIAR O ESTADO DE 'OBRIGATORIA'
+            obrigatoria: qp.pergunta.obrigatoria,
             ordem: index,
             opcoes: qp.pergunta.opcoes.map(opt => ({
                 id: opt.id,
@@ -413,21 +417,30 @@ function EditQuestionarioFormContent() {
         };
 
         try {
-            const response = await api.patch(`/questionarios/${questionarioId}`, payload); //
+            const response = await api.patch(`/questionarios/${questionarioId}`, payload);
             setTitulo(response.data.titulo);
+
+            // Atualizando o estado local com os dados que vieram do backend
             const sanitizedQuePergs = response.data.perguntas.map((p: any) => ({
-                id: p.questionarioPerguntaId,
+                // A estrutura aqui depende de como seu backend retorna os dados,
+                // então vamos focar na parte da 'pergunta'.
+                id: p.questionarioPerguntaId, // ou o que for o ID da relação QuePerg
                 questionarioId: p.questionarioId,
                 pergunta: {
                     id: p.id,
                     enunciado: p.enunciado,
                     tipos: p.tipos,
+                    // ✅ 2. ADICIONE ESTA LINHA PARA ATUALIZAR O ESTADO LOCAL COM O VALOR SALVO
+                    obrigatoria: p.obrigatoria,
                     opcoes: p.opcoes ?? []
                 }
             }));
-            setQuePergs(sanitizedQuePergs);
+
+            setQuePergs(sanitizedQuePergs); // Atualiza o estado com os dados retornados pela API
+
             alert("Questionário salvo com sucesso!");
             router.push('/questionarios');
+
         } catch (error: any) {
             console.error("Erro ao salvar:", error.response?.data ?? error);
             const errorMessage = error.response?.data?.error ?? 'Ocorreu um problema ao salvar.';
@@ -482,6 +495,15 @@ function EditQuestionarioFormContent() {
         });
     };
 
+    const handleObrigatoriaChange = (qIndex: number, novoEstado: boolean) => {
+        setQuePergs(prevQuePergs =>
+            prevQuePergs.map((qp, index) =>
+                index === qIndex
+                    ? { ...qp, pergunta: { ...qp.pergunta, obrigatoria: novoEstado } }
+                    : qp
+            )
+        );
+    };
 
     const selectedAvaliacaoDetalhes = useMemo(() => {
         if (!selectedAvaliacaoId) return null;
@@ -583,6 +605,18 @@ function EditQuestionarioFormContent() {
                                                         placeholder={`Enunciado da Pergunta ${qIndex + 1}`}
                                                         required
                                                     />
+                                                    <div className="pergunta-meta-editor mt-2">
+                                                        <label htmlFor={`obrigatoria-pergunta-${qIndex}`} className="form-label flex items-center gap-2 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                id={`obrigatoria-pergunta-${qIndex}`}
+                                                                checked={qp.pergunta.obrigatoria}
+                                                                onChange={(e) => handleObrigatoriaChange(qIndex, e.target.checked)}
+                                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                            />
+                                                            Resposta Obrigatória
+                                                        </label>
+                                                    </div>
                                                     <div className="mt-4 flex items-end gap-x-3">
                                                         {/* Contêiner para o seletor de tipo, que ocupará o espaço disponível */}
                                                         <div className="flex-grow">

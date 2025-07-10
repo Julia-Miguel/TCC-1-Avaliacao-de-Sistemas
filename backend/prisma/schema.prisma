@@ -102,19 +102,15 @@ model UsuAval {
   usuario   Usuario? @relation(fields: [usuarioId], references: [id])
 
   // Se o respondente for anônimo:
-  anonymousSessionId String? @unique // Para tentar controlar respostas anônimas
+  anonymousSessionId String?
 
   status       String // Ex: "PENDENTE", "EM_ANDAMENTO", "CONCLUIDO"
   isFinalizado Boolean    @default(false)
   respostas    Resposta[]
   created_at   DateTime   @default(now())
   updated_at   DateTime   @updatedAt
-
-  // Garante que ou temos um usuarioId ou um anonymousSessionId, mas não ambos ao mesmo tempo,
-  // e que a combinação com avaliacaoId seja única para evitar múltiplas "tentativas" pela mesma entidade.
-  // Esta constraint pode precisar de ajuste fino ou ser tratada na lógica da aplicação.
-  // @@unique([avaliacaoId, usuarioId]) // Se usuarioId não for nulo
-  // @@unique([avaliacaoId, anonymousSessionId]) // Se anonymousSessionId não for nulo
+  @@unique([avaliacaoId, usuarioId]) // Se usuarioId não for nulo
+  @@unique([avaliacaoId, anonymousSessionId]) // Se anonymousSessionId não for nulo
 
   @@map("usu_aval")
 }
@@ -137,17 +133,16 @@ model Opcao {
 }
 
 model Pergunta {
-  id               Int      @id @default(autoincrement())
-  enunciado        String
-  tipos            TipoPergunta
-  ordem            Int      @default(0) // Campo para guardar a ordem da pergunta
-
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-
-  opcoes           Opcao[]
-  questionarios    QuePerg[]
-  respostas        Resposta[]
+  id              Int      @id @default(autoincrement())
+  enunciado       String
+  tipos           String
+  obrigatoria     Boolean  @default(true)
+  ordem           Int      @default(0)
+  opcoes          Opcao[]
+  questionarios   QuePerg[]
+  respostas       Resposta[]
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 }
 
 model QuePerg {

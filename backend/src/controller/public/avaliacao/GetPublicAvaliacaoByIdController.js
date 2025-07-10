@@ -63,6 +63,7 @@ export class GetPublicAvaliacaoByIdController {
           id: qp.pergunta.id,
           enunciado: qp.pergunta.enunciado,
           tipos: qp.pergunta.tipos,
+          obrigatoria: qp.pergunta.obrigatoria,
           opcoes: qp.pergunta.opcoes.map(opt => ({ id: opt.id, texto: opt.texto }))
         })) || []
       };

@@ -3,7 +3,7 @@ import { prisma } from '../../database/client.js';
 
 export class UpdatePerguntasController {
     async handle(request, response) {
-        const { id: perguntaIdToUpdate, enunciado, tipos, opcoes } = request.body;
+        const { id: perguntaIdToUpdate, enunciado, tipos, opcoes, obrigatoria } = request.body;
         if (!request.user || !request.user.empresaId) {
             return response.status(401).json({ error: "Usuário não autenticado ou ID da empresa não encontrado no token." });
         }
@@ -55,6 +55,7 @@ export class UpdatePerguntasController {
                     data: {
                         enunciado,
                         tipos,
+                        obrigatoria,
                         opcoes: tipos === 'MULTIPLA_ESCOLHA' && opcoes && opcoes.length > 0
                             ? { create: opcoes.map(opt => ({ texto: opt.texto })) }
                             : undefined
@@ -69,7 +70,7 @@ export class UpdatePerguntasController {
             return response.json(updatedPergunta);
         } catch (error) {
             console.error("Erro ao atualizar pergunta:", error);
-            if (error.code === 'P2025') { // Prisma error for record not found during update
+            if (error.code === 'P2025') { 
                 return response.status(404).json({ message: "Pergunta não encontrada para atualização." });
             }
             return response.status(500).json({ message: "Erro ao atualizar pergunta: " + error.message });

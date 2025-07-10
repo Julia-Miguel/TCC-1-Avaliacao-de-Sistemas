@@ -1,16 +1,15 @@
-// backend/src/controller/questionarios/UpdateQuestionarioController.js
-
 import { prisma } from '../../database/client.js';
 
 export class UpdateQuestionarioController {
   async handle(request, response) {
+    console.log("PAYLOAD RECEBIDO NO BACKEND:", JSON.stringify(request.body, null, 2));
+
     const { id: questionarioIdParam } = request.params;
     const { titulo, perguntas } = request.body;
-    const questionarioId = parseInt(questionarioIdParam);
+    const questionarioId = parseInt(questionarioIdParam, 10);
 
-    // ... (as validações iniciais continuam as mesmas)
-    if (isNaN(questionarioId) || !titulo || !Array.isArray(perguntas) || !request.user) {
-        return response.status(400).json({ error: 'Dados inválidos ou usuário não autenticado.' });
+    if (isNaN(questionarioId) || !titulo || !Array.isArray(perguntas)) {
+      return response.status(400).json({ error: 'Dados inválidos.' });
     }
 
     try {
@@ -21,17 +20,14 @@ export class UpdateQuestionarioController {
           select: { perguntas: { select: { perguntaId: true } } }
         });
 
-        if (!questionarioAtual) {
-          // Lança um erro para que a transação inteira seja revertida
-          throw new Error('Questionário não encontrado.'); 
-        }
-
+        if (!questionarioAtual) throw new Error('Questionário não encontrado.');
+        
         const idsPerguntasAtuais = questionarioAtual.perguntas.map(qp => qp.perguntaId);
         const idsPerguntasRecebidas = perguntas.map(p => p.id).filter(id => id);
         const idsParaDeletar = idsPerguntasAtuais.filter(id => !idsPerguntasRecebidas.includes(id));
 
         if (idsParaDeletar.length > 0) {
-          await tx.quePerg.deleteMany({ where: { perguntaId: { in: idsParaDeletar } } });
+          await tx.quePerg.deleteMany({ where: { perguntaId: { in: idsParaDeletar }, questionarioId: questionarioId } });
           await tx.opcao.deleteMany({ where: { perguntaId: { in: idsParaDeletar } } });
           await tx.pergunta.deleteMany({ where: { id: { in: idsParaDeletar } } });
         }
@@ -43,65 +39,71 @@ export class UpdateQuestionarioController {
         });
 
         // --- 3. ATUALIZAR PERGUNTAS EXISTENTES E CRIAR NOVAS ---
-        for (const pergunta of perguntas) {
+        for (const [index, pergunta] of perguntas.entries()) {
+          const ordemAtual = index;
+
           if (pergunta.id) {
-            // LÓGICA DE ATUALIZAÇÃO para uma pergunta que JÁ EXISTE
             await tx.pergunta.update({
               where: { id: pergunta.id },
               data: {
                 enunciado: pergunta.enunciado,
                 tipos: pergunta.tipos,
-                ordem: pergunta.ordem,
+                obrigatoria: pergunta.obrigatoria, 
+                ordem: ordemAtual,
                 opcoes: {
-                  // AQUI SIM, deleteMany é válido para limpar as opções antigas
-                  deleteMany: {}, 
+                  deleteMany: {},
                   create: pergunta.opcoes?.map(opt => ({ texto: opt.texto })) || [],
                 },
               },
             });
           } else {
-            // LÓGICA DE CRIAÇÃO para uma pergunta NOVA
-            await tx.pergunta.create({
+            const novaPergunta = await tx.pergunta.create({
               data: {
                 enunciado: pergunta.enunciado,
                 tipos: pergunta.tipos,
-                ordem: pergunta.ordem,
+                ordem: ordemAtual,
+                obrigatoria: typeof pergunta.obrigatoria === 'boolean' ? pergunta.obrigatoria : true,
                 opcoes: {
-                  // AQUI NÃO PODE TER deleteMany, apenas o create
                   create: pergunta.opcoes?.map(opt => ({ texto: opt.texto })) || [],
                 },
-                // Cria o "link" com o questionário na tabela QuePerg
-                questionarios: {
-                  create: [{ questionarioId: questionarioId }],
-                },
               },
+            });
+            await tx.quePerg.create({
+                data: {
+                    questionarioId: questionarioId,
+                    perguntaId: novaPergunta.id,
+                    ordem: ordemAtual
+                }
             });
           }
         }
       });
-
+      
       // --- 4. BUSCAR E RETORNAR O RESULTADO FINAL ---
       const questionarioFinal = await prisma.questionario.findUnique({
         where: { id: questionarioId },
-        include: { 
-            perguntas: {
-                include: {
-                    pergunta: {
-                        include: { opcoes: true }
-                    }
-                },
-                orderBy: {
-                    pergunta: { ordem: 'asc' }
-                }
+        include: {
+          perguntas: {
+            include: {
+              pergunta: {
+                include: { opcoes: true }
+              }
+            },
+            // ✅ A CORREÇÃO ESTÁ AQUI:
+            // Ordenando pelo campo 'ordem' que está dentro da relação 'pergunta'
+            orderBy: {
+              pergunta: {
+                ordem: 'asc'
+              }
             }
-         },
+          }
+        },
       });
-
+      
       return response.json(questionarioFinal);
 
     } catch (error) {
       console.error('Erro ao sincronizar questionário:', error);
-      // Verifica se o erro foi o que nós lançamos (Questionário não encontrado)
       if (error.message === 'Questionário não encontrado.') {
         return response.status(404).json({ error: error.message });
       }
