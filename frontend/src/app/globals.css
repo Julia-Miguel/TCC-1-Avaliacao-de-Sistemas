@@ -335,7 +335,6 @@ a:not(.btn):hover {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--foreground);
-  margin-bottom: var(--spacing-xs);
 }
 
 input[type="text"],

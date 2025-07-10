@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { CheckSquare } from 'lucide-react';
 import "../../globals.css";
 
-// --- Interfaces ---
 interface OpcaoResposta {
     id: number;
     texto: string;
@@ -36,9 +35,7 @@ interface ClienteUser {
     email: string;
     tipo: 'CLIENTE_PLATAFORMA';
 }
-// --- Fim das Interfaces ---
 
-// --- Funções Helper ---
 function generateSimpleUUID() {
     let d = new Date().getTime();
     let d2 = (typeof performance !== 'undefined' && performance.now && (performance.now() * 1000)) || 0;
@@ -58,15 +55,11 @@ function getAnonymousSessionId() {
     }
     return sessionId;
 }
-// --- Fim Funções Helper ---
-
-
 function ResponderAvaliacaoContent() {
     const params = useParams();
     const router = useRouter();
     const avaliacaoId = params.avaliacaoId ? parseInt(params.avaliacaoId as string) : null;
 
-    // --- Estados ---
     const [avaliacaoData, setAvaliacaoData] = useState<AvaliacaoParaResponder | null>(null);
     const [respostas, setRespostas] = useState<RespostasState>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -76,28 +69,51 @@ function ResponderAvaliacaoContent() {
     const [anonymousSessionId, setAnonymousSessionId] = useState<string | null>(null);
     const [loggedInCliente, setLoggedInCliente] = useState<ClienteUser | null>(null);
 
-    // Efeito para carregar dados do usuário e da avaliação
+    // ✅ LÓGICA DE CARREGAMENTO E INICIALIZAÇÃO ATUALIZADA
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const clienteUserString = localStorage.getItem('clienteUser');
-            if (clienteUserString) {
-                try {
-                    setLoggedInCliente(JSON.parse(clienteUserString));
-                } catch (e) {
-                    console.error("Erro ao parsear clienteUser:", e);
-                    localStorage.clear(); // Limpa dados inválidos
-                }
-            }
-            setAnonymousSessionId(getAnonymousSessionId());
-        }
-
         if (!avaliacaoId) {
             setError("ID da Avaliação não fornecido.");
             setIsLoading(false);
             return;
         }
 
-        const loadAvaliacao = async () => {
+        // Função para registrar o início da avaliação
+        const startEvaluationSession = async (userId?: number, sessionId?: string) => {
+            const payload = userId ? { usuarioId: userId } : { anonymousSessionId: sessionId };
+            if (!payload.usuarioId && !payload.anonymousSessionId) return;
+
+            try {
+                // Chamada "fire-and-forget" para o novo endpoint
+                await api.post(`/public/avaliacoes/${avaliacaoId}/iniciar`, payload);
+                console.log("Sessão de avaliação iniciada com sucesso.");
+            } catch (err) {
+                // Não bloqueamos o usuário por isso, apenas logamos o erro.
+                console.error("Falha ao registrar o início da avaliação:", err);
+            }
+        };
+
+        const initializePage = async () => {
+            setIsLoading(true);
+
+            // Identifica o usuário primeiro
+            let cliente: ClienteUser | null = null;
+            let anonId: string | null = null;
+            if (typeof window !== "undefined") {
+                const clienteUserString = localStorage.getItem('clienteUser');
+                if (clienteUserString) {
+                    try {
+                        cliente = JSON.parse(clienteUserString);
+                        setLoggedInCliente(cliente);
+                    } catch (e) { console.error("Erro ao parsear clienteUser:", e); }
+                }
+                anonId = getAnonymousSessionId();
+                setAnonymousSessionId(anonId);
+            }
+
+            // Agora, registra o início da sessão
+            await startEvaluationSession(cliente?.id, anonId ?? undefined);
+
+            // Finalmente, carrega os dados da avaliação
             try {
                 const response = await api.get<AvaliacaoParaResponder>(`/public/avaliacoes/${avaliacaoId}`);
                 setAvaliacaoData(response.data);
@@ -107,13 +123,13 @@ function ResponderAvaliacaoContent() {
                 });
                 setRespostas(initialRespostas);
             } catch (err: any) {
-                setError(err.response?.data?.message || "Não foi possível carregar a avaliação.");
+                setError(err.response?.data?.message ?? "Não foi possível carregar a avaliação.");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        loadAvaliacao();
+        initializePage();
     }, [avaliacaoId]);
 
     const handleInputChange = (perguntaId: number, valor: string) => {
@@ -190,7 +206,7 @@ function ResponderAvaliacaoContent() {
             </div>
         );
     }
-    
+
     if (avaliacaoData?.requerLoginCliente && !loggedInCliente) {
         if (typeof window !== "undefined") {
             router.push(`/clientes/login?redirectTo=/responder/${avaliacaoId}`);
@@ -238,7 +254,7 @@ function ResponderAvaliacaoContent() {
                                 onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
                                 placeholder="Digite sua resposta aqui..."
                                 disabled={isSubmitting}
-                                // ✅ ATRIBUTO 'required' REMOVIDO
+                            // ✅ ATRIBUTO 'required' REMOVIDO
                             />
                         )}
 
@@ -255,7 +271,7 @@ function ResponderAvaliacaoContent() {
                                             onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
                                             className="h-5 w-5 text-primary focus:ring-primary"
                                             disabled={isSubmitting}
-                                            // ✅ ATRIBUTO 'required' REMOVIDO
+                                        // ✅ ATRIBUTO 'required' REMOVIDO
                                         />
                                         <label htmlFor={`opcao-${opcao.id}-pergunta-${pergunta.id}`} className="ml-3 block text-md text-foreground cursor-pointer">
                                             {opcao.texto}

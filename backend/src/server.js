@@ -10,6 +10,7 @@ import { usuAvalRouter } from './routes/usuAval.js';
 import { respostaRouter } from './routes/resposta.js';
 import { empresasRouter } from './routes/empresas.js';
 import { dashboardRouter } from './routes/dashboard.js';
+import { publicAvaliacaoRoutes } from './routes/publicAvaliacao.js';
 
 // Corrigido: renomeado de 'server' para 'app' para consistência
 const app = express();
@@ -29,6 +30,7 @@ app.use(usuAvalRouter);
 app.use(respostaRouter);
 app.use(empresasRouter);
 app.use(dashboardRouter);
+app.use(publicAvaliacaoRoutes);
 
 
 // Routes
