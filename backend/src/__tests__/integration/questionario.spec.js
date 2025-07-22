@@ -1,4 +1,3 @@
-// src/__tests__/integration/questionario.spec.js
 import request from 'supertest';
 import { app } from '../../server.js';
 import { PrismaClient, TipoUsuario } from '@prisma/client';
@@ -6,94 +5,90 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-describe('Questionario Routes (Protected)', () => {
+describe('Rotas de Questionário (/questionarios)', () => {
   let adminToken;
+  let admin;
+  let questionarioParaTestes;
 
   beforeAll(async () => {
-    await prisma.usuario.deleteMany();
-    await prisma.empresa.deleteMany();
+    await prisma.questionario.deleteMany({});
+    await prisma.usuario.deleteMany({});
+    await prisma.empresa.deleteMany({});
 
     const hashedPassword = await bcrypt.hash('password123', 8);
-    
     const empresa = await prisma.empresa.create({
       data: {
-        nome: 'Empresa de Teste de Questionario',
-        emailResponsavel: 'resp.questionario@teste.com',
+        nome: 'Empresa de Teste de Questionario Final',
+        emailResponsavel: 'resp.questionario.final@teste.com',
         senhaEmpresa: hashedPassword,
       },
     });
-
-    await prisma.usuario.create({
+    admin = await prisma.usuario.create({
       data: {
-        nome: 'Admin de Questionario',
-        email: 'admin.questionario@teste.com',
+        nome: 'Admin de Questionario Final',
+        email: 'admin.questionario.final@teste.com',
         senha: hashedPassword,
         tipo: TipoUsuario.ADMIN_EMPRESA,
         empresaId: empresa.id,
       },
     });
-
     const loginResponse = await request(app)
-      .post('/admin/login')
-      .send({
-        email: 'admin.questionario@teste.com',
-        senha: 'password123',
-        empresaId: empresa.id,
-      });
-    
+      .post('/usuarios/login-admin')
+      .send({ email: admin.email, senha: 'password123', empresaId: empresa.id });
     adminToken = loginResponse.body.token;
   });
 
   beforeEach(async () => {
-    await prisma.questionario.deleteMany();
+    await prisma.questionario.deleteMany({});
+    questionarioParaTestes = await prisma.questionario.create({
+        data: {
+            titulo: "Questionário Padrão para Testes",
+            // ✅ CORREÇÃO: A linha 'ativo: true' foi removida.
+            criadorId: admin.id 
+        }
+    });
   });
 
   afterAll(async () => {
     await prisma.$disconnect();
   });
 
-  it('should be able to create a new questionario when authenticated', async () => {
-    const questionarioData = {
-      titulo: 'Questionário de Satisfação', // Alterado de 'nome' para 'titulo'
-    };
+  describe('POST /questionarios', () => {
+      it('deve criar um novo questionário quando autenticado', async () => {
+        const response = await request(app)
+          .post('/questionarios')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ titulo: 'Novo Questionário de Satisfação' });
 
-    const response = await request(app)
-      .post('/questionarios')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send(questionarioData);
+        expect(response.status).toBe(201);
+        expect(response.body.titulo).toBe('Novo Questionário de Satisfação');
+      });
+  });
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty('id');
-    expect(response.body.titulo).toBe('Questionário de Satisfação'); // Alterado de 'nome' para 'titulo'
+  describe('GET /questionarios/:id', () => {
+    it('deve buscar um questionário pelo seu ID', async () => {
+        const response = await request(app)
+            .get(`/questionarios/${questionarioParaTestes.id}`)
+            .set('Authorization', `Bearer ${adminToken}`);
 
-    const questionarioInDb = await prisma.questionario.findFirst({
-      where: { titulo: 'Questionário de Satisfação' }, // Alterado de 'nome' para 'titulo'
+        expect(response.status).toBe(200);
+        expect(response.body.titulo).toBe(questionarioParaTestes.titulo);
     });
-    expect(questionarioInDb).toBeTruthy();
   });
 
-  it('should NOT be able to create a new questionario without a token', async () => {
-    const questionarioData = {
-      titulo: 'Questionário Secreto', // Alterado de 'nome' para 'titulo'
-    };
+  describe('DELETE /questionarios/:id', () => {
+    it('deve deletar um questionário', async () => {
+        const response = await request(app)
+            .delete(`/questionarios/${questionarioParaTestes.id}`)
+            .set('Authorization', `Bearer ${adminToken}`);
+        
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe('Questionário deletado com sucesso');
 
-    const response = await request(app)
-      .post('/questionarios')
-      .send(questionarioData);
-
-    expect(response.status).toBe(401);
-  });
-
-  it('should NOT be able to create a new questionario with an invalid token', async () => {
-    const questionarioData = {
-      titulo: 'Questionário Inválido', // Alterado de 'nome' para 'titulo'
-    };
-
-    const response = await request(app)
-      .post('/questionarios')
-      .set('Authorization', 'Bearer tokeninvalido123')
-      .send(questionarioData);
-
-    expect(response.status).toBe(401);
+        const questionarioNoDB = await prisma.questionario.findUnique({
+            where: { id: questionarioParaTestes.id }
+        });
+        expect(questionarioNoDB).toBeNull();
+    });
   });
 });

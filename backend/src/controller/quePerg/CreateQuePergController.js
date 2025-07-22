@@ -1,34 +1,27 @@
-// backend/src/controller/quePerg/CreateQuePergController.js
+// ✅ ARQUIVO CORRIGIDO: src/controller/quePerg/CreateQuePergController.js
 import { prisma } from '../../database/client.js';
 
 export class CreateQuePergController {
   async handle(request, response) {
-    const { pergunta_id, questionario_id } = request.body;
+    // ✅ CORREÇÃO: Usando camelCase para corresponder ao teste
+    const { perguntaId, questionarioId } = request.body;
 
-    const quePerg = await prisma.quePerg.create({
-      data: {
-        pergunta: {
-          connect: { id: pergunta_id }
-        },
-        questionario: {
-          connect: { id: questionario_id }
-        }
-      },
-      include: {
-        pergunta: {
-          select: {
-            enunciado: true, // Alterado de "descricao" para "enunciado"
-            tipos: true,     // Alterado de "tipo" para "tipos"
-          },
-        },
-        questionario: {
-          select: {
-            titulo: true,
-          },
-        },
-      },
-    });
+    if (!perguntaId || !questionarioId) {
+        return response.status(400).json({ message: "perguntaId e questionarioId são obrigatórios." });
+    }
 
-    return response.json(quePerg);
+    try {
+        const quePerg = await prisma.quePerg.create({
+          data: {
+            // O Prisma espera os IDs para a conexão
+            questionarioId: parseInt(questionarioId),
+            perguntaId: parseInt(perguntaId)
+          }
+        });
+        return response.status(201).json(quePerg);
+    } catch (error) {
+        console.error(error);
+        return response.status(400).json({ message: "Erro ao associar pergunta." });
+    }
   }
 }

@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -13,110 +10,88 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// --- NOVOS E MODIFICADOS ---
 enum TipoUsuario {
   ADMIN_EMPRESA
   CLIENTE_PLATAFORMA
 }
 
-// NOVO MODELO: Empresa
 model Empresa {
-  id               Int       @id @default(autoincrement())
-  nome             String    @unique // Nome do Hospital/Empresa
-  emailResponsavel String    @unique // Email para login da Empresa e contato principal
-  senhaEmpresa     String // SENHA DA EMPRESA (será hasheada)
-  // Outros campos como CNPJ, telefone, endereço poderiam entrar aqui
-  usuarios         Usuario[] // Usuários (Admins) pertencentes a esta empresa
-  created_at       DateTime  @default(now())
-  updated_at       DateTime  @updatedAt
+  id               Int        @id @default(autoincrement())
+  nome             String     @unique
+  emailResponsavel String     @unique
+  senhaEmpresa     String
+  usuarios         Usuario[]
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
 
   @@map("empresas")
 }
 
-// MODELO USUARIO MODIFICADO
 model Usuario {
-  id    Int         @id @default(autoincrement())
-  nome  String?
-  email String      @unique // Email para login do Admin ou do Cliente da Plataforma
-  senha String // Senha do Admin ou do Cliente da Plataforma (será hasheada)
-  tipo  TipoUsuario // ADMIN_EMPRESA ou CLIENTE_PLATAFORMA
-
-  empresaId Int? // OPCIONAL: Só preenchido se tipo for ADMIN_EMPRESA
-  empresa   Empresa? @relation(fields: [empresaId], references: [id]) // Relação opcional
-
+  id                   Int            @id @default(autoincrement())
+  nome                 String?
+  email                String         @unique
+  senha                String
+  tipo                 TipoUsuario
+  empresaId            Int?
+  empresa              Empresa?       @relation(fields: [empresaId], references: [id])
   questionariosCriados Questionario[] @relation("CriadorQuestionario")
   avaliacoesCriadas    Avaliacao[]    @relation("CriadorAvaliacao")
-  usuAval              UsuAval[] // Respostas dadas por este usuário (se for CLIENTE_PLATAFORMA logado)
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  usuAval              UsuAval[]
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
 
   @@map("usuarios")
 }
 
-// MODELO QUESTIONARIO MODIFICADO
 model Questionario {
-  id            Int            @id @default(autoincrement())
-  titulo        String
-  
-  criadorId     Int            // ID do Usuario (ADMIN_EMPRESA) que criou
-  criador       Usuario        @relation("CriadorQuestionario", fields: [criadorId], references: [id])
-  ordem     Int      @default(0)
-
-  perguntas  QuePerg[]
-  avaliacoes Avaliacao[]
-  created_at DateTime    @default(now())
-  updated_at DateTime    @updatedAt
+  id           Int         @id @default(autoincrement())
+  titulo       String
+  criadorId    Int
+  criador      Usuario     @relation("CriadorQuestionario", fields: [criadorId], references: [id])
+  ordem        Int         @default(0)
+  perguntas    QuePerg[]
+  avaliacoes   Avaliacao[]
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
 
   @@map("questionarios")
 }
 
-// MODELO AVALIACAO MODIFICADO
 model Avaliacao {
   id                 Int          @id @default(autoincrement())
   semestre           String
-  requerLoginCliente Boolean      @default(false) // true = só cliente logado pode responder; false = anônimo também pode
+  requerLoginCliente Boolean      @default(false)
   questionarioId     Int
-  questionario       Questionario @relation(fields: [questionarioId], references: [id])
-
-  criadorId Int // ID do Usuario (ADMIN_EMPRESA) que criou/agendou esta avaliação
-  criador   Usuario @relation("CriadorAvaliacao", fields: [criadorId], references: [id])
-  // A Avaliacao pertence à empresa do 'criador'.
-
-  usuarios   UsuAval[] // Quem está respondendo ou foi designado para responder
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
+  // ✅ CORREÇÃO: Deletar avaliações quando o questionário for deletado
+  questionario       Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
+  criadorId          Int
+  criador            Usuario      @relation("CriadorAvaliacao", fields: [criadorId], references: [id])
+  usuarios           UsuAval[]
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
 
   @@map("avaliacao")
 }
 
-// MODELO USU_AVAL MODIFICADO
 model UsuAval {
-  id Int @id @default(autoincrement())
-
-  avaliacaoId Int
-  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id])
-
-  // Se o respondente for um CLIENTE_PLATAFORMA logado:
-  usuarioId Int? // Opcional
-  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
-
-  // Se o respondente for anônimo:
+  id                 Int      @id @default(autoincrement())
+  avaliacaoId        Int
+  // ✅ CORREÇÃO: Deletar esta entrada quando a avaliação for deletada
+  avaliacao          Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  usuarioId          Int?
+  usuario            Usuario?  @relation(fields: [usuarioId], references: [id])
   anonymousSessionId String?
+  status             String
+  isFinalizado       Boolean   @default(false)
+  respostas          Resposta[]
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
 
-  status       String // Ex: "PENDENTE", "EM_ANDAMENTO", "CONCLUIDO"
-  isFinalizado Boolean    @default(false)
-  respostas    Resposta[]
-  created_at   DateTime   @default(now())
-  updated_at   DateTime   @updatedAt
-  @@unique([avaliacaoId, usuarioId]) // Se usuarioId não for nulo
-  @@unique([avaliacaoId, anonymousSessionId]) // Se anonymousSessionId não for nulo
-
+  @@unique([avaliacaoId, usuarioId])
+  @@unique([avaliacaoId, anonymousSessionId])
   @@map("usu_aval")
 }
-
-// --- SEUS MODELOS DE PERGUNTA, OPCAO, RESPOSTA, QUEPERG ---
-// (Presumindo que já estão corretos conforme nossa última interação)
 
 enum TipoPergunta {
   TEXTO
@@ -133,24 +108,27 @@ model Opcao {
 }
 
 model Pergunta {
-  id              Int      @id @default(autoincrement())
-  enunciado       String
-  tipos           String
-  obrigatoria     Boolean  @default(true)
-  ordem           Int      @default(0)
-  opcoes          Opcao[]
-  questionarios   QuePerg[]
-  respostas       Resposta[]
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id            Int        @id @default(autoincrement())
+  enunciado     String
+  tipos         String
+  obrigatoria   Boolean    @default(true)  
+  ordem         Int        @default(0)
+  opcoes        Opcao[]
+  questionarios QuePerg[]
+  respostas     Resposta[]
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
 }
 
 model QuePerg {
   id             Int          @id @default(autoincrement())
   questionarioId Int
   perguntaId     Int
-  questionario   Questionario @relation(fields: [questionarioId], references: [id])
-  pergunta       Pergunta     @relation(fields: [perguntaId], references: [id])
+  ordem          Int          @default(0) // Ordem da pergunta dentro do questionário
+  // ✅ CORREÇÃO: Deletar esta associação quando o questionário for deletado
+  questionario   Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
+  // ✅ CORREÇÃO: Deletar esta associação quando a pergunta for deletada
+  pergunta       Pergunta     @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
 
@@ -162,7 +140,8 @@ model Resposta {
   usuAvalId  Int
   perguntaId Int
   resposta   String
-  usuAval    UsuAval  @relation(fields: [usuAvalId], references: [id])
+  // ✅ CORREÇÃO: Deletar esta resposta quando a participação for deletada
+  usuAval    UsuAval  @relation(fields: [usuAvalId], references: [id], onDelete: Cascade)
   pergunta   Pergunta @relation(fields: [perguntaId], references: [id])
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

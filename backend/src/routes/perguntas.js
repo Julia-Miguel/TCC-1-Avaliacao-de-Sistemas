@@ -8,25 +8,17 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const perguntasRouter = Router();
 
-
-// Create
 const createPerguntasController = new CreatePerguntasController();
-perguntasRouter.post('/perguntas', authMiddleware, createPerguntasController.handle);
-
-//GET ALL
 const getAllPerguntasController = new GetAllPerguntasController();
-perguntasRouter.get('/perguntas', authMiddleware, getAllPerguntasController.handle);
-
-//GET BY ID
 const getByIdPerguntasController = new GetByIdPerguntasController();
-perguntasRouter.get('/perguntas/:id', authMiddleware, getByIdPerguntasController.handle);
-
-//UPDATE
 const updatePerguntasController = new UpdatePerguntasController();
-perguntasRouter.patch('/perguntas/:id', authMiddleware, updatePerguntasController.handle);
-
-//DELETE
 const deletePerguntasController = new DeletePerguntasController();
-perguntasRouter.delete('/perguntas', authMiddleware, deletePerguntasController.handle);
+
+perguntasRouter.post('/perguntas', authMiddleware, createPerguntasController.handle);
+perguntasRouter.get('/perguntas', authMiddleware, getAllPerguntasController.handle);
+perguntasRouter.get('/perguntas/:id', authMiddleware, getByIdPerguntasController.handle);
+perguntasRouter.patch('/perguntas/:id', authMiddleware, updatePerguntasController.handle);
+// ✅ Rota de DELETE Corrigida para incluir o :id
+perguntasRouter.delete('/perguntas/:id', authMiddleware, deletePerguntasController.handle);
 
 export { perguntasRouter };

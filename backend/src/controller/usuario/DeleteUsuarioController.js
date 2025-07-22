@@ -1,28 +1,25 @@
+// src/controller/usuario/DeleteUsuarioController.js
 import { prisma } from '../../database/client.js';
-import { Prisma } from '@prisma/client';
 
 export class DeleteUsuarioController {
     async handle(request, response) {
-        const { id } = request.body;
+        // ✅ CORREÇÃO: Pegando o 'id' dos parâmetros da URL
+        const { id } = request.params;
 
         try {
-            const usuario = await prisma.usuario.delete({
+            await prisma.usuario.delete({
                 where: {
                     id: parseInt(id)
                 }
             });
-            return response.json(usuario);
-        }
-        catch (error) {
-            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-                return response.status(400).json({ 
-                    message: `[DeleteUsuarioController] Usuario id: ${id} não existe.` 
-                });
-            } else {
-                return response.status(500).json({ 
-                    message: `[DeleteUsuarioController] ${error.message}` 
-                });
+            return response.status(200).json({ message: 'Usuário excluído com sucesso.' });
+        } catch (error) {
+            // Adiciona tratamento para caso o usuário não seja encontrado
+            if (error.code === 'P2025') {
+                return response.status(404).json({ message: "Usuário não encontrado." });
             }
+            console.error(error);
+            return response.status(500).json({ message: `Erro ao deletar usuário.` });
         }
     }
 }

@@ -6,41 +6,91 @@ export class StartAvaliacaoController {
     const { usuarioId, anonymousSessionId } = request.body;
     const avaliacaoId = parseInt(avaliacaoIdParam, 10);
 
-    // Validação básica
-    if (isNaN(avaliacaoId) || (!usuarioId && !anonymousSessionId)) {
-      return response.status(400).json({ message: "Dados de entrada inválidos." });
+    if (isNaN(avaliacaoId)) {
+      return response.status(400).json({ message: "ID da avaliação na URL é inválido." });
+    }
+
+    if (!usuarioId && !anonymousSessionId) {
+      return response.status(400).json({ message: "Identificação do respondente é necessária." });
     }
 
     try {
+      // Etapa 1: Garantir que a sessão de avaliação exista.
       const whereClause = usuarioId
-        ? { avaliacaoId_usuarioId: { avaliacaoId, usuarioId } }
-        : { avaliacaoId_anonymousSessionId: { avaliacaoId, anonymousSessionId } };
+        ? { avaliacaoId, usuarioId }
+        : { avaliacaoId, anonymousSessionId };
 
-      const createClause = usuarioId
-        ? { avaliacaoId, usuarioId, status: 'INICIADO', isFinalizado: false }
-        : { avaliacaoId, anonymousSessionId, status: 'INICIADO', isFinalizado: false };
+      const existingUsuAval = await prisma.usuAval.findFirst({ where: whereClause });
 
-      // O upsert é perfeito aqui:
-      // - Tenta encontrar um registro com base no 'where'.
-      // - Se encontrar, não faz nada (o 'update' está vazio).
-      // - Se NÃO encontrar, cria um novo registro com os dados do 'create'.
-      await prisma.usuAval.upsert({
-        where: whereClause,
-        update: {}, // Não fazemos nada se já existir
-        create: createClause,
+      if (!existingUsuAval) {
+        await prisma.usuAval.create({
+          data: {
+            avaliacaoId,
+            status: 'INICIADO',
+            isFinalizado: false,
+            ...(usuarioId ? { usuarioId } : { anonymousSessionId }),
+          },
+        });
+      }
+
+      // Etapa 2: Buscar os dados da avaliação com a inclusão correta.
+      const avaliacao = await prisma.avaliacao.findUnique({
+        where: { id: avaliacaoId },
+        include: {
+          criador: {
+            include: {
+              empresa: true,
+            },
+          },
+          questionario: {
+            include: {
+              perguntas: {
+                orderBy: { ordem: 'asc' },
+                include: {
+                  pergunta: { include: { opcoes: true } },
+                },
+              },
+            },
+          },
+        },
       });
 
-      // Retorna sucesso. Não precisamos enviar dados de volta.
-      return response.status(200).json({ message: "Sessão de avaliação iniciada." });
+      if (!avaliacao) {
+        return response.status(404).json({ message: "Nenhuma avaliação foi encontrada com o ID fornecido." });
+      }
+      if (!avaliacao.questionario) {
+        return response.status(404).json({ message: "Configuração inválida: Questionário não encontrado." });
+      }
+      if (!avaliacao.criador || !avaliacao.criador.empresa) {
+          return response.status(500).json({ message: "Configuração inválida: A avaliação não está associada a uma empresa." });
+      }
+
+
+      // Etapa 3: Montar a resposta final.
+      const responseData = {
+        avaliacaoId: avaliacao.id,
+        semestreAvaliacao: avaliacao.semestre,
+        requerLoginCliente: avaliacao.requer_login,
+        nomeEmpresa: avaliacao.criador.empresa.nome,
+        tituloQuestionario: avaliacao.questionario.titulo,
+        perguntas: (avaliacao.questionario.perguntas || [])
+          .filter(quePerg => quePerg.pergunta)
+          .map(quePerg => ({
+            id: quePerg.pergunta.id,
+            enunciado: quePerg.pergunta.enunciado,
+            obrigatoria: quePerg.pergunta.obrigatoria,
+            // --- CORREÇÃO DEFINITIVA AQUI ---
+            // Lendo do campo 'tipos' (plural) do banco de dados e enviando como 'tipo' (singular) para o frontend.
+            tipo: quePerg.pergunta.tipos, 
+            opcoes: quePerg.pergunta.opcoes || [],
+          })),
+      };
+
+      return response.status(200).json(responseData);
 
     } catch (error) {
-      // O código P2002 (unique constraint failed) pode acontecer em uma condição de corrida.
-      // Nesse caso, o registro já existe, o que é o comportamento desejado.
-      if (error.code === 'P2002') {
-        return response.status(200).json({ message: "Sessão já existente." });
-      }
-      console.error("Erro ao iniciar avaliação:", error);
-      return response.status(500).json({ message: "Erro interno ao iniciar a avaliação." });
+      console.error("Erro crítico ao iniciar e buscar avaliação:", error);
+      return response.status(500).json({ message: "Erro interno do servidor ao processar a avaliação." });
     }
   }
 }

@@ -48,7 +48,7 @@ function CreateAvaliacaoContent() {
     // O criadorId será adicionado pelo backend usando o token do usuário logado
     const data = {
       semestre: semestre.trim(),
-      questionario_id: parseInt(questionarioId),
+      questionarioId: parseInt(questionarioId),
       requerLoginCliente,
     };
 

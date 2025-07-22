@@ -1,44 +1,42 @@
-// backend/src/controller/questionarios/CreateQuestionarioController.js
+// ✅ ARQUIVO CORRIGIDO: src/controller/questionarios/CreateQuestionarioController.js
 import { prisma } from '../../database/client.js';
 
 export class CreateQuestionarioController {
   async handle(request, response) {
-    // Verifique se request.user e as propriedades esperadas existem
-    // A propriedade do ID do usuário no token é 'usuarioId'
+    // O middleware de autenticação já nos deu as informações do usuário em 'request.user'
     if (!request.user || !request.user.usuarioId) { 
         return response.status(401).json({ message: "Usuário não autenticado ou ID do usuário não encontrado no token." });
     }
-    // Não precisamos verificar 'empresaId' aqui diretamente, pois o 'usuarioId' do token
-    // já pertence a um admin de uma empresa específica. A ligação com a empresa é feita
-    // através do 'criadorId' (que é o 'usuarioId') no modelo Questionario.
 
-    const { usuarioId: criadorId } = request.user; // Pega o ID do admin logado do token
+    // Pega o ID do admin logado a partir do token
+    const { usuarioId: criadorId } = request.user; 
     const { titulo } = request.body;
 
-    if (!titulo || !titulo.trim()) { // Adicionada verificação de trim()
+    if (!titulo || !titulo.trim()) {
       return response.status(400).json({ message: "Título é obrigatório." });
     }
 
-    // A verificação "!criadorId" é redundante por causa da verificação "!request.user || !request.user.usuarioId" acima.
-    // Se request.user.usuarioId existir, criadorId também existirá.
-
     try {
+      // Verifica se o usuário criador realmente existe no banco de dados
+      const criadorExiste = await prisma.usuario.findUnique({
+        where: { id: parseInt(criadorId) }
+      });
+
+      if (!criadorExiste) {
+        // Esta é a mensagem de erro que você está a ver no frontend
+        return response.status(400).json({ message: "Usuário criador não encontrado. Verifique o token." });
+      }
+
       const questionario = await prisma.questionario.create({
         data: {
           titulo: titulo.trim(),
-          criadorId: parseInt(criadorId) // Garante que é número e usa o ID do admin logado
+          // ✅ A forma mais direta e segura de associar
+          criadorId: parseInt(criadorId) 
         }
-        // Não é necessário incluir o 'criador' aqui na resposta de criação,
-        // a menos que você precise imediatamente no frontend. Geralmente,
-        // ao listar, você faria o include.
       });
       return response.status(201).json(questionario);
     } catch (error) {
       console.error("Erro ao criar questionário no controller:", error);
-      // Verifica se o erro é de constraint de chave estrangeira para criadorId
-      if (error.code === 'P2003' && error.meta?.field_name?.includes('criadorId')) {
-           return response.status(400).json({ message: "Usuário criador (admin) não encontrado no banco de dados. Verifique o ID." });
-      }
       return response.status(500).json({ error: "Erro interno do servidor ao criar questionário." });
     }
   }

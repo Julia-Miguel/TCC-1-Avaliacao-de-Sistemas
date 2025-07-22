@@ -7,14 +7,8 @@ async function validateRequiredQuestions(avaliacaoId, respostas) {
       questionario: {
         include: {
           perguntas: {
-            where: {
-              pergunta: {
-                obrigatoria: true, 
-              },
-            },
-            include: {
-              pergunta: true,
-            },
+            where: { pergunta: { obrigatoria: true } },
+            include: { pergunta: true },
           },
         },
       },
@@ -40,7 +34,6 @@ async function validateRequiredQuestions(avaliacaoId, respostas) {
   return { error: false };
 }
 
-
 export class SubmitRespostasController {
   async handle(request, response) {
     const { avaliacaoId: avaliacaoIdParam } = request.params;
@@ -56,25 +49,18 @@ export class SubmitRespostasController {
       if (validationResult.error) {
         return response.status(validationResult.status).json({ message: validationResult.message });
       }
+
       const whereClause = usuarioId
         ? { avaliacaoId_usuarioId: { avaliacaoId, usuarioId } }
         : { avaliacaoId_anonymousSessionId: { avaliacaoId, anonymousSessionId } };
 
-      const dataPayload = { status: 'CONCLUIDO', isFinalizado: true };
+      const usuAvalRecord = await prisma.usuAval.findUnique({ where: whereClause });
 
-      const createClause = usuarioId
-        ? { avaliacaoId, usuarioId, ...dataPayload }
-        : { avaliacaoId, anonymousSessionId, ...dataPayload };
+      if (!usuAvalRecord) {
+        return response.status(404).json({ message: "Sessão de avaliação não encontrada. Recarregue a página e tente novamente." });
+      }
 
-      const usuAvalRecord = await prisma.usuAval.upsert({
-        where: whereClause,
-        update: dataPayload,
-        create: createClause,  
-      });
-
-      await prisma.resposta.deleteMany({
-        where: { usuAvalId: usuAvalRecord.id }
-      });
+      await prisma.resposta.deleteMany({ where: { usuAvalId: usuAvalRecord.id } });
 
       const respostasParaSalvar = respostas
         .filter(r => r.respostaTexto && r.respostaTexto.trim() !== '')
@@ -85,18 +71,18 @@ export class SubmitRespostasController {
         }));
 
       if (respostasParaSalvar.length > 0) {
-        await prisma.resposta.createMany({
-          data: respostasParaSalvar,
-        });
+        await prisma.resposta.createMany({ data: respostasParaSalvar });
       }
+
+      await prisma.usuAval.update({
+        where: { id: usuAvalRecord.id },
+        data: { status: 'CONCLUIDO', isFinalizado: true },
+      });
 
       return response.status(201).json({ message: "Respostas enviadas com sucesso!" });
 
     } catch (error) {
       console.error("Erro ao submeter respostas:", error);
-      if (error.code === 'P2002') {
-        return response.status(409).json({ message: "Esta avaliação já foi finalizada." });
-      }
       return response.status(500).json({ message: "Erro interno do servidor." });
     }
   }

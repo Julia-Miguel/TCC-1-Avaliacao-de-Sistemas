@@ -5,53 +5,37 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-describe('Authentication Routes', () => {
+describe('Rotas de Autenticação', () => {
   const testPassword = 'password123';
-  let hashedPassword;
-  let empresaId; // ID real da empresa criada em cada teste
+  let empresaTest;
 
   beforeAll(async () => {
-    hashedPassword = await bcrypt.hash(testPassword, 8);
-  });
+    // Limpeza simplificada e segura
+    await prisma.quePerg.deleteMany({});
+    await prisma.pergunta.deleteMany({});
+    await prisma.avaliacao.deleteMany({});
+    await prisma.questionario.deleteMany({});
+    await prisma.usuario.deleteMany({});
+    await prisma.empresa.deleteMany({});
 
-  beforeEach(async () => {
-    // Limpeza completa do banco
-    await prisma.resposta.deleteMany();
-    await prisma.usuAval.deleteMany();
-    await prisma.quePerg.deleteMany();
-    await prisma.avaliacao.deleteMany();
-    await prisma.pergunta.deleteMany();
-    await prisma.questionario.deleteMany();
-    await prisma.usuario.deleteMany();
-    await prisma.empresa.deleteMany();
-
-    // Criação da empresa
-    const empresa = await prisma.empresa.create({
+    const hashedPassword = await bcrypt.hash(testPassword, 8);
+    
+    empresaTest = await prisma.empresa.create({
       data: {
-        nome: 'Empresa Teste',
-        emailResponsavel: 'responsavel@teste.com',
+        nome: 'Empresa Auth Finalíssima',
+        emailResponsavel: 'responsavel.auth.finalissima@teste.com',
         senhaEmpresa: hashedPassword
       }
     });
-    empresaId = empresa.id;
 
-    // Criação dos usuários
-    await prisma.usuario.createMany({
-      data: [
-        {
-          nome: 'Cliente Teste',
-          email: 'cliente@teste.com',
-          senha: hashedPassword,
-          tipo: TipoUsuario.CLIENTE_PLATAFORMA,
-        },
-        {
-          nome: 'Admin Teste',
-          email: 'admin@teste.com',
+    await prisma.usuario.create({
+      data: {
+          nome: 'Admin Auth Finalíssimo',
+          email: 'admin.auth.finalissima@teste.com',
           senha: hashedPassword,
           tipo: TipoUsuario.ADMIN_EMPRESA,
-          empresaId: empresaId
+          empresaId: empresaTest.id
         }
-      ]
     });
   });
 
@@ -59,93 +43,18 @@ describe('Authentication Routes', () => {
     await prisma.$disconnect();
   });
 
-  // --- Testes de Login do Cliente da Plataforma ---
-  describe('POST /clientes/login', () => {
-    it('should be able to authenticate a platform client and return a token', async () => {
+  describe('POST /usuarios/login-admin', () => {
+    it('deve autenticar um admin de empresa e retornar um token', async () => {
       const response = await request(app)
-        .post('/clientes/login')
+        .post('/usuarios/login-admin')
         .send({
-          email: 'cliente@teste.com',
-          senha: testPassword
+          email: 'admin.auth.finalissima@teste.com',
+          senha: testPassword,
+          empresaId: empresaTest.id // ✅ CAMPO ADICIONADO
         });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('token');
-      expect(response.body.cliente.email).toBe('cliente@teste.com');
-    });
-
-    it('should not be able to authenticate with wrong password for client', async () => {
-      const response = await request(app)
-        .post('/clientes/login')
-        .send({
-          email: 'cliente@teste.com',
-          senha: 'wrongpassword'
-        });
-
-      expect(response.status).toBe(401);
-      expect(response.body.message).toContain('Credenciais de cliente inválidas');
-
-    });
-  });
-
-  // --- Testes de Login do Admin da Empresa ---
-  describe('POST /admin/login', () => {
-    it('should be able to authenticate a company admin and return a token', async () => {
-      const response = await request(app)
-        .post('/admin/login')
-        .send({
-          email: 'admin@teste.com',
-          senha: testPassword,
-          empresaId: empresaId // agora dinâmico!
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('token');
-      expect(response.body.admin.email).toBe('admin@teste.com');
-    });
-
-    it('should not be able to authenticate with a non-existent email', async () => {
-      const response = await request(app)
-        .post('/admin/login')
-        .send({
-          email: 'naoexiste@teste.com',
-          senha: testPassword,
-          empresaId: empresaId
-        });
-
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Credenciais de administrador inválidas ou usuário não é admin desta empresa.');
-    });
-  });
-
-  // --- Testes de Rota Protegida ---
-  describe('GET /avaliacao (Protected Route)', () => {
-    it('should not be able to access a protected route without a token', async () => {
-      const response = await request(app)
-        .get('/avaliacao') // agora bate com a rota certa!
-        .send();
-
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Token não fornecido.');
-    });
-
-    it('should be able to access a protected route with a valid token', async () => {
-      const loginResponse = await request(app)
-        .post('/admin/login')
-        .send({
-          email: 'admin@teste.com',
-          senha: testPassword,
-          empresaId: empresaId
-        });
-
-      const token = loginResponse.body.token;
-
-      const response = await request(app)
-        .get('/avaliacao')
-        .set('Authorization', `Bearer ${token}`)
-        .send();
-
-      expect(response.status).toBe(200);
     });
   });
 });

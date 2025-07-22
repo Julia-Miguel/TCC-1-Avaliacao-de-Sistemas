@@ -1,5 +1,9 @@
-// backend/src/routes/usuario.js
+// ✅ ARQUIVO CORRIGIDO: src/routes/usuario.js
+
 import { Router } from 'express';
+import { authMiddleware } from '../middleware/authMiddleware.js';
+
+// Importando cada controller individualmente
 import { CreateUsuarioController } from '../controller/usuario/CreateUsuarioController.js';
 import { GetAllUsuarioController } from '../controller/usuario/GetAllUsuarioController.js';
 import { GetByIdUsuarioController } from '../controller/usuario/GetByIdUsuarioController.js';
@@ -12,39 +16,28 @@ import { LoginClientePlataformaUsuarioController } from '../controller/usuario/L
 
 const usuarioRouter = Router();
 
-const createClientePlataformaUsuarioController = new CreateClientePlataformaUsuarioController();
-usuarioRouter.post('/clientes/register', createClientePlataformaUsuarioController.handle);
-
-const loginClientePlataformaUsuarioController = new LoginClientePlataformaUsuarioController();
-usuarioRouter.post('/clientes/login', loginClientePlataformaUsuarioController.handle);
-
-// Rota para criar um usuário ADMIN_EMPRESA
-const createAdminEmpresaUsuarioController = new CreateAdminEmpresaUsuarioController();
-usuarioRouter.post('/usuarios/register-admin', createAdminEmpresaUsuarioController.handle);
-
-// ADICIONE A NOVA ROTA DE LOGIN DO ADMIN_EMPRESA
-const loginAdminEmpresaUsuarioController = new LoginAdminEmpresaUsuarioController();
-usuarioRouter.post('/usuarios/login-admin', loginAdminEmpresaUsuarioController.handle);
-
-
-// Rota para criar um usuário CLIENTE_PLATAFORMA (já existente, pode precisar de ajuste no tipo depois)
+// --- Instâncias dos Controllers ---
 const createUsuarioController = new CreateUsuarioController();
+const getAllUsuarioController = new GetAllUsuarioController();
+const getByIdUsuarioController = new GetByIdUsuarioController();
+const updateUsuarioController = new UpdateUsuarioController();
+const deleteUsuarioController = new DeleteUsuarioController();
+const createAdminEmpresaUsuarioController = new CreateAdminEmpresaUsuarioController();
+const loginAdminEmpresaUsuarioController = new LoginAdminEmpresaUsuarioController();
+const createClientePlataformaUsuarioController = new CreateClientePlataformaUsuarioController();
+const loginClientePlataformaUsuarioController = new LoginClientePlataformaUsuarioController();
+
+// --- Rotas Públicas (NÃO usam authMiddleware) ---
+usuarioRouter.post('/clientes/register', createClientePlataformaUsuarioController.handle);
+usuarioRouter.post('/clientes/login', loginClientePlataformaUsuarioController.handle);
+usuarioRouter.post('/usuarios/register-admin', createAdminEmpresaUsuarioController.handle);
+usuarioRouter.post('/usuarios/login-admin', loginAdminEmpresaUsuarioController.handle);
 usuarioRouter.post('/usuario', createUsuarioController.handle);
 
-// Get All
-const getAllUsuarioController = new GetAllUsuarioController();  
-usuarioRouter.get('/usuario', getAllUsuarioController.handle);
-
-// Get By Id
-const getByIdUsuarioController = new GetByIdUsuarioController();
-usuarioRouter.get('/usuario/:id', getByIdUsuarioController.handle);
-
-// Update
-const updateUsuarioController = new UpdateUsuarioController();
-usuarioRouter.put('/usuario', updateUsuarioController.handle);
-
-// Delete
-const deleteUsuarioController = new DeleteUsuarioController();
-usuarioRouter.delete('/usuario', deleteUsuarioController.handle);
+// --- Rotas Protegidas (USAM authMiddleware individualmente) ---
+usuarioRouter.get('/usuario', authMiddleware, getAllUsuarioController.handle);
+usuarioRouter.get('/usuario/:id', authMiddleware, getByIdUsuarioController.handle);
+usuarioRouter.put('/usuario/:id', authMiddleware, updateUsuarioController.handle);
+usuarioRouter.delete('/usuario/:id', authMiddleware, deleteUsuarioController.handle);
 
 export { usuarioRouter };

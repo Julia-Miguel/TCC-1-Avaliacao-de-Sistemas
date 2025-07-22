@@ -1,77 +1,77 @@
-// backend/src/controller/public/avaliacao/GetPublicAvaliacaoByIdController.js
-
 import { prisma } from '../../../database/client.js';
 
 export class GetPublicAvaliacaoByIdController {
   async handle(request, response) {
-    const { id: avaliacaoIdParam } = request.params;
-    const avaliacaoId = parseInt(avaliacaoIdParam);
+    const { id } = request.params;
+    const avaliacaoId = parseInt(id, 10);
 
     if (isNaN(avaliacaoId)) {
-      return response.status(400).json({ message: "ID da Avaliação inválido." });
+      return response.status(400).json({ message: "ID da avaliação inválido." });
     }
 
     try {
       const avaliacao = await prisma.avaliacao.findUnique({
-        where: {
-          id: avaliacaoId,
-        },
+        where: { id: avaliacaoId },
         include: {
+          empresa: true,
           questionario: {
             include: {
-              criador: {
-                select: {
-                  empresa: {
-                    select: {
-                      nome: true
-                    }
-                  }
-                }
-              },
               perguntas: {
-                orderBy: {
-                  id: 'asc'
-                },
+                orderBy: { ordem: 'asc' },
                 include: {
                   pergunta: {
                     include: {
-                      opcoes: {
-                        orderBy: {
-                          id: 'asc'
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                      opcoes: true,
+                    },
+                  },
+                },
+              },
+            },
           },
-
-        }
+        },
       });
 
-      if (!avaliacao) {
-        return response.status(404).json({ message: "Avaliação não encontrada." });
+      // --- INÍCIO DAS VERIFICAÇÕES DE ROBUSTEZ ---
+
+      if (!avaliacao || !avaliacao.isPublica) {
+        return response.status(404).json({ message: "Avaliação não encontrada ou não é pública." });
       }
-      const dadosParaResponder = {
+
+      if (!avaliacao.empresa) {
+        return response.status(500).json({ message: "Configuração inválida: A avaliação não está associada a uma empresa." });
+      }
+
+      if (!avaliacao.questionario) {
+        return response.status(500).json({ message: "Configuração inválida: A avaliação não possui um questionário vinculado." });
+      }
+      
+      // Garante que 'perguntas' seja um array, mesmo que vazio.
+      const perguntasDoQuestionario = avaliacao.questionario.perguntas || [];
+
+      // --- FIM DAS VERIFICAÇÕES DE ROBUSTEZ ---
+
+      // Mapeia os dados do banco para o formato esperado pelo frontend
+      const responseData = {
         avaliacaoId: avaliacao.id,
         semestreAvaliacao: avaliacao.semestre,
-        requerLoginCliente: avaliacao.requerLoginCliente,
-        nomeEmpresa: avaliacao.questionario?.criador?.empresa?.nome || "Empresa Desconhecida",
-        tituloQuestionario: avaliacao.questionario?.titulo || "Questionário Sem Título",
-        perguntas: avaliacao.questionario?.perguntas.map(qp => ({
-          id: qp.pergunta.id,
-          enunciado: qp.pergunta.enunciado,
-          tipos: qp.pergunta.tipos,
-          obrigatoria: qp.pergunta.obrigatoria,
-          opcoes: qp.pergunta.opcoes.map(opt => ({ id: opt.id, texto: opt.texto }))
-        })) || []
+        requerLoginCliente: avaliacao.requer_login,
+        nomeEmpresa: avaliacao.empresa.nome,
+        tituloQuestionario: avaliacao.questionario.titulo,
+        perguntas: perguntasDoQuestionario
+          .filter(quePerg => quePerg.pergunta) // Filtra para garantir que a pergunta existe
+          .map(quePerg => ({
+            id: quePerg.pergunta.id,
+            enunciado: quePerg.pergunta.enunciado,
+            obrigatoria: quePerg.pergunta.obrigatoria,
+            tipo: quePerg.pergunta.tipo,
+            opcoes: quePerg.pergunta.opcoes || [], // Garante que opções seja um array
+          })),
       };
 
-      return response.json(dadosParaResponder);
+      return response.json(responseData);
 
     } catch (error) {
-      console.error("Erro ao buscar avaliação pública:", error);
+      console.error("Erro detalhado ao buscar dados da avaliação:", error);
       return response.status(500).json({ message: "Erro interno ao buscar dados da avaliação." });
     }
   }

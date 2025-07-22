@@ -1,3 +1,4 @@
+// ✅ ARQUIVO CORRIGIDO: src/routes/QuePerg.js
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { CreateQuePergController } from '../controller/quePerg/CreateQuePergController.js';
@@ -8,24 +9,18 @@ import { DeleteQuePergController } from '../controller/quePerg/DeleteQuePergCont
 
 const quePergRouter = Router();
 
-// Create
 const createQuePergController = new CreateQuePergController();
-quePergRouter.post('/queperg', authMiddleware, createQuePergController.handle);
-
-//GET ALL
 const getAllQuePergController = new GetAllQuePergController();
-quePergRouter.get('/queperg', authMiddleware, getAllQuePergController.handle);
-
-//GET BY ID
 const getByIdQuePergController = new GetByIdQuePergController();
-quePergRouter.get('/queperg/:id', authMiddleware, getByIdQuePergController.handle);
-
-//UPDATE
 const updateQuePergController = new UpdateQuePergController();
-quePergRouter.put('/queperg', authMiddleware, updateQuePergController.handle);
-
-//DELETE
 const deleteQuePergController = new DeleteQuePergController();
-quePergRouter.delete('/queperg', authMiddleware, deleteQuePergController.handle);
+
+// Todas as rotas estão protegidas
+quePergRouter.post('/queperg', authMiddleware, createQuePergController.handle);
+quePergRouter.get('/queperg', authMiddleware, getAllQuePergController.handle);
+quePergRouter.get('/queperg/:id', authMiddleware, getByIdQuePergController.handle);
+quePergRouter.put('/queperg/:id', authMiddleware, updateQuePergController.handle);
+// ✅ ROTA CORRIGIDA: Usando DELETE com :id
+quePergRouter.delete('/queperg/:id', authMiddleware, deleteQuePergController.handle);
 
 export { quePergRouter };

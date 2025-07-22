@@ -7,17 +7,21 @@ import Link from 'next/link';
 import { CheckSquare } from 'lucide-react';
 import "../../globals.css";
 
+// --- INTERFACES ---
 interface OpcaoResposta {
     id: number;
     texto: string;
 }
+
 interface PerguntaParaResponder {
     id: number;
     enunciado: string;
     obrigatoria: boolean;
-    tipos: 'TEXTO' | 'MULTIPLA_ESCOLHA';
+    // CORREÇÃO DEFINITIVA: O nome do campo é 'tipo' (singular) para corresponder ao backend.
+    tipo: 'TEXTO' | 'MULTIPLA_ESCOLHA'; 
     opcoes: OpcaoResposta[];
 }
+
 interface AvaliacaoParaResponder {
     avaliacaoId: number;
     semestreAvaliacao: string;
@@ -26,9 +30,11 @@ interface AvaliacaoParaResponder {
     tituloQuestionario: string;
     perguntas: PerguntaParaResponder[];
 }
+
 interface RespostasState {
     [perguntaId: number]: string;
 }
+
 interface ClienteUser {
     id: number;
     nome?: string | null;
@@ -36,29 +42,22 @@ interface ClienteUser {
     tipo: 'CLIENTE_PLATAFORMA';
 }
 
-function generateSimpleUUID() {
-    let d = new Date().getTime();
-    let d2 = (typeof performance !== 'undefined' && performance.now && (performance.now() * 1000)) || 0;
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        let r = Math.random() * 16;
-        if (d > 0) { r = (d + r) % 16 | 0; d = Math.floor(d / 16); }
-        else { r = (d2 + r) % 16 | 0; d2 = Math.floor(d2 / 16); }
-        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-    });
-}
+// --- FUNÇÕES UTILITÁRIAS ---
 function getAnonymousSessionId() {
     if (typeof window === "undefined") return null;
     let sessionId = localStorage.getItem('anonymousSessionId');
     if (!sessionId) {
-        sessionId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : generateSimpleUUID();
+        sessionId = crypto.randomUUID();
         localStorage.setItem('anonymousSessionId', sessionId);
     }
     return sessionId;
 }
+
+// --- COMPONENTE PRINCIPAL ---
 function ResponderAvaliacaoContent() {
     const params = useParams();
     const router = useRouter();
-    const avaliacaoId = params.avaliacaoId ? parseInt(params.avaliacaoId as string) : null;
+    const avaliacaoIdParam = params.avaliacaoId as string;
 
     const [avaliacaoData, setAvaliacaoData] = useState<AvaliacaoParaResponder | null>(null);
     const [respostas, setRespostas] = useState<RespostasState>({});
@@ -66,63 +65,45 @@ function ResponderAvaliacaoContent() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
-    const [anonymousSessionId, setAnonymousSessionId] = useState<string | null>(null);
-    const [loggedInCliente, setLoggedInCliente] = useState<ClienteUser | null>(null);
 
-    // ✅ LÓGICA DE CARREGAMENTO E INICIALIZAÇÃO ATUALIZADA
     useEffect(() => {
-        if (!avaliacaoId) {
-            setError("ID da Avaliação não fornecido.");
+        if (!avaliacaoIdParam) {
+            return;
+        }
+
+        const avaliacaoId = parseInt(avaliacaoIdParam, 10);
+        if (isNaN(avaliacaoId)) {
+            setError("O ID da avaliação na URL é inválido.");
             setIsLoading(false);
             return;
         }
 
-        // Função para registrar o início da avaliação
-        const startEvaluationSession = async (userId?: number, sessionId?: string) => {
-            const payload = userId ? { usuarioId: userId } : { anonymousSessionId: sessionId };
-            if (!payload.usuarioId && !payload.anonymousSessionId) return;
-
-            try {
-                // Chamada "fire-and-forget" para o novo endpoint
-                await api.post(`/public/avaliacoes/${avaliacaoId}/iniciar`, payload);
-                console.log("Sessão de avaliação iniciada com sucesso.");
-            } catch (err) {
-                // Não bloqueamos o usuário por isso, apenas logamos o erro.
-                console.error("Falha ao registrar o início da avaliação:", err);
-            }
-        };
-
         const initializePage = async () => {
             setIsLoading(true);
 
-            // Identifica o usuário primeiro
-            let cliente: ClienteUser | null = null;
-            let anonId: string | null = null;
-            if (typeof window !== "undefined") {
-                const clienteUserString = localStorage.getItem('clienteUser');
-                if (clienteUserString) {
-                    try {
-                        cliente = JSON.parse(clienteUserString);
-                        setLoggedInCliente(cliente);
-                    } catch (e) { console.error("Erro ao parsear clienteUser:", e); }
-                }
-                anonId = getAnonymousSessionId();
-                setAnonymousSessionId(anonId);
-            }
-
-            // Agora, registra o início da sessão
-            await startEvaluationSession(cliente?.id, anonId ?? undefined);
-
-            // Finalmente, carrega os dados da avaliação
+            const clienteUserString = localStorage.getItem('clienteUser');
+            const cliente: ClienteUser | null = clienteUserString ? JSON.parse(clienteUserString) : null;
+            const anonId = getAnonymousSessionId();
+            
             try {
-                const response = await api.get<AvaliacaoParaResponder>(`/public/avaliacoes/${avaliacaoId}`);
-                setAvaliacaoData(response.data);
-                const initialRespostas: RespostasState = {};
-                response.data.perguntas.forEach(p => {
-                    initialRespostas[p.id] = '';
-                });
-                setRespostas(initialRespostas);
+                const payload = cliente ? { usuarioId: cliente.id } : { anonymousSessionId: anonId };
+                // A chamada única ao backend continua correta.
+                const response = await api.post<AvaliacaoParaResponder>(`/public/avaliacoes/${avaliacaoId}/iniciar`, payload);
+
+                if (response.data && Array.isArray(response.data.perguntas)) {
+                    setAvaliacaoData(response.data);
+                    const initialRespostas: RespostasState = {};
+                    response.data.perguntas.forEach(p => {
+                        initialRespostas[p.id] = '';
+                    });
+                    setRespostas(initialRespostas);
+                } else {
+                    console.error("Payload da API inválido:", response.data);
+                    setError("Recebemos uma resposta inesperada do servidor.");
+                }
+
             } catch (err: any) {
+                console.error("Erro na inicialização da página:", JSON.stringify(err.response?.data || err.message, null, 2));
                 setError(err.response?.data?.message ?? "Não foi possível carregar a avaliação.");
             } finally {
                 setIsLoading(false);
@@ -130,113 +111,60 @@ function ResponderAvaliacaoContent() {
         };
 
         initializePage();
-    }, [avaliacaoId]);
+    }, [avaliacaoIdParam]);
 
     const handleInputChange = (perguntaId: number, valor: string) => {
         setRespostas(prev => ({ ...prev, [perguntaId]: valor }));
     };
 
-    // ✅ FUNÇÃO DE SUBMISSÃO CORRIGIDA
     const handleSubmitRespostas = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        const avaliacaoId = parseInt(avaliacaoIdParam, 10);
 
-        if (!avaliacaoData) {
-            setError("Dados da avaliação não carregados.");
-            return;
-        }
+        if (!avaliacaoData) return;
 
-        // Validação JS: Apenas para perguntas obrigatórias
         for (const pergunta of avaliacaoData.perguntas) {
-            if (pergunta.obrigatoria) {
-                const resposta = respostas[pergunta.id];
-                if (!resposta || resposta.trim() === '') {
-                    alert(`A pergunta "${pergunta.enunciado}" é obrigatória.`);
-                    return; // Para a submissão
-                }
+            if (pergunta.obrigatoria && !respostas[pergunta.id]?.trim()) {
+                alert(`A pergunta "${pergunta.enunciado}" é obrigatória.`);
+                return;
             }
         }
 
         setIsSubmitting(true);
         setError(null);
-        setSubmissionMessage(null);
+        
+        const clienteUserString = localStorage.getItem('clienteUser');
+        const cliente: ClienteUser | null = clienteUserString ? JSON.parse(clienteUserString) : null;
 
-        const payload: {
-            respostas: { perguntaId: number, respostaTexto: string }[];
-            usuarioId?: number;
-            anonymousSessionId?: string;
-        } = {
+        const payload = {
             respostas: Object.entries(respostas).map(([pId, respTexto]) => ({
                 perguntaId: parseInt(pId),
                 respostaTexto: respTexto
             })),
+            ...(cliente ? { usuarioId: cliente.id } : { anonymousSessionId: getAnonymousSessionId() })
         };
-
-        if (loggedInCliente) {
-            payload.usuarioId = loggedInCliente.id;
-        } else if (anonymousSessionId) {
-            payload.anonymousSessionId = anonymousSessionId;
-        } else {
-            setError("Não foi possível identificar sua sessão.");
-            setIsSubmitting(false);
-            return;
-        }
 
         try {
             const response = await api.post(`/public/avaliacoes/${avaliacaoId}/respostas`, payload);
             setSubmissionMessage(response.data.message ?? "Respostas enviadas com sucesso!");
         } catch (err: any) {
-            console.error("Erro ao enviar respostas:", err.response?.data ?? err.message);
             setError(err.response?.data?.message ?? "Erro ao enviar suas respostas.");
         } finally {
             setIsSubmitting(false);
         }
-    }; // A CHAVE `}` ESTAVA NO LUGAR ERRADO. AQUI É O FIM CORRETO DA FUNÇÃO.
-
-    // --- Lógica de Renderização (sem alterações, exceto pela remoção do 'required') ---
-
-    if (isLoading) {
-        return <div className="page-container center-content"><p>Carregando...</p></div>;
-    }
-
-    if (error && !submissionMessage) {
-        return (
-            <div className="page-container center-content">
-                <p className="text-red-500">{error}</p>
-                <Link href="/" className="btn btn-secondary mt-4">Voltar</Link>
-            </div>
-        );
-    }
-
-    if (avaliacaoData?.requerLoginCliente && !loggedInCliente) {
-        if (typeof window !== "undefined") {
-            router.push(`/clientes/login?redirectTo=/responder/${avaliacaoId}`);
-        }
-        return <div className="page-container center-content"><p>Redirecionando para login...</p></div>;
-    }
-
-    if (submissionMessage) {
-        return (
-            <div className="page-container center-content text-center py-10">
-                <CheckSquare size={64} className="text-green-500 mx-auto mb-6" />
-                <h2 className="text-3xl font-semibold mb-3">Obrigado!</h2>
-                <p className="text-lg text-text-muted">{submissionMessage}</p>
-                <Link href="/" className="btn btn-primary mt-8">Voltar para a Página Inicial</Link>
-            </div>
-        );
-    }
-
-    if (!avaliacaoData) {
-        return <div className="page-container center-content"><p>Avaliação não encontrada.</p></div>;
-    }
+    };
+    
+    if (isLoading) return <div className="page-container center-content"><p>Carregando...</p></div>;
+    if (error) return <div className="page-container center-content"><p className="text-red-500">{error}</p><Link href="/" className="btn btn-secondary mt-4">Voltar</Link></div>;
+    if (submissionMessage) return <div className="page-container center-content text-center py-10"><CheckSquare size={64} className="text-green-500 mx-auto mb-6" /><h2 className="text-3xl font-semibold mb-3">Obrigado!</h2><p className="text-lg text-text-muted">{submissionMessage}</p><Link href="/" className="btn btn-primary mt-8">Voltar para a Página Inicial</Link></div>;
+    if (!avaliacaoData) return <div className="page-container center-content"><p>Não foi possível carregar os dados da avaliação.</p></div>;
 
     return (
         <div className="page-container max-w-3xl mx-auto py-8 px-4">
             <header className="mb-10 text-center">
                 <h1 className="text-4xl font-bold text-foreground">{avaliacaoData.tituloQuestionario}</h1>
                 <p className="mt-2 text-lg text-text-muted">Avaliação de: {avaliacaoData.nomeEmpresa}</p>
-                {avaliacaoData.semestreAvaliacao && <p className="mt-1 text-md text-text-muted">Referente a: {avaliacaoData.semestreAvaliacao}</p>}
             </header>
-
             <form onSubmit={handleSubmitRespostas} className="space-y-8">
                 {avaliacaoData.perguntas.map((pergunta, index) => (
                     <div key={pergunta.id} className="p-6 bg-card-background dark:bg-gray-800 shadow-lg rounded-xl border border-border">
@@ -244,8 +172,11 @@ function ResponderAvaliacaoContent() {
                             {index + 1}. {pergunta.enunciado}
                             {pergunta.obrigatoria && <span className="text-red-500 ml-1">*</span>}
                         </label>
+                        
+                        {/* --- INÍCIO DA CORREÇÃO --- */}
+                        {/* A lógica agora usa 'tipo' (singular) e é robusta a maiúsculas/minúsculas. */}
 
-                        {pergunta.tipos === 'TEXTO' && (
+                        {pergunta.tipo?.toUpperCase() === 'TEXTO' && (
                             <textarea
                                 id={`pergunta-${pergunta.id}`}
                                 rows={5}
@@ -254,16 +185,15 @@ function ResponderAvaliacaoContent() {
                                 onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
                                 placeholder="Digite sua resposta aqui..."
                                 disabled={isSubmitting}
-                            // ✅ ATRIBUTO 'required' REMOVIDO
                             />
                         )}
 
-                        {pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
+                        {pergunta.tipo?.toUpperCase() === 'MULTIPLA_ESCOLHA' && (
                             <div className="mt-4 space-y-3">
                                 {pergunta.opcoes.map(opcao => (
                                     <div key={opcao.id} className="flex items-center p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <input
-                                            id={`opcao-${opcao.id}-pergunta-${pergunta.id}`}
+                                            id={`pergunta-${pergunta.id}-opcao-${opcao.id}`}
                                             name={`pergunta-${pergunta.id}`}
                                             type="radio"
                                             value={opcao.texto}
@@ -271,24 +201,23 @@ function ResponderAvaliacaoContent() {
                                             onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
                                             className="h-5 w-5 text-primary focus:ring-primary"
                                             disabled={isSubmitting}
-                                        // ✅ ATRIBUTO 'required' REMOVIDO
                                         />
-                                        <label htmlFor={`opcao-${opcao.id}-pergunta-${pergunta.id}`} className="ml-3 block text-md text-foreground cursor-pointer">
+                                        <label 
+                                            htmlFor={`pergunta-${pergunta.id}-opcao-${opcao.id}`} 
+                                            className="ml-3 block text-md text-foreground cursor-pointer"
+                                        >
                                             {opcao.texto}
                                         </label>
                                     </div>
                                 ))}
                             </div>
                         )}
+                        {/* --- FIM DA CORREÇÃO --- */}
+
                     </div>
                 ))}
-
-                {error && <p className="text-red-500 text-center font-semibold">{error}</p>}
-
                 <div className="pt-8 flex justify-end">
-                    <button type="submit" className="btn btn-primary btn-lg" disabled={isSubmitting || isLoading}>
-                        {isSubmitting ? "Enviando..." : "Enviar Minhas Respostas"}
-                    </button>
+                    <button type="submit" className="btn btn-primary btn-lg" disabled={isSubmitting || isLoading}>{isSubmitting ? "Enviando..." : "Enviar Respostas"}</button>
                 </div>
             </form>
         </div>

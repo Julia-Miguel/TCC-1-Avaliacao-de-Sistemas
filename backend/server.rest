@@ -256,8 +256,8 @@ Content-Type: application/json
 
 {
     "nome": "Hospital Modelo Beta",
-    "emailResponsavel": "direcao@hospitalbeta.coma.br",
-    "senhaEmpresa": "senhaSegura456!"
+    "emailResponsavel": "teste@gmail.com",
+    "senhaEmpresa": "123456"
 }
 
 
@@ -306,7 +306,7 @@ Content-Type: application/json
     "nome": "Admin Beta Principal",
     "email": "eu@gmail.com",
     "senha": "senhadificil",
-    "empresaId": 2
+    "empresaId": 243
 }
 
 

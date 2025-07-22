@@ -1,28 +1,27 @@
-// backend/src/controller/avaliacao/CreateAvaliacaoController.js
+// ✅ ARQUIVO CORRIGIDO: src/controller/avaliacao/CreateAvaliacaoController.js
 import { prisma } from '../../database/client.js';
 
 export class CreateAvaliacaoController {
     async handle(request, response) {
-        const { semestre, questionario_id, requerLoginCliente } = request.body; // Adicionado requerLoginCliente
+        // ✅ CORREÇÃO: Usando 'questionarioId' (camelCase) para corresponder ao frontend
+        const { semestre, questionarioId, requerLoginCliente } = request.body;
 
-        if (!request.user || !request.user.usuarioId || !request.user.empresaId) {
-            return response.status(401).json({ message: "Usuário não autenticado ou dados de usuário/empresa incompletos no token." });
+        if (!request.user || !request.user.usuarioId) {
+            return response.status(401).json({ message: "Usuário não autenticado." });
         }
-        const { usuarioId: criadorId, empresaId: adminEmpresaId } = request.user;
+        const { usuarioId: criadorId } = request.user;
 
-        if (!semestre || !questionario_id) {
+        if (!semestre || !questionarioId) {
             return response.status(400).json({ message: "Semestre e ID do Questionário são obrigatórios." });
         }
 
-        const questionarioId = parseInt(questionario_id);
-
         try {
-            // Verificar se o questionário selecionado pertence à empresa do admin
+            // A sua lógica de verificação de permissão já está ótima aqui.
             const questionarioVinculado = await prisma.questionario.findFirst({
                 where: {
-                    id: questionarioId,
+                    id: parseInt(questionarioId),
                     criador: {
-                        empresaId: parseInt(adminEmpresaId)
+                        id: parseInt(criadorId)
                     }
                 }
             });
@@ -34,21 +33,14 @@ export class CreateAvaliacaoController {
             const avaliacao = await prisma.avaliacao.create({
                 data: {
                     semestre,
-                    requerLoginCliente: requerLoginCliente || false, // Valor padrão se não enviado
-                    questionario: {
-                        connect: { id: questionarioId }
-                    },
-                    criador: { // Conecta ao admin logado como criador da avaliação
-                        connect: { id: parseInt(criadorId) }
-                    }
+                    requerLoginCliente: !!requerLoginCliente, // Garante que é booleano
+                    questionarioId: parseInt(questionarioId),
+                    criadorId: parseInt(criadorId)
                 }
             });
             return response.status(201).json(avaliacao);
         } catch (error) {
             console.error("Erro ao criar avaliação:", error);
-            if (error.code === 'P2003') { // Foreign key constraint failed
-                 return response.status(400).json({ message: "Questionário ou Usuário criador não encontrado." });
-            }
             return response.status(500).json({ error: "Erro interno ao criar avaliação." });
         }
     }

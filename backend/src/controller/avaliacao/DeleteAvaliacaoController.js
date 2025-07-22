@@ -1,26 +1,20 @@
+// ✅ ARQUIVO CORRIGIDO: src/controller/avaliacao/DeleteAvaliacaoController.js
 import { prisma } from '../../database/client.js';
-import { Prisma } from '@prisma/client';
 
 export class DeleteAvaliacaoController {
-
     async handle(request, response) {
-
-        const { id } = request.body;
+        const { id } = request.params; // Correção aqui
 
         try {
-            const avaliacao = await prisma.avaliacao.delete({
-                where: {
-                    id: parseInt(id)
-                }
+            await prisma.avaliacao.delete({
+                where: { id: parseInt(id) }
             });
-            return response.json(avaliacao);
-
+            return response.status(200).json({ message: "Avaliação deletada com sucesso." });
         } catch (error) {
-
-            console.error(error);
-            return response.status(400).json({
-                message: error.message || 'Unexpected error.'
-            });
+            if (error.code === 'P2025') {
+                return response.status(404).json({ message: "Avaliação não encontrada." });
+            }
+            return response.status(500).json({ message: "Erro ao deletar avaliação." });
         }
     }
 }
