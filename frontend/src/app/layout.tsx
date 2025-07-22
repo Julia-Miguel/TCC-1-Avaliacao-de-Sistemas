@@ -3,7 +3,6 @@
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NavbarLayout from "@/components/NavBar";
 import SideMenu from "@/components/SideMenu";
 import MobileMenu from "@/components/MobileMenu";
 import { ThemeProvider } from "@/components/menu/ThemeProvider";
@@ -52,12 +51,11 @@ export default function RootLayout({
                     className="flex flex-col flex-1 h-screen"
                     style={{
                       transition: "margin-left 0.3s",
-                      marginLeft: collapsed ? "4rem" : "0.1rem", // igual ao width do menu
+                      marginLeft: collapsed ? "4rem" : "16rem", // Ajustado para a largura da sidebar
                     }}
                   >
-                    <NavbarLayout />
                     <main className="flex-1 overflow-y-auto">
-                      <div className="page-container p-4 md:p-1">
+                      <div className="page-container p-4 md:p-6">
                         <Suspense fallback={<div className="text-center p-8">Carregando página...</div>}>
                           {children}
                         </Suspense>

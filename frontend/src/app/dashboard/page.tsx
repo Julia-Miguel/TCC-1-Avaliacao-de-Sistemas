@@ -30,8 +30,17 @@ function DashboardPageContent() {
     async function fetchStats() {
       try {
         setLoading(true);
-        const response = await api.get<DashboardStats>('/dashboard/stats');
-        setStats(response.data);
+        const response = await api.get('/dashboard');
+        // Adapta os dados recebidos do backend para o formato esperado pelo frontend
+        const data = response.data;
+        setStats({
+          geral: {
+            totalQuestionarios: data.globalKpis.totalQuestionarios,
+            totalAvaliacoes: data.globalKpis.totalAvaliacoes,
+            totalRespostasCompletas: data.globalKpis.totalFinalizados,
+          },
+          respostasAgregadas: data.respostasAgregadas, // O backend atual não retorna respostas agregadas
+        });
       } catch (err) {
         setError('Não foi possível carregar os dados do dashboard.');
         console.error(err);

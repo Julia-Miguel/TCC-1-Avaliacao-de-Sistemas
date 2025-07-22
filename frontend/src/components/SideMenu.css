@@ -1,164 +1,196 @@
 /* frontend/src/components/SideMenu.css */
 
 .side-menu {
-  width: 16rem; /* 256px - w-64 no Tailwind */
-  position: relative; /* Alterado de fixed para relative */
+  width: 16rem; /* 256px */
+  height: 100vh;
+  position: fixed;
   top: 0;
   left: 0;
-  height: 100vh;
-  z-index: 1000; /* valor alto para garantir que fique acima */
-  box-shadow: 2px 0 16px rgba(0,0,0,0.15); /* profundidade visual */
-  background: #fff; /* ou a cor do seu tema */
   display: flex;
   flex-direction: column;
-  background-color: var(--color-background-element); /* Fundo branco/claro */
-  border-right: 1px solid var(--color-border); /* Borda sutil à direita */
-  color: var(--color-text-base);
-  transition: background-color var(--transition-slow), border-color var(--transition-slow), color var(--transition-slow), width 0.3s ease;
-  padding-bottom: var(--spacing-md); /* Espaço no final do menu */
+  background-color: var(--color-background-element);
+  border-right: 1px solid var(--color-border);
+  transition: width 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+.side-menu.collapsed {
+  width: 4rem; /* 64px */
 }
 
 .side-menu-header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg);
-  font-size: 1.125rem;
-  font-weight: 600;
+  justify-content: space-between;
+  padding: 1rem;
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
-.side-menu-nav {
-  flex-grow: 1; /* Permite que a navegação ocupe o espaço disponível */
-  padding: var(--spacing-md) var(--spacing-sm); /* Espaçamento vertical e horizontal menor para os itens */
-  overflow-y: auto; /* Scroll se houver muitos itens */
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs); /* Espaço pequeno entre os links */
+.side-menu-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
 }
 
-.side-menu-link {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md); /* Padding interno dos links */
-  border-radius: var(--border-radius-md);
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-  color: var(--color-text-muted); /* Cor padrão para links inativos (cinza suave) */
-  text-decoration: none;
-  font-weight: 500; /* medium */
-  margin: 0 var(--spacing-sm); /* Margem horizontal para os links não colarem nas bordas do nav */
-}
-
-.side-menu-link:hover {
-  background-color: rgba(var(--color-primary-rgb), 0.08); /* Fundo primário bem sutil */
-  color: var(--color-primary); /* Texto na cor primária no hover */
-}
-
-.side-menu-link.active {
-  background-color: var(--color-primary);
-  color: var(--color-text-on-primary); /* Texto branco/claro sobre fundo primário */
-  font-weight: 500; /* Pode ser semibold (600) se quiser mais destaque */
-  box-shadow: var(--shadow-sm); /* Sombra sutil para o item ativo */
-}
-
-.side-menu-icon {
-  width: 1.25rem; /* w-5 */
-  height: 1.25rem; /* h-5 */
-  margin-right: var(--spacing-sm); /* Espaço entre ícone e texto */
-  flex-shrink: 0; /* Evita que o ícone encolha */
-  /* A cor do ícone será herdada do .side-menu-link (color) */
-}
-/* Para garantir que o ícone no estado ativo também use a cor correta */
-.side-menu-link.active .side-menu-icon {
-  color: var(--color-text-on-primary);
-}
-
-
-.side-menu-label {
-  font-size: 0.875rem; /* text-sm */
-  line-height: 1.25rem;
-  /* O peso da fonte é herdado do .side-menu-link */
-}
-
-.side-menu-footer {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--color-border);
-  font-size: 0.75rem; /* text-xs */
-  color: var(--color-text-muted);
-  text-align: center;
-  flex-shrink: 0; /* Evita que o footer encolha */
-}
-.side-menu-footer p { /* Se você usar <p> dentro do footer */
-    margin: 0;
-    color: inherit; /* Herda a cor do .side-menu-footer */
-}
-
-
-/* Botão hamburger visível apenas em telas pequenas */
-.hamburger-button {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 50;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-base);
-}
-
-@media (max-width: 768px) {
-  .side-menu {
-    top: 0;
-    height: 100vh;
-    padding-top: 4rem;
-  }
-}
-
-.side-menu.collapsed {
-  width: 4rem; /* Exibe só ícones */
-}
-
-.side-menu-label,
-.side-menu-header,
-.side-menu-footer {
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.side-menu.collapsed .side-menu-label,
-.side-menu.collapsed .side-menu-title,
-.side-menu.collapsed .side-menu-footer {
+.side-menu.collapsed .side-menu-title {
   opacity: 0;
-  visibility: hidden;
-  height: 0;
-  overflow: hidden;
-}
-
-
-.side-menu.collapsed .side-menu-link {
-  justify-content: center;
-  margin: 0 auto;
-  padding: var(--spacing-sm); /* menos padding */
-}
-
-.side-menu.collapsed .side-menu-icon {
-  margin: 0;
+  display: none;
 }
 
 .hamburger-toggle {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text-base);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  padding: 0.25rem;
+  border-radius: var(--border-radius-md);
+}
+.hamburger-toggle:hover {
+  color: var(--color-primary);
+  background-color: rgba(var(--color-primary-rgb), 0.1);
 }
 
-.side-menu-title {
-  font-size: 1.125rem;
+.side-menu-nav {
+  flex-grow: 1;
+  padding: 0.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.side-menu-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: var(--border-radius-md);
+  text-decoration: none;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.side-menu-link:hover {
+  background-color: rgba(var(--color-primary-rgb), 0.08);
+  color: var(--color-primary);
+}
+
+.side-menu-link.active {
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+  box-shadow: var(--shadow-sm);
+}
+.side-menu-link.active:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.side-menu-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.75rem;
+  transition: margin-right 0.3s ease-in-out;
+}
+.side-menu.collapsed .side-menu-icon {
+  margin-right: 0;
+}
+
+.side-menu-label {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+.side-menu.collapsed .side-menu-label {
+  opacity: 0;
+  display: none;
+}
+
+
+/* Footer e Perfil do Usuário */
+.side-menu-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.user-profile-section {
+  position: relative;
+}
+
+.user-profile-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-radius: var(--border-radius-md);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.user-profile-button:hover {
+  background-color: var(--color-background-page);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.user-name {
   font-weight: 600;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.user-email {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.user-profile-menu {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  margin-top: 0.5rem;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 0.5rem;
+  border-radius: var(--border-radius-md);
+  color: var(--color-error);
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.logout-button:hover {
+  background-color: rgba(var(--color-error-rgb), 0.1);
+}
+
+.theme-toggle-wrapper {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+.side-menu.collapsed .theme-toggle-wrapper {
+  justify-content: center;
+}
+.side-menu.collapsed .user-profile-section {
+    display: none;
 }

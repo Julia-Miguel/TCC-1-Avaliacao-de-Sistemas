@@ -1,3 +1,6 @@
+// backend/src/server.js
+
+import 'dotenv/config'; // <-- ADICIONE ESTA LINHA NO TOPO
 import express from 'express';
 import cors from "cors";
 import { mainRouter } from './routes/main.js';
@@ -12,33 +15,32 @@ import { empresasRouter } from './routes/empresas.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { publicAvaliacaoRoutes } from './routes/publicAvaliacao.js';
 
-// Corrigido: renomeado de 'server' para 'app' para consistência
 const app = express();
 
-// Middleware para analisar o corpo das requisições JSON
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  optionsSuccessStatus: 200 
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cors());
 
-// Corrigido: usando 'app.use'
-app.use(mainRouter);
-app.use(questionarioRouter);
-app.use(quePergRouter);
-app.use(perguntasRouter);
-app.use(avaliacaoRouter);
-app.use(usuarioRouter);
-app.use(usuAvalRouter);
-app.use(respostaRouter);
-app.use(empresasRouter);
-app.use(dashboardRouter);
-app.use(publicAvaliacaoRoutes);
+app.use('/api', mainRouter);
+app.use('/api', questionarioRouter);
+app.use('/api', quePergRouter);
+app.use('/api', perguntasRouter);
+app.use('/api', avaliacaoRouter);
+app.use('/api', usuarioRouter);
+app.use('/api', usuAvalRouter);
+app.use('/api', respostaRouter);
+app.use('/api', empresasRouter);
+app.use('/api', dashboardRouter);
+app.use('/api', publicAvaliacaoRoutes);
 
-
-// Routes
 app.get('/', (request, response) => {
     response.json({
         message: 'Status: Server is running.'
     });
 });
 
-// Corrigido: exportando a variável 'app' que agora está definida
 export { app };

@@ -59,6 +59,43 @@ export class GetDashboardDataController {
                 };
             }
 
+            // --- Agregação de respostas para perguntas de múltipla escolha e escala ---
+            // Busca todas as perguntas do tipo MULTIPLA_ESCOLHA ou ESCALA da empresa
+            const perguntasAgregadas = await prisma.pergunta.findMany({
+                where: {
+                    tipos: { in: ['MULTIPLA_ESCOLHA', 'ESCALA'] },
+                    questionarios: {
+                        some: {
+                            questionario: { criador: { empresaId: empresaId } }
+                        }
+                    }
+                },
+                include: {
+                    opcoes: true
+                }
+            });
+
+            // Para cada pergunta, agregue as respostas
+            const respostasAgregadas = [];
+            for (const pergunta of perguntasAgregadas) {
+                // Busca respostas agrupadas por valor
+                const agregados = await prisma.resposta.groupBy({
+                    by: ['resposta'],
+                    where: { perguntaId: pergunta.id },
+                    _count: { resposta: true }
+                });
+                // Monta os dados para o gráfico
+                const dados = agregados.map(item => ({
+                    name: item.resposta,
+                    count: item._count.resposta
+                }));
+                respostasAgregadas.push({
+                    perguntaId: pergunta.id,
+                    enunciado: pergunta.enunciado,
+                    dados
+                });
+            }
+
             // --- Estrutura final da resposta ---
             return response.json({
                 globalKpis: {
@@ -68,7 +105,8 @@ export class GetDashboardDataController {
                     taxaDeConclusao: globalTaxaDeConclusao,
                     totalQuestionarios: globalTotalQuestionarios
                 },
-                latestQuestionnaire: specificQuestionnaireData
+                latestQuestionnaire: specificQuestionnaireData,
+                respostasAgregadas
             });
 
         } catch (error) {

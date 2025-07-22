@@ -1,95 +1,79 @@
 // frontend/src/contexts/AuthContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '@/services/api';
 
+// Interfaces
 interface AdminUser {
-  id: number;
+  usuarioId: number;
+  empresaId: number;
+  tipo: string;
   nome: string;
   email: string;
-  tipo: string;
-  empresaId: number;
 }
 
 interface AuthContextType {
   loggedInAdmin: AdminUser | null;
-  adminToken: string | null;
-  isLoadingAuth: boolean;
+  isLoading: boolean;
   loginAdmin: (user: AdminUser, token: string) => void;
   logoutAdmin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Provedor de Autenticação
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loggedInAdmin, setLoggedInAdmin] = useState<AdminUser | null>(null);
-  const [adminToken, setAdminToken] = useState<string | null>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem('adminToken');
-      const storedUserString = localStorage.getItem('adminUser');
-      if (storedToken && storedUserString) {
-        try {
-          const storedUser = JSON.parse(storedUserString);
-          setLoggedInAdmin(storedUser);
-          setAdminToken(storedToken);
-        } catch (e) {
-          console.error("AuthContext: Erro ao parsear dados do localStorage", e);
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminUser');
-        }
+    const token = localStorage.getItem('adminToken');
+    const userString = localStorage.getItem('adminUser');
+
+    if (token && userString) {
+      try {
+        const user = JSON.parse(userString);
+        api.defaults.headers.Authorization = `Bearer ${token}`;
+        setLoggedInAdmin(user);
+      } catch (error) {
+        console.error("Falha ao carregar dados de autenticação do localStorage", error);
+        localStorage.clear(); // Limpa tudo se os dados estiverem corrompidos
       }
-      setIsLoadingAuth(false);
     }
+    setIsLoading(false); // Finaliza o carregamento inicial
   }, []);
 
-  const loginAdmin = (user: AdminUser, token: string) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem('adminToken', token);
-      localStorage.setItem('adminUser', JSON.stringify(user));
-    }
+  const loginAdmin = useCallback((user: AdminUser, token: string) => {
+    localStorage.setItem('adminToken', token);
+    localStorage.setItem('adminUser', JSON.stringify(user));
+    api.defaults.headers.Authorization = `Bearer ${token}`;
     setLoggedInAdmin(user);
-    setAdminToken(token);
-    router.push('/questionarios');
-  };
+    router.push('/'); // Redireciona para a página principal após o login
+  }, [router]);
 
-  const logoutAdmin = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminUser');
-    }
+  const logoutAdmin = useCallback(() => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    delete api.defaults.headers.Authorization;
     setLoggedInAdmin(null);
-    setAdminToken(null);
-    router.push('/empresas/login'); // Redireciona para o login da empresa
-  };
-
-  const contextValue = useMemo(
-    () => ({
-      loggedInAdmin,
-      adminToken,
-      isLoadingAuth,
-      loginAdmin,
-      logoutAdmin,
-    }),
-    [loggedInAdmin, adminToken, isLoadingAuth, loginAdmin, logoutAdmin]
-  );
+    router.push('/empresas/login'); // Volta para o início do fluxo de login
+  }, [router]);
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={{ loggedInAdmin, isLoading, loginAdmin, logoutAdmin }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
+// Hook para usar o contexto
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }
   return context;
 };
-

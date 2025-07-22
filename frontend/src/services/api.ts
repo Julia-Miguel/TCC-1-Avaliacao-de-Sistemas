@@ -1,12 +1,14 @@
+// frontend/src/services/api.ts
 import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
-// Interceptor JWT
+// Interceptor que adiciona o token de autenticação em cada requisição
 api.interceptors.request.use(
-  async (config) => {
+  (config) => {
+    // Garante que o código só rode no navegador
     if (typeof window !== "undefined") {
       const token = localStorage.getItem('adminToken');
       if (token) {
@@ -15,7 +17,9 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(new Error(error?.message ?? String(error)))
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 export default api;
