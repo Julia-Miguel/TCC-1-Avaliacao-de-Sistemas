@@ -75,9 +75,12 @@ export default function RootLayout({
                 </div>
               </>
             ) : (
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Carregando...</div>}>
-                {children}
-              </Suspense>
+          // AQUI: o <main> para centralizar o conteúdo das páginas públicas
+              <main className="min-h-screen flex flex-col items-center justify-start bg-page-bg p-4 sm:p-6 md:p-8">
+                <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
+                  {children}
+                </Suspense>
+              </main>
             )}
           </AuthProvider>
         </ThemeProvider>
