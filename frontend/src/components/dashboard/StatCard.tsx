@@ -12,15 +12,15 @@ interface StatCardProps {
 
 export const StatCard = ({ title, value, icon: Icon, color, bgColor }: StatCardProps) => {
   return (
-    <div className="bg-element-bg p-5 rounded-xl shadow-md border border-main-border transition-shadow duration-200">
-      <div className="flex items-start justify-between">
-        <div className={`p-2 rounded-lg ${bgColor}`}>
+    <div className="bg-element-bg p-5 rounded-xl shadow-md border border-main-border transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-text-muted mb-1 truncate">{title}</p>
+          <p className="text-2xl font-bold text-text-base">{value}</p>
+        </div>
+        <div className={`p-3 rounded-full ${bgColor}`}>
           <Icon size={24} className={color} strokeWidth={1.5} />
         </div>
-      </div>
-      <div className="mt-3">
-        <h3 className="text-xl md:text-2xl font-semibold text-text-base">{value}</h3>
-        <p className="text-sm text-text-muted mt-1 truncate">{title}</p>
       </div>
     </div>
   );

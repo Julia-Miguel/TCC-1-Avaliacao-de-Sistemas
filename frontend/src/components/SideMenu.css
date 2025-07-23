@@ -194,3 +194,11 @@
 .side-menu.collapsed .user-profile-section {
     display: none;
 }
+/* Esconde o link do logo quando a sidebar estiver recolhida */
+.side-menu.collapsed .side-menu-logo-link {
+  display: none;
+}
+/* Alinha o ícone restante (o menu) para a direita no modo recolhido */
+.side-menu.collapsed .side-menu-header {
+  justify-content: flex-end;
+}

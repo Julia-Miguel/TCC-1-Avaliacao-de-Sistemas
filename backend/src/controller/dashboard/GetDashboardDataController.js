@@ -1,112 +1,80 @@
+// backend/src/controller/dashboard/GetDashboardDataController.js
 import { prisma } from '../../database/client.js';
 
 export class GetDashboardDataController {
     async handle(request, response) {
-        const empresaId = request.user.empresaId;
-        const { questionarioId } = request.query;
+        const { empresaId } = request.user; // Obtido pelo authMiddleware
 
         if (!empresaId) {
-            return response.status(401).json({ message: "ID da empresa não encontrado no token de autenticação." });
+            return response.status(401).json({ message: "ID da empresa não encontrado no token." });
         }
 
         try {
-            // --- KPIs GLOBAIS (sem alterações) ---
-            const whereGlobal = { criador: { empresaId: empresaId } };
-            const globalTotalQuestionarios = await prisma.questionario.count({ where: whereGlobal });
-            const globalTotalAvaliacoes = await prisma.avaliacao.count({ where: { questionario: whereGlobal } });
-            const globalTotalIniciados = await prisma.usuAval.count({ where: { avaliacao: { questionario: whereGlobal } } });
-            const globalTotalFinalizados = await prisma.usuAval.count({ where: { avaliacao: { questionario: whereGlobal }, isFinalizado: true } });
-            const globalTaxaDeConclusao = globalTotalIniciados > 0 ? Math.round((globalTotalFinalizados / globalTotalIniciados) * 100) : 0;
+            const intEmpresaId = parseInt(empresaId);
 
-            // --- Lógica para buscar dados de um questionário específico ---
-            let targetQuestionario = null;
-            if (questionarioId) {
-                targetQuestionario = await prisma.questionario.findFirst({
-                    where: { id: parseInt(questionarioId), criador: { empresaId: empresaId } },
-                    // ✅ ADICIONADO CONTAGEM DE PERGUNTAS
-                    include: { _count: { select: { avaliacoes: true, perguntas: true } } }
-                });
-            } else {
-                targetQuestionario = await prisma.questionario.findFirst({
-                    where: { criador: { empresaId: empresaId } },
-                    orderBy: { updated_at: 'desc' },
-                    // ✅ ADICIONADO CONTAGEM DE PERGUNTAS
-                    include: { _count: { select: { avaliacoes: true, perguntas: true } } }
-                });
-            }
+            // --- 1. KPIs GLOBAIS ---
+            const questionariosDaEmpresa = await prisma.questionario.findMany({
+                where: { criador: { empresaId: intEmpresaId } },
+                select: { id: true }
+            });
+            const questionarioIds = questionariosDaEmpresa.map(q => q.id);
 
-            let specificQuestionnaireData = null;
-            if (targetQuestionario) {
-                const currentQuestionarioId = targetQuestionario.id;
-                const specificTotalIniciados = await prisma.usuAval.count({ where: { avaliacao: { questionarioId: currentQuestionarioId } } });
-                const specificTotalFinalizados = await prisma.usuAval.count({ where: { avaliacao: { questionarioId: currentQuestionarioId }, isFinalizado: true } });
-                const specificTaxaDeConclusao = specificTotalIniciados > 0 ? Math.round((specificTotalFinalizados / specificTotalIniciados) * 100) : 0;
+            const totalQuestionarios = questionarioIds.length;
+            const totalAvaliacoes = await prisma.avaliacao.count({ where: { questionarioId: { in: questionarioIds } } });
+            const totalRespondentes = await prisma.usuAval.count({ where: { avaliacao: { questionarioId: { in: questionarioIds } } } });
+            const totalFinalizados = await prisma.usuAval.count({ where: { avaliacao: { questionarioId: { in: questionarioIds } }, isFinalizado: true } });
+            const taxaDeConclusao = totalRespondentes > 0 ? Math.round((totalFinalizados / totalRespondentes) * 100) : 0;
 
-                specificQuestionnaireData = {
-                    info: {
-                        id: targetQuestionario.id,
-                        titulo: targetQuestionario.titulo,
-                        avaliacoesCount: targetQuestionario._count.avaliacoes,
-                        perguntasCount: targetQuestionario._count.perguntas, // ✅ NOVA INFORMAÇÃO
-                        updated_at: targetQuestionario.updated_at,
-                    },
-                    kpis: {
-                        totalAvaliacoes: targetQuestionario._count.avaliacoes,
-                        totalRespondentes: specificTotalIniciados,
-                        totalFinalizados: specificTotalFinalizados,
-                        taxaDeConclusao: specificTaxaDeConclusao
-                    }
-                };
-            }
-
-            // --- Agregação de respostas para perguntas de múltipla escolha e escala ---
-            // Busca todas as perguntas do tipo MULTIPLA_ESCOLHA ou ESCALA da empresa
-            const perguntasAgregadas = await prisma.pergunta.findMany({
+            // --- 2. GRÁFICOS DE MÚLTIPLA ESCOLHA ---
+            const perguntasMultiplaEscolha = await prisma.pergunta.findMany({
                 where: {
-                    tipos: { in: ['MULTIPLA_ESCOLHA', 'ESCALA'] },
-                    questionarios: {
-                        some: {
-                            questionario: { criador: { empresaId: empresaId } }
-                        }
-                    }
+                    tipos: 'MULTIPLA_ESCOLHA',
+                    questionarios: { some: { questionarioId: { in: questionarioIds } } }
                 },
                 include: {
                     opcoes: true
                 }
             });
 
-            // Para cada pergunta, agregue as respostas
-            const respostasAgregadas = [];
-            for (const pergunta of perguntasAgregadas) {
-                // Busca respostas agrupadas por valor
-                const agregados = await prisma.resposta.groupBy({
+            const graficos = [];
+            for (const pergunta of perguntasMultiplaEscolha) {
+                const contagemRespostas = await prisma.resposta.groupBy({
                     by: ['resposta'],
                     where: { perguntaId: pergunta.id },
-                    _count: { resposta: true }
+                    _count: { _all: true },
                 });
-                // Monta os dados para o gráfico
-                const dados = agregados.map(item => ({
-                    name: item.resposta,
-                    count: item._count.resposta
-                }));
-                respostasAgregadas.push({
-                    perguntaId: pergunta.id,
-                    enunciado: pergunta.enunciado,
-                    dados
-                });
+
+                if (contagemRespostas.length > 0) {
+                    graficos.push({
+                        perguntaId: pergunta.id,
+                        enunciado: pergunta.enunciado,
+                        respostas: contagemRespostas.map(item => ({
+                            name: item.resposta,
+                            value: item._count._all,
+                        })),
+                    });
+                }
             }
 
-            // --- Estrutura final da resposta ---
-            return response.json({
-                globalKpis: {
-                    totalAvaliacoes: globalTotalAvaliacoes,
-                    totalRespondentes: globalTotalIniciados,
-                    totalFinalizados: globalTotalFinalizados,
-                    taxaDeConclusao: globalTaxaDeConclusao,
-                    totalQuestionarios: globalTotalQuestionarios
+            // --- 3. PERGUNTAS DE TEXTO PARA NUVEM DE PALAVRAS ---
+            const textQuestions = await prisma.pergunta.findMany({
+                where: {
+                    tipos: 'TEXTO',
+                    questionarios: { some: { questionarioId: { in: questionarioIds } } }
                 },
-                latestQuestionnaire: specificQuestionnaireData,
-                respostasAgregadas
+                select: { id: true, enunciado: true }
+            });
+
+            return response.json({
+                kpis: {
+                    totalAvaliacoes,
+                    totalRespondentes,
+                    totalFinalizados,
+                    taxaDeConclusao,
+                    totalQuestionarios
+                },
+                graficos,
+                textQuestions
             });
 
         } catch (error) {
