@@ -1,134 +1,119 @@
 // frontend/src/app/dashboard/page.tsx
 'use client';
 
-import { useEffect, useState } from "react";
-import api from "@/services/api";
-import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
-import { WordCloud } from "@/components/dashboard/WordCloud";
-import { TrendingUp, FileText, CheckSquare, Users, Loader2, ClipboardList } from "lucide-react";
+import { useEffect, useState } from 'react';
+import api from '@/services/api';
+import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
+import { StatCard } from '@/components/dashboard/StatCard';
+import { QuestionResponseChart } from '@/components/dashboard/QuestionResponseChart';
+import { FileText, ClipboardList, Users } from 'lucide-react';
 
-// --- Interfaces para os dados ---
-interface KpiData {
-    totalAvaliacoes: number;
-    totalRespondentes: number;
-    totalFinalizados: number;
-    taxaDeConclusao: number;
+interface DashboardStats {
+  geral: {
     totalQuestionarios: number;
-}
-interface GraficoData {
+    totalAvaliacoes: number;
+    totalRespostasCompletas: number;
+  };
+  respostasAgregadas: {
     perguntaId: number;
     enunciado: string;
-    respostas: { name: string; value: number }[];
+    dados: { name: string; count: number }[];
+  }[];
 }
-interface TextQuestion {
-    id: number;
-    enunciado: string;
-}
-// --- Fim das Interfaces ---
 
 function DashboardPageContent() {
-    const [kpis, setKpis] = useState<KpiData | null>(null);
-    const [graficos, setGraficos] = useState<GraficoData[]>([]);
-    const [wordCloudData, setWordCloudData] = useState<{ text: string; value: number }[]>([]);
-    const [textQuestions, setTextQuestions] = useState<TextQuestion[]>([]);
-    const [selectedTextQuestion, setSelectedTextQuestion] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-    const [isLoadingWordCloud, setIsLoadingWordCloud] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setIsLoading(true);
-                const response = await api.get('/dashboard');
-                setKpis(response.data.kpis);
-                setGraficos(response.data.graficos);
-                setTextQuestions(response.data.textQuestions);
-                if (response.data.textQuestions.length > 0) {
-                    setSelectedTextQuestion(response.data.textQuestions[0].id.toString());
-                }
-            } catch (err) {
-                console.error("Erro ao carregar dashboard:", err);
-                setError("Falha ao carregar os dados do dashboard.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
-
-    useEffect(() => {
-        if (selectedTextQuestion) {
-            const fetchWordCloud = async () => {
-                try {
-                    setIsLoadingWordCloud(true);
-                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}`);
-                    setWordCloudData(response.data.wordCloud);
-                } catch (error) {
-                    console.error("Erro ao carregar nuvem de palavras:", error);
-                    setWordCloudData([]);
-                } finally {
-                    setIsLoadingWordCloud(false);
-                }
-            };
-            fetchWordCloud();
-        }
-    }, [selectedTextQuestion]);
-    
-    if (isLoading) {
-        return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLoading(true);
+        const response = await api.get('/dashboard');
+        // Adapta os dados recebidos do backend para o formato esperado pelo frontend
+        const data = response.data;
+        setStats({
+          geral: {
+            totalQuestionarios: data.globalKpis.totalQuestionarios,
+            totalAvaliacoes: data.globalKpis.totalAvaliacoes,
+            totalRespostasCompletas: data.globalKpis.totalFinalizados,
+          },
+          respostasAgregadas: data.respostasAgregadas, // O backend atual não retorna respostas agregadas
+        });
+      } catch (err) {
+        setError('Não foi possível carregar os dados do dashboard.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
-    if (error) {
-        return <div className="text-center p-10 text-red-500">{error}</div>;
-    }
+    fetchStats();
+  }, []);
 
-    return (
-        <div className="space-y-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard Geral</h1>
+  if (loading) {
+    return <div className="text-center py-20">Carregando dashboard...</div>;
+  }
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total de Questionários" value={kpis?.totalQuestionarios ?? 0} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
-                <StatCard title="Total de Avaliações" value={kpis?.totalAvaliacoes ?? 0} icon={ClipboardList} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
-                <StatCard title="Respostas Finalizadas" value={kpis?.totalFinalizados ?? 0} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
-                <StatCard title="Taxa de Conclusão" value={`${kpis?.taxaDeConclusao ?? 0}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
-            </div>
+  if (error || !stats) {
+    return <div className="text-center py-20 text-red-500">{error ?? 'Dados não encontrados.'}</div>;
+  }
 
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground pt-4">Análise de Respostas</h2>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {graficos.map(grafico => (
-                    <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
-                ))}
+  return (
+    <div className="page-container p-4 sm:p-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-8">Dashboard Geral</h1>
 
-                {textQuestions.length > 0 && (
-                    <div className="bg-card-bg dark:bg-gray-800 p-6 rounded-lg shadow border border-border lg:col-span-2">
-                        <div className="form-group mb-4">
-                            <label htmlFor="text-question-select" className="form-label">Analisar Respostas de Texto:</label>
-                            <select 
-                                id="text-question-select" 
-                                className="input-edit-mode w-full mt-1"
-                                value={selectedTextQuestion}
-                                onChange={e => setSelectedTextQuestion(e.target.value)}
-                            >
-                                {textQuestions.map(q => <option key={q.id} value={q.id}>{q.enunciado}</option>)}
-                            </select>
-                        </div>
-                        <div className="w-full h-80">
-                           {isLoadingWordCloud ? <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div> : <WordCloud words={wordCloudData} title={""} />}
-                        </div>
-                    </div>
-                )}
-            </div>
+      {/* Seção de Estatísticas Gerais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <StatCard
+          title="Total de Questionários"
+          value={stats.geral.totalQuestionarios}
+          icon={FileText}
+          color="text-blue-600"
+          bgColor="bg-blue-100"
+        />
+        <StatCard
+          title="Total de Avaliações"
+          value={stats.geral.totalAvaliacoes}
+          icon={ClipboardList}
+          color="text-green-600"
+          bgColor="bg-green-100"
+        />
+        <StatCard
+          title="Respostas Finalizadas"
+          value={stats.geral.totalRespostasCompletas}
+          icon={Users}
+          color="text-purple-600"
+          bgColor="bg-purple-100"
+        />
+      </div>
+
+      {/* Seção de Gráficos */}
+      <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Distribuição de Respostas</h2>
+      
+      {stats.respostasAgregadas.length === 0 ? (
+        <div className="text-center py-10 px-4 bg-card-background dark:bg-gray-800 rounded-lg shadow border border-border">
+          <p className="text-text-muted">Nenhuma resposta para perguntas de múltipla escolha ou escala foi encontrada para gerar gráficos.</p>
         </div>
-    );
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {stats.respostasAgregadas.map((item) => (
+            <QuestionResponseChart
+              key={item.perguntaId}
+              title={item.enunciado}
+              data={item.dados}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default function Dashboard() {
-    return (
-        <AdminAuthGuard>
-            <DashboardPageContent />
-        </AdminAuthGuard>
-    );
+export default function DashboardPage() {
+  return (
+    <AdminAuthGuard>
+      <DashboardPageContent />
+    </AdminAuthGuard>
+  );
 }
