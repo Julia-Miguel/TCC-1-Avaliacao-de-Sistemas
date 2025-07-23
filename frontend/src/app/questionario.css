@@ -330,7 +330,93 @@
   overflow-x: hidden;
 }
 
+/* frontend/src/app/questionario.css */
 
+/* --- Estilos para a Nova Aba de Respostas --- */
+
+/* Contêiner principal da aba de respostas */
+.respostas-view-container {
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+/* Card para cada semestre */
+.semestre-card {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* Header do card de semestre (clicável para expandir) */
+.semestre-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  text-align: left;
+  transition: background-color var(--transition-std);
+}
+
+.semestre-header:hover {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+}
+
+/* Título dentro do header do semestre */
+.semestre-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Corpo do card que contém a lista de avaliações */
+.semestre-body {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Card individual para cada avaliação dentro do semestre */
+.avaliacao-item-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-std), border-color var(--transition-std), transform var(--transition-fast);
+  cursor: pointer;
+}
+
+.avaliacao-item-card:hover {
+  background-color: var(--color-background-page);
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+/* Detalhes de uma avaliação selecionada */
+.avaliacao-detalhes-card {
+  background-color: var(--card-background);
+  padding: 1.5rem;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+/* Card para cada respondente dentro dos detalhes */
+.respondente-card {
+  background-color: var(--color-background-page);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+}
 
 
 

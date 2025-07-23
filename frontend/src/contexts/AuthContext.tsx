@@ -5,9 +5,9 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 
-// Interfaces
+// Interface
 interface AdminUser {
-  usuarioId: number;
+  id: number; // AQUI: Alterado de 'usuarioId' para 'id' para corresponder à API
   empresaId: number;
   tipo: string;
   nome: string;

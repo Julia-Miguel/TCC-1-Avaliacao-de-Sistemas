@@ -17,9 +17,22 @@ import { publicAvaliacaoRoutes } from './routes/publicAvaliacao.js';
 
 const app = express();
 
+// Lista de endereços permitidos
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://192.168.0.114:3000'
+];
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  optionsSuccessStatus: 200 
+  origin: function (origin, callback) {
+    // Permite requisições sem 'origin' (como apps mobile ou Postman) ou se a origem está na lista
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido pela política de CORS'));
+    }
+  },
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
