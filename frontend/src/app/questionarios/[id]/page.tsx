@@ -817,7 +817,7 @@ function EditQuestionarioFormContent() {
                             </div>
                         );
                     } else if (wordCloudData && wordCloudData.length > 0) {
-                        wordCloudContent = <WordCloud words={wordCloudData} />;
+                        wordCloudContent = <WordCloud words={wordCloudData} title="Nuvem de Palavras da Pergunta" />;
                     } else {
                         wordCloudContent = (
                             <div className="flex h-full w-full items-center justify-center">

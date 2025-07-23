@@ -26,7 +26,7 @@ interface ProcessedWord extends cloud.Word {
 }
 interface WordCloudProps {
     words: WordData[];
-    title: string; // Adicionamos um título para o card
+    title: string;
 }
 
 const colorScale = scaleOrdinal(schemeCategory10);

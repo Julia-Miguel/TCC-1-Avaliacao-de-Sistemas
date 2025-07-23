@@ -46,7 +46,6 @@ function ResponderAvaliacaoContent() {
     if (typeof window === 'undefined') return null;
     let sessionId = localStorage.getItem('anonymousSessionId');
     if (!sessionId) {
-<<<<<<< HEAD
       if (crypto && typeof crypto.randomUUID === 'function') {
         sessionId = crypto.randomUUID();
       } else {
@@ -58,21 +57,6 @@ function ResponderAvaliacaoContent() {
         });
       }
       localStorage.setItem('anonymousSessionId', sessionId);
-=======
-        // Tenta usar o método moderno e seguro primeiro
-        if (crypto && typeof crypto.randomUUID === 'function') {
-            sessionId = crypto.randomUUID();
-        } else {
-            // Se não estiver disponível, usa um fallback que funciona em qualquer lugar
-            console.warn("crypto.randomUUID não disponível. Usando fallback.");
-            sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0, 
-                      v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-        localStorage.setItem('anonymousSessionId', sessionId);
->>>>>>> beeef94 (mecanismos para Network)
     }
     return sessionId;
   }, []);
