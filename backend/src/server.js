@@ -25,7 +25,8 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permite requisições sem 'origin' (como apps mobile ou Postman) ou se a origem está na lista
+    // Permite requisições sem 'origin' (como apps mobile ou Postman) 
+    // ou se a origem está na lista de permitidos.
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
