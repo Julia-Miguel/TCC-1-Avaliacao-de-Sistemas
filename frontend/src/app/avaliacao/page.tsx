@@ -123,20 +123,52 @@ function ListAvaliacaoContent() {
     setShowShareModal(false);
   };
 
-  const handleCopyLink = () => {
-    if (!navigator.clipboard) {
-      console.error("Clipboard API não suportada!");
-      alert("Seu navegador não suporta copiar automaticamente. Por favor, copie manualmente.");
-      return;
+  // Função de fallback para copiar texto em contextos não seguros
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Evita que a página role ao focar no textarea
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.opacity = "0";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        alert("Não foi possível copiar o link. Por favor, copie manualmente.");
+      }
+    } catch (err) {
+      console.error("Falha ao usar o fallback de cópia: ", err);
+      alert("Não foi possível copiar o link. Por favor, copie manualmente.");
     }
 
-    navigator.clipboard.writeText(shareableLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(err => {
-      console.error("Falha ao copiar link: ", err);
-      alert("Não foi possível copiar o link. Tente manualmente.");
-    });
+    document.body.removeChild(textArea);
+  };
+
+  // Nova função principal que decide qual método usar
+  const handleCopyLink = () => {
+    // Tenta usar a API moderna se o contexto for seguro
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(shareableLink).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(err => {
+        console.error("Falha ao copiar com a Clipboard API, tentando fallback: ", err);
+        fallbackCopyTextToClipboard(shareableLink);
+      });
+    } else {
+      // Usa o fallback para HTTP ou navegadores mais antigos
+      fallbackCopyTextToClipboard(shareableLink);
+    }
   };
 
 
