@@ -1,6 +1,6 @@
 // backend/src/server.js
 
-import 'dotenv/config'; // <-- ADICIONE ESTA LINHA NO TOPO
+import 'dotenv/config';
 import express from 'express';
 import cors from "cors";
 import { mainRouter } from './routes/main.js';
@@ -17,7 +17,6 @@ import { publicAvaliacaoRoutes } from './routes/publicAvaliacao.js';
 
 const app = express();
 
-// Lista de endereços permitidos
 const allowedOrigins = [
   'http://localhost:3000',
   'http://192.168.0.114:3000'
@@ -25,8 +24,6 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permite requisições sem 'origin' (como apps mobile ou Postman) 
-    // ou se a origem está na lista de permitidos.
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {

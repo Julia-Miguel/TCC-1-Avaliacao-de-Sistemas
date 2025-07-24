@@ -105,7 +105,6 @@ interface SpecificQuestionnaireDashboardData {
 }
 
 
-
 // Componente exportado da página (sem mudanças)
 export default function EditQuestionarioPage() {
     return (
@@ -173,26 +172,44 @@ function EditQuestionarioFormContent() {
             setIsLoadingDashboard(true);
             api.get(`/dashboard?questionarioId=${questionarioId}`)
                 .then(response => {
-                    if (response.data.latestQuestionnaire && response.data.latestQuestionnaire.info.id === questionarioId) {
-                        setDashboardData(response.data.latestQuestionnaire);
+                    const backendData = response.data; // Esta é a resposta real do backend para /dashboard?questionarioId=...
 
-                        // NOVO: Inicializa a visibilidade dos gráficos individuais (todos visíveis por padrão)
+                    // Mapeia os dados do backend para a interface do frontend
+                    const formattedData: SpecificQuestionnaireDashboardData = {
+                        info: {
+                            id: questionarioId,
+                            titulo: titulo, // Pega o título do estado local
+                            avaliacoesCount: backendData.kpis?.totalAvaliacoes ?? 0,
+                            updated_at: new Date().toISOString(), // Use uma data relevante ou do questionário
+                            textQuestions: backendData.textQuestions || [],
+                        },
+                        kpis: backendData.kpis,
+                        graficos: backendData.graficos,
+                        overallMultiChoiceDistribution: backendData.overallMultiChoiceDistribution,
+                    };
+
+                    if (formattedData && formattedData.info && formattedData.info.textQuestions && formattedData.kpis && formattedData.graficos) {
+                        setDashboardData(formattedData);
+
+                        // Inicializa a visibilidade dos gráficos individuais (todos visíveis por padrão)
                         const initialVisibility: { [key: string]: boolean } = {};
-                        response.data.latestQuestionnaire.graficos.forEach((g: GraficoData) => {
+                        formattedData.graficos.forEach((g: GraficoData) => {
                             initialVisibility[g.perguntaId.toString()] = true; // Usa o ID da pergunta como chave
                         });
                         setChartVisibility(initialVisibility);
-                        // FIM NOVO
 
-                        if (response.data.latestQuestionnaire.info.textQuestions.length > 0) {
-                            setSelectedTextQuestion(response.data.latestQuestionnaire.info.textQuestions[0].id.toString());
+                        // Define a primeira pergunta de texto como padrão para a Nuvem de Palavras
+                        if (formattedData.info.textQuestions.length > 0) {
+                            setSelectedTextQuestion(formattedData.info.textQuestions[0].id.toString());
                         } else {
-                            setSelectedTextQuestion('');
-                            setWordCloudData([]);
+                            setSelectedTextQuestion(''); // Garante que esteja vazio se não houver perguntas de texto
+                            setWordCloudData([]); // Limpa a nuvem se não houver perguntas de texto
                         }
                     } else {
+                        // Caso a API retorne uma estrutura inesperada ou incompleta (após a formatação)
+                        console.error("Estrutura de dados do dashboard inválida ou incompleta recebida da API (após formatação):", backendData);
                         setDashboardData(null);
-                        setChartVisibility({}); // NOVO: Limpa a visibilidade se não houver dados do dashboard
+                        setChartVisibility({});
                         setSelectedTextQuestion('');
                         setWordCloudData([]);
                     }
@@ -201,7 +218,7 @@ function EditQuestionarioFormContent() {
                     console.error("Erro ao buscar dados do dashboard específico:", err);
                     setError("Erro ao carregar dados de análise do questionário.");
                     setDashboardData(null);
-                    setChartVisibility({}); // NOVO: Limpa a visibilidade em caso de erro
+                    setChartVisibility({});
                     setSelectedTextQuestion('');
                     setWordCloudData([]);
                 })
@@ -209,7 +226,7 @@ function EditQuestionarioFormContent() {
                     setIsLoadingDashboard(false);
                 });
         }
-    }, [viewMode, questionarioId]);
+    }, [viewMode, questionarioId, titulo]); // Adicione 'titulo' como dependência para garantir que esteja atualizado
 
     // useEffect para carregar dados da nuvem de palavras
     useEffect(() => {
@@ -397,53 +414,42 @@ function EditQuestionarioFormContent() {
         setIsLoading(true);
         setError(null);
 
-        // Transformando o estado do frontend para o formato que o backend espera
         const perguntasParaEnviar = quePergs.map((qp, index) => ({
-            id: qp.pergunta.id,
+            id: qp.pergunta.id, // Será undefined para novas perguntas
             enunciado: qp.pergunta.enunciado,
             tipos: qp.pergunta.tipos,
-            // ✅ 1. ADICIONE ESTA LINHA PARA ENVIAR O ESTADO DE 'OBRIGATORIA'
             obrigatoria: qp.pergunta.obrigatoria,
-            ordem: index,
-            opcoes: qp.pergunta.opcoes.map(opt => ({
-                id: opt.id,
-                texto: opt.texto
-            }))
+            ordem: index, // A ordem é importante para o backend
+            opcoes: qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'
+                ? qp.pergunta.opcoes.map(opt => ({
+                    id: opt.id, // Será undefined para novas opções
+                    texto: opt.texto
+                }))
+                : [] // Garante que não envia opções para perguntas de TEXTO
         }));
 
         const payload = {
             titulo: titulo,
-            perguntas: perguntasParaEnviar,
+            perguntas: perguntasParaEnviar, // Agora o backend vai processar isso!
         };
 
         try {
-            const response = await api.patch(`/questionarios/${questionarioId}`, payload);
-            setTitulo(response.data.titulo);
+            await api.patch(`/questionarios/${questionarioId}`, payload);
+            
+            // Recarregar os dados do questionário e suas perguntas do backend
+            // para garantir que o estado do frontend reflita a realidade do banco.
+            const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
+            setTitulo(respQuestionario.data.titulo);
 
-            // Atualizando o estado local com os dados que vieram do backend
-            const sanitizedQuePergs = response.data.perguntas.map((p: any) => ({
-                // A estrutura aqui depende de como seu backend retorna os dados,
-                // então vamos focar na parte da 'pergunta'.
-                id: p.questionarioPerguntaId, // ou o que for o ID da relação QuePerg
-                questionarioId: p.questionarioId,
-                pergunta: {
-                    id: p.id,
-                    enunciado: p.enunciado,
-                    tipos: p.tipos,
-                    // ✅ 2. ADICIONE ESTA LINHA PARA ATUALIZAR O ESTADO LOCAL COM O VALOR SALVO
-                    obrigatoria: p.obrigatoria,
-                    opcoes: p.opcoes ?? []
-                }
-            }));
-
-            setQuePergs(sanitizedQuePergs); // Atualiza o estado com os dados retornados pela API
+            const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`);
+            const sanitizedQuePergs = sanitizeQuePergs(respQuePerg.data);
+            setQuePergs(sanitizedQuePergs);
 
             alert("Questionário salvo com sucesso!");
-            router.push('/questionarios');
-
+            router.push('/questionarios'); // Redireciona para a lista
         } catch (error: any) {
             console.error("Erro ao salvar:", error.response?.data ?? error);
-            const errorMessage = error.response?.data?.error ?? 'Ocorreu um problema ao salvar.';
+            const errorMessage = error.response?.data?.message ?? 'Ocorreu um problema ao salvar.';
             setError(errorMessage);
             alert(`Erro ao salvar: ${errorMessage}`);
         } finally {
@@ -805,7 +811,7 @@ function EditQuestionarioFormContent() {
                     if (isLoadingDashboard) {
                         return <div className="text-center p-10">Carregando análise...</div>;
                     }
-                    if (!dashboardData?.kpis || !dashboardData?.graficos) {
+                    if (!dashboardData || !dashboardData.kpis || !dashboardData.graficos || !dashboardData.info.textQuestions) {
                         return <div className="text-center p-10">Não há dados para analisar ou os dados estão incompletos.</div>;
                     }
 
@@ -902,11 +908,18 @@ function EditQuestionarioFormContent() {
                                         <select
                                             id="text-question-select-specific"
                                             className="input-edit-mode"
-                                            value={selectedTextQuestion}
+                                            // Ajuste para garantir que a primeira pergunta de texto seja selecionada por padrão
+                                            value={selectedTextQuestion || (dashboardData.info.textQuestions.length > 0 ? dashboardData.info.textQuestions[0].id.toString() : "")}
                                             onChange={e => setSelectedTextQuestion(e.target.value)}
+                                            disabled={isLoadingWordCloud || !dashboardData.info.textQuestions || dashboardData.info.textQuestions.length === 0}
                                         >
-                                            <option value="">Selecione uma pergunta</option>
-                                            {dashboardData.info.textQuestions.filter(qp => qp.tipos === 'TEXTO').map(qp => <option key={qp.id} value={qp.id}>{qp.enunciado}</option>)}
+                                            {/* Reintroduz a opção "Selecione uma pergunta" se você quiser que o backend lide com "todas as perguntas" */}
+                                            {/* Se o backend não lida com isso, esta opção fará com que o gráfico não carregue */}
+                                            {dashboardData.info.textQuestions.length > 0 && <option value="">Selecione uma pergunta</option>}
+                                            
+                                            {dashboardData.info.textQuestions.filter(qp => qp.tipos === 'TEXTO').map(qp => (
+                                                <option key={qp.id} value={qp.id}>{qp.enunciado}</option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div className="mt-4 h-[400px]">

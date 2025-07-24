@@ -175,6 +175,7 @@ function HomePageDashboardContent() {
 }
 
 export default function ProtectedHomePageDashboard() {
+    console.log('ProtectedHomePageDashboard está sendo renderizado.'); // ADICIONE ESTA LINHA
     return (
         <AdminAuthGuard>
             <HomePageDashboardContent />
