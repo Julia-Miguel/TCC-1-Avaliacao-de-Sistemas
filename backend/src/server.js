@@ -17,13 +17,13 @@ import { publicAvaliacaoRoutes } from './routes/publicAvaliacao.js';
 
 const app = express();
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://192.168.0.114:3000'
-];
+const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
+
+console.log('Origens permitidas no backend (FRONTEND_URL):', allowedOrigins); // Novo log aqui
 
 const corsOptions = {
   origin: function (origin, callback) {
+    console.log('Origem da requisição recebida:', origin); // Novo log aqui
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {

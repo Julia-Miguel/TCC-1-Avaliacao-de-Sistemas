@@ -1,4 +1,3 @@
-// frontend/src/app/questionarios/[id]/page.tsx
 'use client';
 
 import { useEffect, useState, Suspense, useMemo } from "react";
@@ -7,7 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import "../../globals.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, FileText, CheckSquare, Users } from "lucide-react";
+import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, FileText, CheckSquare, Users, Loader2 } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
 import { WordCloud } from "@/components/dashboard/WordCloud";
@@ -86,11 +85,19 @@ interface AvaliacaoComDetalhes {
     requerLoginCliente: boolean;
     usuarios: Respondente[];
     _count?: { usuarios: number };
-    created_at: string; // Adicionado para ordenação se necessário
+    created_at: string;
 }
 
-// NOVO: Interface para os dados do dashboard específicos para um questionário
-// Esta interface deve corresponder à estrutura de `latestQuestionnaire` do backend
+interface WordData {
+    text: string;
+    value: number;
+}
+
+interface TextQuestion {
+    id: string;
+    enunciado: string;
+}
+
 interface SpecificQuestionnaireDashboardData {
     info: {
         id: number;
@@ -101,11 +108,9 @@ interface SpecificQuestionnaireDashboardData {
     };
     kpis: KpiData;
     graficos: GraficoData[];
-    overallMultiChoiceDistribution?: { name: string; value: number }[]; // NOVO: Gráfico geral
+    overallMultiChoiceDistribution?: { name: string; value: number }[];
 }
 
-
-// Componente exportado da página (sem mudanças)
 export default function EditQuestionarioPage() {
     return (
         <Suspense fallback={<div className="page-container center-content"><p>Carregando...</p></div>}>
@@ -131,7 +136,6 @@ function EditQuestionarioFormContent() {
     const [isLoadingRespostas, setIsLoadingRespostas] = useState(false);
     const [selectedAvaliacaoId, setSelectedAvaliacaoId] = useState<number | null>(null);
 
-    // ALTERADO: O tipo de dashboardData agora é a nova interface criada ou null
     const [dashboardData, setDashboardData] = useState<SpecificQuestionnaireDashboardData | null>(null);
     const [wordCloudData, setWordCloudData] = useState<{ text: string; value: number }[]>([]);
     const [selectedTextQuestion, setSelectedTextQuestion] = useState('');
@@ -150,10 +154,19 @@ function EditQuestionarioFormContent() {
         })
     );
 
+    const availableTextQuestions = useMemo(() => {
+        return quePergs
+            .filter(qp => qp.pergunta.tipos === 'TEXTO' && qp.pergunta.id != null)
+            .map(qp => ({
+                id: qp.pergunta.id!.toString(),
+                enunciado: qp.pergunta.enunciado
+            }));
+    }, [quePergs]);
+
     const handleDragStart = (event: any) => {
         const interactiveElements = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'];
         if (interactiveElements.includes(event?.active?.event?.target?.tagName)) {
-            event.cancel(); // evita o drag em campos interativos
+            event.cancel();
         }
     };
 
@@ -166,21 +179,19 @@ function EditQuestionarioFormContent() {
         setQuePergs(novos);
     };
 
-    // useEffect para carregar dados do dashboard quando o modo muda para 'analise'
     useEffect(() => {
         if (viewMode === 'analise' && questionarioId) {
             setIsLoadingDashboard(true);
             api.get(`/dashboard?questionarioId=${questionarioId}`)
                 .then(response => {
-                    const backendData = response.data; // Esta é a resposta real do backend para /dashboard?questionarioId=...
+                    const backendData = response.data;
 
-                    // Mapeia os dados do backend para a interface do frontend
                     const formattedData: SpecificQuestionnaireDashboardData = {
                         info: {
                             id: questionarioId,
-                            titulo: titulo, // Pega o título do estado local
+                            titulo: titulo,
                             avaliacoesCount: backendData.kpis?.totalAvaliacoes ?? 0,
-                            updated_at: new Date().toISOString(), // Use uma data relevante ou do questionário
+                            updated_at: new Date().toISOString(),
                             textQuestions: backendData.textQuestions || [],
                         },
                         kpis: backendData.kpis,
@@ -188,25 +199,26 @@ function EditQuestionarioFormContent() {
                         overallMultiChoiceDistribution: backendData.overallMultiChoiceDistribution,
                     };
 
+                    if (availableTextQuestions.length > 0) {
+                        setSelectedTextQuestion(availableTextQuestions[0].id);
+                    }
+
                     if (formattedData && formattedData.info && formattedData.info.textQuestions && formattedData.kpis && formattedData.graficos) {
                         setDashboardData(formattedData);
 
-                        // Inicializa a visibilidade dos gráficos individuais (todos visíveis por padrão)
                         const initialVisibility: { [key: string]: boolean } = {};
                         formattedData.graficos.forEach((g: GraficoData) => {
-                            initialVisibility[g.perguntaId.toString()] = true; // Usa o ID da pergunta como chave
+                            initialVisibility[g.perguntaId.toString()] = true;
                         });
                         setChartVisibility(initialVisibility);
 
-                        // Define a primeira pergunta de texto como padrão para a Nuvem de Palavras
                         if (formattedData.info.textQuestions.length > 0) {
                             setSelectedTextQuestion(formattedData.info.textQuestions[0].id.toString());
                         } else {
-                            setSelectedTextQuestion(''); // Garante que esteja vazio se não houver perguntas de texto
-                            setWordCloudData([]); // Limpa a nuvem se não houver perguntas de texto
+                            setSelectedTextQuestion('');
+                            setWordCloudData([]);
                         }
                     } else {
-                        // Caso a API retorne uma estrutura inesperada ou incompleta (após a formatação)
                         console.error("Estrutura de dados do dashboard inválida ou incompleta recebida da API (após formatação):", backendData);
                         setDashboardData(null);
                         setChartVisibility({});
@@ -226,29 +238,27 @@ function EditQuestionarioFormContent() {
                     setIsLoadingDashboard(false);
                 });
         }
-    }, [viewMode, questionarioId, titulo]); // Adicione 'titulo' como dependência para garantir que esteja atualizado
+    }, [viewMode, questionarioId, titulo]);
 
-    // useEffect para carregar dados da nuvem de palavras
     useEffect(() => {
-        if (viewMode === 'analise' && selectedTextQuestion && questionarioId) { // Adicionado questionarioId na dependência
+        if (viewMode === 'analise' && selectedTextQuestion && questionarioId) {
             const fetchWordCloud = async () => {
                 try {
                     setIsLoadingWordCloud(true);
-                    // Passa o questionarioId para filtrar a análise corretamente no backend
-                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}&questionarioId=${questionarioId}`); //
+                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}&questionarioId=${questionarioId}`);
                     setWordCloudData(response.data.wordCloud);
                 } catch (error) {
                     console.error("Erro ao carregar nuvem de palavras:", error);
-                    setWordCloudData([]); // Limpa em caso de erro
+                    setWordCloudData([]);
                 } finally {
                     setIsLoadingWordCloud(false);
                 }
             };
             fetchWordCloud();
         } else if (viewMode === 'analise' && !selectedTextQuestion) {
-            setWordCloudData([]); // Limpa a nuvem se nenhuma pergunta for selecionada
+            setWordCloudData([]);
         }
-    }, [viewMode, selectedTextQuestion, questionarioId]); // Adicionado questionarioId como dependência
+    }, [viewMode, selectedTextQuestion, questionarioId]);
 
     function sanitizeQuePergs(data: QuePerg[]): QuePerg[] {
         return data.map(qp => ({
@@ -270,12 +280,12 @@ function EditQuestionarioFormContent() {
         setError(null);
         const loadData = async () => {
             try {
-                const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`); //
+                const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
                 setTitulo(respQuestionario.data.titulo);
-                const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`); //
+                const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`);
                 const sanitizedQuePergs = sanitizeQuePergs(respQuePerg.data);
                 setQuePergs(sanitizedQuePergs);
-            } catch (err: any) { /* ... (tratamento de erro existente) ... */
+            } catch (err: any) {
                 console.error("Erro ao carregar dados do questionário:", err);
                 if (err.response && (err.response.status === 401 || err.response.status === 403)) {
                     setError("Acesso não autorizado ou negado. Faça o login novamente.");
@@ -291,12 +301,11 @@ function EditQuestionarioFormContent() {
         loadData();
     }, [questionarioId]);
 
-    // --- Lógica para buscar respostas quando o modo de visualização muda ---
     useEffect(() => {
         if (viewMode === 'respostas' && questionarioId) {
             setIsLoadingRespostas(true);
             setError(null);
-            api.get<AvaliacaoComDetalhes[]>(`/questionarios/${questionarioId}/avaliacoes-com-respostas`) // Endpoint ajustado conforme backend
+            api.get<AvaliacaoComDetalhes[]>(`/questionarios/${questionarioId}/avaliacoes-com-respostas`)
                 .then(response => {
                     setAvaliacoesComRespostas(response.data);
                 })
@@ -310,7 +319,6 @@ function EditQuestionarioFormContent() {
         }
     }, [viewMode, questionarioId]);
 
-    // --- Funções de manipulação de perguntas e opções (sem mudanças) ---
     const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) =>
@@ -321,12 +329,10 @@ function EditQuestionarioFormContent() {
         );
     };
     const removePergunta = (indexToRemove: number) => {
-        // Confirmação para evitar exclusão acidental
         if (!window.confirm("Tem certeza de que deseja remover esta pergunta?")) {
             return;
         }
 
-        // Filtra o array de perguntas, mantendo todas exceto a do índice a ser removido
         const novasPerguntas = quePergs.filter((_, index) => index !== indexToRemove);
         setQuePergs(novasPerguntas);
     };
@@ -369,7 +375,7 @@ function EditQuestionarioFormContent() {
             )
         );
     };
-    const addOptionToList = (qIndex: number) => { /* ... seu código ... */
+    const addOptionToList = (qIndex: number) => {
         setQuePergs(prevQuePergs =>
             prevQuePergs.map((qp, index) => {
                 if (index === qIndex) {
@@ -395,7 +401,7 @@ function EditQuestionarioFormContent() {
             })
         );
     };
-    const handleAddNewPergunta = () => { /* ... seu código ... */
+    const handleAddNewPergunta = () => {
         const novaPerguntaDefault: PerguntaAninhada = {
             tempId: `temp-perg-${Date.now()}`,
             enunciado: "",
@@ -415,29 +421,27 @@ function EditQuestionarioFormContent() {
         setError(null);
 
         const perguntasParaEnviar = quePergs.map((qp, index) => ({
-            id: qp.pergunta.id, // Será undefined para novas perguntas
+            id: qp.pergunta.id,
             enunciado: qp.pergunta.enunciado,
             tipos: qp.pergunta.tipos,
             obrigatoria: qp.pergunta.obrigatoria,
-            ordem: index, // A ordem é importante para o backend
+            ordem: index,
             opcoes: qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'
                 ? qp.pergunta.opcoes.map(opt => ({
-                    id: opt.id, // Será undefined para novas opções
+                    id: opt.id,
                     texto: opt.texto
                 }))
-                : [] // Garante que não envia opções para perguntas de TEXTO
+                : []
         }));
 
         const payload = {
             titulo: titulo,
-            perguntas: perguntasParaEnviar, // Agora o backend vai processar isso!
+            perguntas: perguntasParaEnviar,
         };
 
         try {
             await api.patch(`/questionarios/${questionarioId}`, payload);
-            
-            // Recarregar os dados do questionário e suas perguntas do backend
-            // para garantir que o estado do frontend reflita a realidade do banco.
+
             const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
             setTitulo(respQuestionario.data.titulo);
 
@@ -446,7 +450,7 @@ function EditQuestionarioFormContent() {
             setQuePergs(sanitizedQuePergs);
 
             alert("Questionário salvo com sucesso!");
-            router.push('/questionarios'); // Redireciona para a lista
+            router.push('/questionarios');
         } catch (error: any) {
             console.error("Erro ao salvar:", error.response?.data ?? error);
             const errorMessage = error.response?.data?.message ?? 'Ocorreu um problema ao salvar.';
@@ -457,7 +461,6 @@ function EditQuestionarioFormContent() {
         }
     };
 
-    // NOVO: Agrupamento e ordenação das avaliações por semestre
     const avaliacoesAgrupadasPorSemestre = useMemo(() => {
         if (viewMode !== 'respostas' || avaliacoesComRespostas.length === 0) {
             return {};
@@ -470,7 +473,6 @@ function EditQuestionarioFormContent() {
             agrupado[av.semestre].push(av);
         });
 
-        // Ordenar os semestres (mais recentes primeiro)
         const semestresOrdenados = Object.keys(agrupado).sort((a, b) => {
             const [anoA, periodoA] = a.split('/').map(Number);
             const [anoB, periodoB] = b.split('/').map(Number);
@@ -480,7 +482,6 @@ function EditQuestionarioFormContent() {
 
         const agrupadoOrdenado: { [semestre: string]: AvaliacaoComDetalhes[] } = {};
         semestresOrdenados.forEach(sem => {
-            // Ordenar avaliações dentro de cada semestre pela data de criação (mais recente primeiro)
             agrupado[sem].sort((evalA, evalB) => new Date(evalB.created_at).getTime() - new Date(evalA.created_at).getTime());
             agrupadoOrdenado[sem] = agrupado[sem];
         });
@@ -488,7 +489,6 @@ function EditQuestionarioFormContent() {
         return agrupadoOrdenado;
     }, [viewMode, avaliacoesComRespostas]);
 
-    // Função para alternar a expansão de um semestre
     const toggleSemestreExpandido = (semestre: string) => {
         setSemestresExpandidos(prev => {
             const novoSet = new Set(prev);
@@ -688,163 +688,136 @@ function EditQuestionarioFormContent() {
                         </button>
                     </div>
                 </form>
-            )
-            }
+            )}
 
-            {/* // --- SEÇÃO DE VISUALIZAÇÃO DE RESPOSTAS MODIFICADA --- */}
-            {
-                viewMode === 'respostas' && (
-                    <div className="respostas-view-container mt-6">
-                        <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-6">
-                            Respostas para o Questionário: <span className="text-primary">{titulo}</span>
-                        </h3>
+            {viewMode === 'respostas' && (
+                <div className="respostas-view-container mt-6">
+                    <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-6">
+                        Respostas para o Questionário: <span className="text-primary">{titulo}</span>
+                    </h3>
 
-                        {isLoadingRespostas && <div className="text-center py-10"><p className="text-text-muted">Carregando respostas...</p></div>}
-                        {error && !isLoadingRespostas && <div className="text-center py-10"><p className="text-red-600 dark:text-red-400">{error}</p></div>}
+                    {isLoadingRespostas && <div className="text-center py-10"><p className="text-text-muted">Carregando respostas...</p></div>}
+                    {error && !isLoadingRespostas && <div className="text-center py-10"><p className="text-red-600 dark:text-red-400">{error}</p></div>}
 
-                        {!isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length === 0 && !error && (
-                            <div className="text-center py-10 px-4 bg-card-background dark:bg-gray-800 rounded-lg shadow border border-border">
-                                <ListChecks className="mx-auto h-12 w-12 text-text-muted" strokeWidth={1.5} />
-                                <p className="mt-4 text-text-muted">
-                                    Nenhuma avaliação utilizando este questionário foi encontrada ou nenhuma resposta foi submetida ainda.
-                                </p>
-                            </div>
-                        )}
+                    {!isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length === 0 && !error && (
+                        <div className="text-center py-10 px-4 bg-card-background dark:bg-gray-800 rounded-lg shadow border border-border">
+                            <ListChecks className="mx-auto h-12 w-12 text-text-muted" strokeWidth={1.5} />
+                            <p className="mt-4 text-text-muted">
+                                Nenhuma avaliação utilizando este questionário foi encontrada ou nenhuma resposta foi submetida ainda.
+                            </p>
+                        </div>
+                    )}
 
-                        {/* Se uma avaliação específica está selecionada, mostra os detalhes dela */}
-                        {selectedAvaliacaoDetalhes && (
-                            <div className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
-                                <button
-                                    onClick={() => setSelectedAvaliacaoId(null)}
-                                    className="btn btn-outline btn-sm mb-6 inline-flex items-center"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-                                    Voltar para Lista de Avaliações
-                                </button>
-                                <h4 className="text-xl font-semibold text-primary mb-1">
-                                    {selectedAvaliacaoDetalhes.semestre}
-                                </h4>
-                                <p className="text-sm text-text-muted mb-4">
-                                    ID da Avaliação: {selectedAvaliacaoDetalhes.id} - Requer Login: {selectedAvaliacaoDetalhes.requerLoginCliente ? "Sim" : "Não"}
-                                </p>
+                    {selectedAvaliacaoDetalhes && (
+                        <div className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
+                            <button
+                                onClick={() => setSelectedAvaliacaoId(null)}
+                                className="btn btn-outline btn-sm mb-6 inline-flex items-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+                                Voltar para Lista de Avaliações
+                            </button>
+                            <h4 className="text-xl font-semibold text-primary mb-1">
+                                {selectedAvaliacaoDetalhes.semestre}
+                            </h4>
+                            <p className="text-sm text-text-muted mb-4">
+                                ID da Avaliação: {selectedAvaliacaoDetalhes.id} - Requer Login: {selectedAvaliacaoDetalhes.requerLoginCliente ? "Sim" : "Não"}
+                            </p>
 
-                                {selectedAvaliacaoDetalhes.usuarios.length === 0 && (
-                                    <p className="text-text-muted py-4">Nenhuma resposta submetida para esta avaliação.</p>
-                                )}
+                            {selectedAvaliacaoDetalhes.usuarios.length === 0 && (
+                                <p className="text-text-muted py-4">Nenhuma resposta submetida para esta avaliação.</p>
+                            )}
 
-                                <div className="space-y-6">
-                                    {selectedAvaliacaoDetalhes.usuarios.map(respondente => (
-                                        <div key={respondente.id} className="p-4 border border-border rounded-md bg-page-bg dark:bg-gray-800/50">
-                                            <p className="text-md font-medium text-foreground">
-                                                Respondente: {respondente.usuario?.nome ?? respondente.usuario?.email ?? `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
-                                            </p>
-                                            <p className="text-xs text-text-muted mb-3">
-                                                Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}
-                                            </p>
-                                            <ul className="space-y-3">
-                                                {respondente.respostas.map(resp => (
-                                                    <li key={resp.id} className="text-sm">
-                                                        <strong className="block text-text-muted mb-0.5">{resp.pergunta.enunciado}</strong>
-                                                        <span className="text-foreground pl-1">{resp.resposta}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Se NENHUMA avaliação específica está selecionada, mostra a lista agrupada por semestre */}
-                        {!isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length > 0 && !selectedAvaliacaoId && (
-                            <div className="space-y-8">
-                                {Object.entries(avaliacoesAgrupadasPorSemestre).map(([semestre, avaliacoesDoSemestre]) => (
-                                    <div key={semestre} className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleSemestreExpandido(semestre)}
-                                            className="w-full flex justify-between items-center text-left py-2"
-                                            aria-expanded={semestresExpandidos.has(semestre) ? "true" : "false"}
-                                        >
-                                            <h4 className="text-lg font-semibold text-primary flex items-center">
-                                                <CalendarDays size={20} className="mr-2 text-primary/80" />
-                                                Semestre: {semestre}
-                                            </h4>
-                                            {semestresExpandidos.has(semestre) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                        </button>
-
-                                        {semestresExpandidos.has(semestre) && (
-                                            <div className="mt-4 space-y-3 pl-2 border-l-2 border-primary/30">
-                                                {avaliacoesDoSemestre.map(av => (
-                                                    <button
-                                                        key={av.id}
-                                                        type="button"
-                                                        className="p-3 border border-border rounded-md hover:bg-page-bg dark:hover:bg-gray-700/40 cursor-pointer transition-colors duration-150 w-full text-left"
-                                                        onClick={() => setSelectedAvaliacaoId(av.id)}
-                                                    >
-                                                        <p className="font-medium text-foreground">
-                                                            Avaliação ID: {av.id}
-                                                            <span className="text-xs text-text-muted ml-2">
-                                                                (Criada em: {new Date(av.created_at).toLocaleDateString('pt-BR')})
-                                                            </span>
-                                                        </p>
-                                                        <div className="text-sm text-text-muted flex items-center mt-1">
-                                                            <Users size={14} className="mr-1.5 text-text-muted/80" />
-                                                            {av._count?.usuarios ?? 0} respondente(s)
-                                                            <span className="mx-2">|</span>
-                                                            <span>Requer Login: {av.requerLoginCliente ? "Sim" : "Não"}</span>
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                            <div className="space-y-6">
+                                {selectedAvaliacaoDetalhes.usuarios.map(respondente => (
+                                    <div key={respondente.id} className="p-4 border border-border rounded-md bg-page-bg dark:bg-gray-800/50">
+                                        <p className="text-md font-medium text-foreground">
+                                            Respondente: {respondente.usuario?.nome ?? respondente.usuario?.email ?? `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
+                                        </p>
+                                        <p className="text-xs text-text-muted mb-3">
+                                            Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}
+                                        </p>
+                                        <ul className="space-y-3">
+                                            {respondente.respostas.map(resp => (
+                                                <li key={resp.id} className="text-sm">
+                                                    <strong className="block text-text-muted mb-0.5">{resp.pergunta.enunciado}</strong>
+                                                    <span className="text-foreground pl-1">{resp.resposta}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
                                 ))}
                             </div>
-                        )}
-                    </div>
-                )
-            }
-            {/* NOVA Renderização condicional para 'analise' */}
-            {
-                viewMode === 'analise' && (() => {
-                    if (isLoadingDashboard) {
-                        return <div className="text-center p-10">Carregando análise...</div>;
-                    }
-                    if (!dashboardData || !dashboardData.kpis || !dashboardData.graficos || !dashboardData.info.textQuestions) {
-                        return <div className="text-center p-10">Não há dados para analisar ou os dados estão incompletos.</div>;
-                    }
+                        </div>
+                    )}
 
-                    let wordCloudContent: React.ReactNode;
-                    if (isLoadingWordCloud) {
-                        wordCloudContent = (
-                            <div className="flex h-full w-full items-center justify-center">
-                                <p>Analisando textos...</p>
-                            </div>
-                        );
-                    } else if (wordCloudData && wordCloudData.length > 0) {
-                        wordCloudContent = <WordCloud words={wordCloudData} title="Nuvem de Palavras da Pergunta" />;
-                    } else {
-                        wordCloudContent = (
-                            <div className="flex h-full w-full items-center justify-center">
-                                <p>Nenhum dado de texto para exibir.</p>
-                            </div>
-                        );
-                    }
-
-                    return (
+                    {!isLoadingRespostas && Object.keys(avaliacoesAgrupadasPorSemestre).length > 0 && !selectedAvaliacaoId && (
                         <div className="space-y-8">
-                            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Análise do Questionário: <span className="text-primary">{titulo}</span></h3>
+                            {Object.entries(avaliacoesAgrupadasPorSemestre).map(([semestre, avaliacoesDoSemestre]) => (
+                                <div key={semestre} className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSemestreExpandido(semestre)}
+                                        className="w-full flex justify-between items-center text-left py-2"
+                                        aria-expanded={semestresExpandidos.has(semestre) ? "true" : "false"}
+                                    >
+                                        <h4 className="text-lg font-semibold text-primary flex items-center">
+                                            <CalendarDays size={20} className="mr-2 text-primary/80" />
+                                            Semestre: {semestre}
+                                        </h4>
+                                        {semestresExpandidos.has(semestre) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </button>
 
+                                    {semestresExpandidos.has(semestre) && (
+                                        <div className="mt-4 space-y-3 pl-2 border-l-2 border-primary/30">
+                                            {avaliacoesDoSemestre.map(av => (
+                                                <button
+                                                    key={av.id}
+                                                    type="button"
+                                                    className="p-3 border border-border rounded-md hover:bg-page-bg dark:hover:bg-gray-700/40 cursor-pointer transition-colors duration-150 w-full text-left"
+                                                    onClick={() => setSelectedAvaliacaoId(av.id)}
+                                                >
+                                                    <p className="font-medium text-foreground">
+                                                        Avaliação ID: {av.id}
+                                                        <span className="text-xs text-text-muted ml-2">
+                                                            (Criada em: {new Date(av.created_at).toLocaleDateString('pt-BR')})
+                                                        </span>
+                                                    </p>
+                                                    <div className="text-sm text-text-muted flex items-center mt-1">
+                                                        <Users size={14} className="mr-1.5 text-text-muted/80" />
+                                                        {av._count?.usuarios ?? 0} respondente(s)
+                                                        <span className="mx-2">|</span>
+                                                        <span>Requer Login: {av.requerLoginCliente ? "Sim" : "Não"}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {viewMode === 'analise' && (
+                <div className="space-y-8">
+                    <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Análise do Questionário: <span className="text-primary">{titulo}</span></h3>
+
+                    {isLoadingDashboard && <div className="text-center p-10"><p className="text-text-muted">Carregando análise...</p></div>}
+                    {!isLoadingDashboard && (!dashboardData || !dashboardData.kpis || !dashboardData.graficos || !dashboardData.info.textQuestions) && (
+                        <div className="text-center p-10">Não há dados para analisar ou os dados estão incompletos.</div>
+                    )}
+
+                    {!isLoadingDashboard && dashboardData && dashboardData.kpis && dashboardData.graficos && dashboardData.info.textQuestions && (
+                        <>
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                                {/* StatCards existentes */}
                                 <StatCard title="Total de Avaliações" value={dashboardData.kpis.totalAvaliacoes} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
                                 <StatCard title="Total de Respondentes" value={dashboardData.kpis.totalRespondentes} icon={Users} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
                                 <StatCard title="Respostas Finalizadas" value={dashboardData.kpis.totalFinalizados} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
                                 <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
                             </div>
 
-                            {/* NOVO: Gráfico Geral (Overall Multi-Choice Distribution) */}
                             {dashboardData.overallMultiChoiceDistribution && dashboardData.overallMultiChoiceDistribution.length > 0 && (
                                 <div className="bg-card-background dark:bg-gray-800 p-4 rounded-lg shadow border border-border">
                                     <h4 className="text-lg font-semibold text-foreground mb-4">Visão Geral das Respostas de Múltipla Escolha</h4>
@@ -855,7 +828,6 @@ function EditQuestionarioFormContent() {
                                 </div>
                             )}
 
-                            {/* NOVO: Controles de visibilidade do gráfico */}
                             <div className="form-group flex justify-end items-center gap-4">
                                 <label htmlFor="chart-visibility-select" className="form-label text-sm font-medium whitespace-nowrap">Mostrar Gráficos:</label>
                                 <select
@@ -870,14 +842,13 @@ function EditQuestionarioFormContent() {
                                         } else if (value === 'none') {
                                             setChartVisibility({});
                                         } else {
-                                            // Alternar visibilidade de gráfico individual
                                             setChartVisibility(prev => ({
                                                 ...prev,
                                                 [value]: !prev[value]
                                             }));
                                         }
                                     }}
-                                    value="" // Reseta o valor selecionado para que o 'onChange' seja disparado novamente se a mesma opção for clicada
+                                    value=""
                                 >
                                     <option value="">Selecione para configurar</option>
                                     <option value="all">Mostrar Todas as Perguntas</option>
@@ -892,45 +863,48 @@ function EditQuestionarioFormContent() {
                                 </select>
                             </div>
 
-
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {/* Renderização condicional dos gráficos de perguntas individuais */}
                                 {dashboardData.graficos.map(grafico => (
                                     chartVisibility[grafico.perguntaId.toString()] && (
                                         <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
                                     )
                                 ))}
 
-                                {/* Seção da nuvem de palavras existente */}
-                                <div>
-                                    <div className="form-group">
-                                        <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
-                                        <select
-                                            id="text-question-select-specific"
-                                            className="input-edit-mode"
-                                            // Ajuste para garantir que a primeira pergunta de texto seja selecionada por padrão
-                                            value={selectedTextQuestion || (dashboardData.info.textQuestions.length > 0 ? dashboardData.info.textQuestions[0].id.toString() : "")}
-                                            onChange={e => setSelectedTextQuestion(e.target.value)}
-                                            disabled={isLoadingWordCloud || !dashboardData.info.textQuestions || dashboardData.info.textQuestions.length === 0}
-                                        >
-                                            {/* Reintroduz a opção "Selecione uma pergunta" se você quiser que o backend lide com "todas as perguntas" */}
-                                            {/* Se o backend não lida com isso, esta opção fará com que o gráfico não carregue */}
-                                            {dashboardData.info.textQuestions.length > 0 && <option value="">Selecione uma pergunta</option>}
-                                            
-                                            {dashboardData.info.textQuestions.filter(qp => qp.tipos === 'TEXTO').map(qp => (
-                                                <option key={qp.id} value={qp.id}>{qp.enunciado}</option>
-                                            ))}
-                                        </select>
+                                {dashboardData.info.textQuestions.length > 0 && (
+                                    <div className="bg-card-background dark:bg-gray-800 p-6 rounded-lg shadow border border-border">
+                                        <div className="form-group mb-4">
+                                            <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
+                                            <select
+                                                id="text-question-select-specific"
+                                                className="input-edit-mode w-full mt-1"
+                                                value={selectedTextQuestion}
+                                                onChange={e => setSelectedTextQuestion(e.target.value)}
+                                                disabled={isLoadingWordCloud || availableTextQuestions.length === 0}
+                                            >
+                                                <option value="">Selecione uma pergunta</option>
+                                                {availableTextQuestions.map(q => (
+                                                    <option key={q.id} value={q.id}>
+                                                        {q.enunciado}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="w-full h-80">
+                                            {isLoadingWordCloud ? (
+                                                <div className="flex justify-center items-center h-full">
+                                                    <Loader2 className="animate-spin h-8 w-8 text-primary" />
+                                                </div>
+                                            ) : (
+                                                <WordCloud words={wordCloudData} title="" />
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="mt-4 h-[400px]">
-                                        {wordCloudContent}
-                                    </div>
-                                </div>
+                                )}
                             </div>
-                        </div>
-                    );
-                })()
-            }
-        </div >
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

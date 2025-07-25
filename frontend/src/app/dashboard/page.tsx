@@ -1,134 +1,212 @@
 // frontend/src/app/dashboard/page.tsx
 'use client';
 
-import { useEffect, useState } from "react";
-import api from "@/services/api";
-import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
-import { WordCloud } from "@/components/dashboard/WordCloud";
-import { TrendingUp, FileText, CheckSquare, Users, Loader2, ClipboardList } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import api from '@/services/api';
+import {
+  TrendingUp,
+  ClipboardList,
+  Users,
+  LayoutList,
+  CheckSquare,
+  Loader2,
+  MessageSquare,
+  Plus,
+} from 'lucide-react';
+import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
+import Link from 'next/link';
 
-// --- Interfaces para os dados ---
 interface KpiData {
-    totalAvaliacoes: number;
-    totalRespondentes: number;
-    totalFinalizados: number;
-    taxaDeConclusao: number;
-    totalQuestionarios: number;
+  totalAvaliacoes: number;
+  totalRespondentes: number;
+  totalFinalizados: number;
+  taxaDeConclusao: number;
+  totalQuestionarios: number;
 }
-interface GraficoData {
-    perguntaId: number;
-    enunciado: string;
-    respostas: { name: string; value: number }[];
+
+interface LastQuestionnaireInfo {
+  id: number;
+  title: string;
+  totalQuestions: number;
+  totalRespondents: number;
+  totalEvaluations: number;
+  completionRate: string;
+  estimatedTime: string;
+  updated_at: string;
 }
-interface TextQuestion {
-    id: number;
-    enunciado: string;
+
+interface DashboardResponse {
+  kpis: KpiData;
+  lastQuestionnaire: LastQuestionnaireInfo | null;
 }
-// --- Fim das Interfaces ---
+
+const LatestQuestionnaireSummary = ({ data }: { data: LastQuestionnaireInfo }) => {
+  return (
+    <Link
+      href={`/questionarios/${data.id}`}
+      className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out no-underline hover:no-underline block"
+    >
+      <div className="flex flex-col md:flex-row justify-center items-center text-center md:text-center">
+        {/* Esquerda: Título e meta-info */}
+        <div className="md:w-[30%] w-full px-4 md:px-6 border-b md:border-b-0 md:border-r border-border mb-4 md:mb-0 flex flex-col items-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">{data.title}</h2>
+          <p className="text-sm text-text-muted mb-1">
+            <span className="font-semibold text-foreground">Perguntas:</span> {data.totalQuestions}
+          </p>
+          <p className="text-sm text-text-muted mb-1">
+            <span className="font-semibold text-foreground">Respondentes:</span> {data.totalRespondents}
+          </p>
+          <p className="text-xs text-text-muted mt-2">
+            Atualizado em: {new Date(data.updated_at).toLocaleString('pt-BR')}
+          </p>
+        </div>
+
+        {/* Direita: KPIs */}
+        <div className="md:w-[70%] w-full px-4 md:px-6 flex flex-col items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+            <div className="flex flex-col items-center space-y-1">
+              <CheckSquare className="text-amber-500" size={24} />
+              <p className="text-sm text-text-muted font-medium">Conclusão</p>
+              <p className="text-lg text-foreground">{data.completionRate}</p>
+            </div>
+            <div className="flex flex-col items-center space-y-1">
+              <ClipboardList className="text-blue-500" size={24} />
+              <p className="text-sm text-text-muted font-medium">Avaliações</p>
+              <p className="text-lg text-foreground">{data.totalEvaluations}</p>
+            </div>
+            <div className="flex flex-col items-center space-y-1">
+              <TrendingUp className="text-purple-500" size={24} />
+              <p className="text-sm text-text-muted font-medium">Tempo Estimado</p>
+              <p className="text-lg text-foreground">{data.estimatedTime}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
 
 function DashboardPageContent() {
-    const [kpis, setKpis] = useState<KpiData | null>(null);
-    const [graficos, setGraficos] = useState<GraficoData[]>([]);
-    const [wordCloudData, setWordCloudData] = useState<{ text: string; value: number }[]>([]);
-    const [textQuestions, setTextQuestions] = useState<TextQuestion[]>([]);
-    const [selectedTextQuestion, setSelectedTextQuestion] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-    const [isLoadingWordCloud, setIsLoadingWordCloud] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const { loggedInAdmin, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setIsLoading(true);
-                const response = await api.get('/dashboard');
-                setKpis(response.data.kpis);
-                setGraficos(response.data.graficos);
-                setTextQuestions(response.data.textQuestions);
-                if (response.data.textQuestions.length > 0) {
-                    setSelectedTextQuestion(response.data.textQuestions[0].id.toString());
-                }
-            } catch (err) {
-                console.error("Erro ao carregar dashboard:", err);
-                setError("Falha ao carregar os dados do dashboard.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
-
-    useEffect(() => {
-        if (selectedTextQuestion) {
-            const fetchWordCloud = async () => {
-                try {
-                    setIsLoadingWordCloud(true);
-                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}`);
-                    setWordCloudData(response.data.wordCloud);
-                } catch (error) {
-                    console.error("Erro ao carregar nuvem de palavras:", error);
-                    setWordCloudData([]);
-                } finally {
-                    setIsLoadingWordCloud(false);
-                }
-            };
-            fetchWordCloud();
+  useEffect(() => {
+    if (!authLoading) {
+      if (!loggedInAdmin || loggedInAdmin.tipo !== 'ADMIN_EMPRESA') {
+        router.push('/empresas/login');
+        return;
+      }
+      (async () => {
+        try {
+          setIsLoading(true);
+          setError(null);
+          const { data } = await api.get<DashboardResponse>('/dashboard');
+          setDashboardData(data);
+        } catch (err: any) {
+          console.error(err);
+          setError('Falha ao carregar os dados do dashboard. Tente novamente.');
+        } finally {
+          setIsLoading(false);
         }
-    }, [selectedTextQuestion]);
-    
-    if (isLoading) {
-        return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
+      })();
     }
-    if (error) {
-        return <div className="text-center p-10 text-red-500">{error}</div>;
-    }
+  }, [authLoading, loggedInAdmin, router]);
 
+  if (isLoading || authLoading) {
     return (
-        <div className="space-y-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard Geral</h1>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total de Questionários" value={kpis?.totalQuestionarios ?? 0} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
-                <StatCard title="Total de Avaliações" value={kpis?.totalAvaliacoes ?? 0} icon={ClipboardList} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
-                <StatCard title="Respostas Finalizadas" value={kpis?.totalFinalizados ?? 0} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
-                <StatCard title="Taxa de Conclusão" value={`${kpis?.taxaDeConclusao ?? 0}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
-            </div>
-
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground pt-4">Análise de Respostas</h2>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {graficos.map(grafico => (
-                    <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
-                ))}
-
-                {textQuestions.length > 0 && (
-                    <div className="bg-card-bg dark:bg-gray-800 p-6 rounded-lg shadow border border-border lg:col-span-2">
-                        <div className="form-group mb-4">
-                            <label htmlFor="text-question-select" className="form-label">Analisar Respostas de Texto:</label>
-                            <select 
-                                id="text-question-select" 
-                                className="input-edit-mode w-full mt-1"
-                                value={selectedTextQuestion}
-                                onChange={e => setSelectedTextQuestion(e.target.value)}
-                            >
-                                {textQuestions.map(q => <option key={q.id} value={q.id}>{q.enunciado}</option>)}
-                            </select>
-                        </div>
-                        <div className="w-full h-80">
-                           {isLoadingWordCloud ? <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div> : <WordCloud words={wordCloudData} title={""} />}
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+      <div className="flex justify-center items-center h-screen min-h-[calc(100vh-8rem)]">
+        <Loader2 className="animate-spin h-12 w-12 text-primary" />
+        <p className="ml-4 text-xl font-semibold text-text-muted">Carregando Dashboard...</p>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-[calc(100vh-8rem)] bg-page-bg">
+        <p className="text-red-500 text-lg">Erro: {error}</p>
+      </div>
+    );
+  }
+
+  if (!dashboardData || !loggedInAdmin) return null;
+
+  const { kpis, lastQuestionnaire } = dashboardData;
+
+  return (
+    <div className="page-container space-y-8">
+      <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Dashboard Administrativo</h1>
+
+      {/* KPI Cards com estilização do LatestQuestionnaireSummary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div
+          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-indigo-50 dark:bg-indigo-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
+        >
+          <LayoutList className="h-10 w-10 text-indigo-500" />
+          <div>
+            <p className="text-sm text-text
+
+-muted font-medium">Total de Questionários</p>
+            <p className="text-2xl font-bold text-foreground">{kpis.totalQuestionarios}</p>
+          </div>
+        </div>
+        <div
+          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-blue-50 dark:bg-blue-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
+        >
+          <ClipboardList className="h-10 w-10 text-blue-500" />
+          <div>
+            <p className="text-sm text-text-muted font-medium">Total de Avaliações</p>
+            <p className="text-2xl font-bold text-foreground">{kpis.totalAvaliacoes}</p>
+          </div>
+        </div>
+        <div
+          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-green-50 dark:bg-green-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
+        >
+          <Users className="h-10 w-10 text-green-500" />
+          <div>
+            <p className="text-sm text-text-muted font-medium">Total de Respondentes</p>
+            <p className="text-2xl font-bold text-foreground">{kpis.totalRespondentes}</p>
+          </div>
+        </div>
+        <div
+          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-amber-50 dark:bg-amber-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
+        >
+          <TrendingUp className="h-10 w-10 text-amber-500" />
+          <div>
+            <p className="text-sm text-text-muted font-medium">Taxa de Conclusão Global</p>
+            <p className="text-2xl font-bold text-foreground">{kpis.taxaDeConclusao}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Último Questionário */}
+      {lastQuestionnaire ? (
+        <LatestQuestionnaireSummary data={lastQuestionnaire} />
+      ) : (
+        <div className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-element-bg p-6 rounded-xl shadow-lg border border-main-border text-center">
+          <MessageSquare className="mx-auto h-16 w-16 text-text-muted mb-4" />
+          <p className="text-text-muted text-lg mb-4">Nenhum questionário encontrado.</p>
+          <Link
+            href="/questionarios/create"
+            className="btn btn-primary inline-flex items-center questionnaire-card cursor-pointer transition-all duration-300 ease-in-out no-underline hover:no-underline block"
+          >
+            <Plus size={18} className="mr-2" /> Criar Questionário
+          </Link>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Dashboard() {
-    return (
-        <AdminAuthGuard>
-            <DashboardPageContent />
-        </AdminAuthGuard>
-    );
+  return (
+    <AdminAuthGuard>
+      <DashboardPageContent />
+    </AdminAuthGuard>
+  );
 }

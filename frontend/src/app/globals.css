@@ -700,3 +700,79 @@ body.dark-mode .questionnaire-card {
 .stats-grid > div {
     border: 1px solid var(--border-color);
 }
+
+
+/* Adicionado ao final do globals.css */
+
+.text-analysis-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas de largura igual */
+    gap: var(--spacing-lg); /* Espaçamento entre as colunas */
+    max-width: 1200px; /* Largura máxima para o container */
+    margin: 0 auto; /* Centralizar o container */
+}
+
+.text-input-section,
+.word-cloud-section {
+    padding: var(--spacing-lg);
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.word-cloud-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 320px;
+    background: linear-gradient(135deg, var(--color-background-page) 60%, var(--color-primary) 10%, var(--color-background-element) 100%);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 4px 24px 0 rgba(var(--color-primary-rgb), 0.08), var(--shadow-md);
+    transition: background 0.4s;
+    position: relative;
+    overflow: hidden;
+}
+
+.word-cloud-section svg {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 500px;
+    max-height: 280px;
+    display: block;
+}
+
+.word-cloud-section text {
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: fill 0.2s, font-size 0.2s, filter 0.2s;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
+    opacity: 0.92;
+}
+
+.word-cloud-section text:hover {
+    fill: var(--color-primary-hover) !important;
+    font-size: 1.15em !important;
+    filter: drop-shadow(0 2px 8px rgba(var(--color-primary-rgb),0.18));
+    opacity: 1;
+}
+
+body.dark-mode .word-cloud-section {
+    background: linear-gradient(135deg, #1F2937 60%, var(--color-primary) 10%, #111827 100%);
+    box-shadow: 0 4px 24px 0 rgba(96,165,250,0.10), var(--shadow-md);
+}
+
+@media (max-width: 768px) {
+    .text-analysis-container {
+        grid-template-columns: 1fr; /* Empilhar as seções em telas menores */
+    }
+    .word-cloud-section {
+        min-height: 220px;
+        padding: var(--spacing-md);
+    }
+    .word-cloud-section svg {
+        max-width: 100%;
+        max-height: 180px;
+    }
+}
