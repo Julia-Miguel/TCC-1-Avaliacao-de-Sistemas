@@ -6,7 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import "../../globals.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, FileText, CheckSquare, Users, Loader2 } from "lucide-react";
+import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, FileText, CheckSquare, Users, Loader2, Filter } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
 import { WordCloud } from "@/components/dashboard/WordCloud";
@@ -17,13 +17,11 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-
 import {
     arrayMove,
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-
 import { SortableItem } from '@/components/SortableItem';
 
 interface KpiData {
@@ -50,15 +48,17 @@ interface PerguntaAninhada {
     opcoes: Opcao[];
     tempId?: string;
 }
+interface QuestionarioData {
+    id: number;
+    titulo: string;
+    perguntas: QuePerg[];
+}
 interface QuePerg {
     perguntaId?: number;
     questionarioId: number;
     pergunta: PerguntaAninhada;
     id?: number;
-}
-interface QuestionarioData {
-    id: number;
-    titulo: string;
+    ordem: number;
 }
 interface RespostaDetalhada {
     id: number;
@@ -66,8 +66,6 @@ interface RespostaDetalhada {
     pergunta: {
         id: number;
         enunciado: string;
-        tipos: 'TEXTO' | 'MULTIPLA_ESCOLHA';
-        opcoes: Opcao[];
     };
 }
 interface Respondente {
@@ -87,28 +85,10 @@ interface AvaliacaoComDetalhes {
     _count?: { usuarios: number };
     created_at: string;
 }
-
-interface WordData {
-    text: string;
-    value: number;
-}
-
-interface TextQuestion {
-    id: string;
-    enunciado: string;
-}
-
 interface SpecificQuestionnaireDashboardData {
-    info: {
-        id: number;
-        titulo: string;
-        avaliacoesCount: number;
-        updated_at: string;
-        textQuestions: { id: number; enunciado: string; tipos: 'TEXTO' | 'MULTIPLA_ESCOLHA' }[];
-    };
     kpis: KpiData;
     graficos: GraficoData[];
-    overallMultiChoiceDistribution?: { name: string; value: number }[];
+    textQuestions: { id: number; enunciado: string }[];
 }
 
 export default function EditQuestionarioPage() {
@@ -144,6 +124,7 @@ function EditQuestionarioFormContent() {
 
     const [semestresExpandidos, setSemestresExpandidos] = useState<Set<string>>(new Set());
     const [chartVisibility, setChartVisibility] = useState<{ [key: string]: boolean }>({});
+    const [selectedSemestre, setSelectedSemestre] = useState<string>('todos');
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -182,28 +163,28 @@ function EditQuestionarioFormContent() {
     useEffect(() => {
         if (viewMode === 'analise' && questionarioId) {
             setIsLoadingDashboard(true);
-            api.get(`/dashboard?questionarioId=${questionarioId}`)
+
+            // Adiciona o filtro de semestre na URL da API
+            let apiUrl = `/dashboard?questionarioId=${questionarioId}`;
+            if (selectedSemestre && selectedSemestre !== 'todos') {
+                apiUrl += `&semestre=${encodeURIComponent(selectedSemestre)}`;
+            }
+
+            api.get(apiUrl)
                 .then(response => {
                     const backendData = response.data;
 
                     const formattedData: SpecificQuestionnaireDashboardData = {
-                        info: {
-                            id: questionarioId,
-                            titulo: titulo,
-                            avaliacoesCount: backendData.kpis?.totalAvaliacoes ?? 0,
-                            updated_at: new Date().toISOString(),
-                            textQuestions: backendData.textQuestions || [],
-                        },
                         kpis: backendData.kpis,
                         graficos: backendData.graficos,
-                        overallMultiChoiceDistribution: backendData.overallMultiChoiceDistribution,
+                        textQuestions: backendData.textQuestions || [],
                     };
 
                     if (availableTextQuestions.length > 0) {
                         setSelectedTextQuestion(availableTextQuestions[0].id);
                     }
 
-                    if (formattedData && formattedData.info && formattedData.info.textQuestions && formattedData.kpis && formattedData.graficos) {
+                    if (formattedData && formattedData.kpis && formattedData.graficos) {
                         setDashboardData(formattedData);
 
                         const initialVisibility: { [key: string]: boolean } = {};
@@ -212,8 +193,8 @@ function EditQuestionarioFormContent() {
                         });
                         setChartVisibility(initialVisibility);
 
-                        if (formattedData.info.textQuestions.length > 0) {
-                            setSelectedTextQuestion(formattedData.info.textQuestions[0].id.toString());
+                        if (formattedData.textQuestions.length > 0) {
+                            setSelectedTextQuestion(formattedData.textQuestions[0].id.toString());
                         } else {
                             setSelectedTextQuestion('');
                             setWordCloudData([]);
@@ -238,14 +219,21 @@ function EditQuestionarioFormContent() {
                     setIsLoadingDashboard(false);
                 });
         }
-    }, [viewMode, questionarioId, titulo]);
+    }, [viewMode, questionarioId, titulo, selectedSemestre]);
 
     useEffect(() => {
         if (viewMode === 'analise' && selectedTextQuestion && questionarioId) {
             const fetchWordCloud = async () => {
                 try {
                     setIsLoadingWordCloud(true);
-                    const response = await api.get(`/analise-texto?perguntaId=${selectedTextQuestion}&questionarioId=${questionarioId}`);
+
+                    // Adiciona o filtro de semestre na URL da API
+                    let apiUrl = `/analise-texto?perguntaId=${selectedTextQuestion}&questionarioId=${questionarioId}`;
+                    if (selectedSemestre && selectedSemestre !== 'todos') {
+                        apiUrl += `&semestre=${encodeURIComponent(selectedSemestre)}`;
+                    }
+
+                    const response = await api.get(apiUrl);
                     setWordCloudData(response.data.wordCloud);
                 } catch (error) {
                     console.error("Erro ao carregar nuvem de palavras:", error);
@@ -258,7 +246,7 @@ function EditQuestionarioFormContent() {
         } else if (viewMode === 'analise' && !selectedTextQuestion) {
             setWordCloudData([]);
         }
-    }, [viewMode, selectedTextQuestion, questionarioId]);
+    }, [viewMode, selectedTextQuestion, questionarioId, selectedSemestre]);
 
     function sanitizeQuePergs(data: QuePerg[]): QuePerg[] {
         return data.map(qp => ({
@@ -280,10 +268,17 @@ function EditQuestionarioFormContent() {
         setError(null);
         const loadData = async () => {
             try {
-                const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
+                const respQuestionario = await api.get<{
+                    id: number;
+                    titulo: string;
+                    perguntas: QuePerg[];
+                }>(`/questionarios/${questionarioId}`);
+
                 setTitulo(respQuestionario.data.titulo);
-                const respQuePerg = await api.get<QuePerg[]>(`/quePerg?questionarioId=${questionarioId}`);
-                const sanitizedQuePergs = sanitizeQuePergs(respQuePerg.data);
+
+                // Ordena as perguntas pela ordem
+                const sortedQuePergs = respQuestionario.data.perguntas.sort((a, b) => a.ordem - b.ordem);
+                const sanitizedQuePergs = sanitizeQuePergs(sortedQuePergs);
                 setQuePergs(sanitizedQuePergs);
             } catch (err: any) {
                 console.error("Erro ao carregar dados do questionário:", err);
@@ -411,7 +406,8 @@ function EditQuestionarioFormContent() {
         };
         const novoQuePerg: QuePerg = {
             questionarioId: questionarioId,
-            pergunta: novaPerguntaDefault
+            pergunta: novaPerguntaDefault,
+            ordem: quePergs.length // Define a ordem como a última posição
         };
         setQuePergs(prevQuePergs => [...prevQuePergs, novoQuePerg]);
     };
@@ -515,6 +511,12 @@ function EditQuestionarioFormContent() {
         if (!selectedAvaliacaoId) return null;
         return avaliacoesComRespostas.find(av => av.id === selectedAvaliacaoId);
     }, [selectedAvaliacaoId, avaliacoesComRespostas]);
+
+    // Novo: Lista de semestres disponíveis para filtro
+    const availableSemestres = useMemo(() => {
+        const semestres = new Set(avaliacoesComRespostas.map(av => av.semestre));
+        return ['todos', ...Array.from(semestres).sort().reverse()];
+    }, [avaliacoesComRespostas]);
 
     if (isLoading && quePergs.length === 0 && !titulo) {
         return <div className="page-container center-content"><p>Carregando dados do questionário...</p></div>;
@@ -732,7 +734,7 @@ function EditQuestionarioFormContent() {
                                 {selectedAvaliacaoDetalhes.usuarios.map(respondente => (
                                     <div key={respondente.id} className="p-4 border border-border rounded-md bg-page-bg dark:bg-gray-800/50">
                                         <p className="text-md font-medium text-foreground">
-                                            Respondente: {respondente.usuario?.nome ?? respondente.usuario?.email ?? `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
+                                            Respondente: {respondente.usuario ? `${respondente.usuario.nome} (${respondente.usuario.email})` : `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
                                         </p>
                                         <p className="text-xs text-text-muted mb-3">
                                             Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}
@@ -802,14 +804,36 @@ function EditQuestionarioFormContent() {
 
             {viewMode === 'analise' && (
                 <div className="space-y-8">
-                    <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Análise do Questionário: <span className="text-primary">{titulo}</span></h3>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
+                            Análise do Questionário: <span className="text-primary">{titulo}</span>
+                        </h3>
+
+                        {/* Filtro de Semestre */}
+                        <div className="form-group flex items-center gap-2">
+                            <label htmlFor="semestre-filter" className="form-label mb-0 flex-shrink-0">
+                                <Filter size={16} className="mr-1.5" />Filtrar:
+                            </label>
+                            <select
+                                id="semestre-filter"
+                                className="input-edit-mode"
+                                value={selectedSemestre}
+                                onChange={e => setSelectedSemestre(e.target.value)}
+                                disabled={availableSemestres.length <= 1 || isLoadingDashboard}
+                            >
+                                {availableSemestres.map(s => (
+                                    <option key={s} value={s}>{s === 'todos' ? 'Todos os Semestres' : s}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
                     {isLoadingDashboard && <div className="text-center p-10"><p className="text-text-muted">Carregando análise...</p></div>}
-                    {!isLoadingDashboard && (!dashboardData || !dashboardData.kpis || !dashboardData.graficos || !dashboardData.info.textQuestions) && (
+                    {!isLoadingDashboard && (!dashboardData || !dashboardData.kpis || !dashboardData.graficos || !dashboardData.textQuestions) && (
                         <div className="text-center p-10">Não há dados para analisar ou os dados estão incompletos.</div>
                     )}
 
-                    {!isLoadingDashboard && dashboardData && dashboardData.kpis && dashboardData.graficos && dashboardData.info.textQuestions && (
+                    {!isLoadingDashboard && dashboardData && dashboardData.kpis && dashboardData.graficos && dashboardData.textQuestions && (
                         <>
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                                 <StatCard title="Total de Avaliações" value={dashboardData.kpis.totalAvaliacoes} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
@@ -818,59 +842,12 @@ function EditQuestionarioFormContent() {
                                 <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={TrendingUp} color="text-amber-500" bgColor="bg-amber-50 dark:bg-amber-700/30" />
                             </div>
 
-                            {dashboardData.overallMultiChoiceDistribution && dashboardData.overallMultiChoiceDistribution.length > 0 && (
-                                <div className="bg-card-background dark:bg-gray-800 p-4 rounded-lg shadow border border-border">
-                                    <h4 className="text-lg font-semibold text-foreground mb-4">Visão Geral das Respostas de Múltipla Escolha</h4>
-                                    <QuestionBarChart
-                                        title="Distribuição Agregada de Respostas"
-                                        data={dashboardData.overallMultiChoiceDistribution}
-                                    />
-                                </div>
-                            )}
-
-                            <div className="form-group flex justify-end items-center gap-4">
-                                <label htmlFor="chart-visibility-select" className="form-label text-sm font-medium whitespace-nowrap">Mostrar Gráficos:</label>
-                                <select
-                                    id="chart-visibility-select"
-                                    className="input-edit-mode w-full max-w-xs"
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (value === 'all') {
-                                            const newVisibility: { [key: string]: boolean } = {};
-                                            dashboardData.graficos.forEach(g => newVisibility[g.perguntaId.toString()] = true);
-                                            setChartVisibility(newVisibility);
-                                        } else if (value === 'none') {
-                                            setChartVisibility({});
-                                        } else {
-                                            setChartVisibility(prev => ({
-                                                ...prev,
-                                                [value]: !prev[value]
-                                            }));
-                                        }
-                                    }}
-                                    value=""
-                                >
-                                    <option value="">Selecione para configurar</option>
-                                    <option value="all">Mostrar Todas as Perguntas</option>
-                                    <option value="none">Esconder Todas as Perguntas</option>
-                                    <optgroup label="Perguntas Individuais">
-                                        {dashboardData.graficos.map(g => (
-                                            <option key={g.perguntaId} value={g.perguntaId.toString()}>
-                                                {chartVisibility[g.perguntaId.toString()] ? '✅ ' : '⬜ '} {g.enunciado.substring(0, 50)}...
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                </select>
-                            </div>
-
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {dashboardData.graficos.map(grafico => (
-                                    chartVisibility[grafico.perguntaId.toString()] && (
-                                        <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
-                                    )
+                                    <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
                                 ))}
 
-                                {dashboardData.info.textQuestions.length > 0 && (
+                                {dashboardData.textQuestions.length > 0 && (
                                     <div className="bg-card-background dark:bg-gray-800 p-6 rounded-lg shadow border border-border">
                                         <div className="form-group mb-4">
                                             <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
@@ -879,10 +856,9 @@ function EditQuestionarioFormContent() {
                                                 className="input-edit-mode w-full mt-1"
                                                 value={selectedTextQuestion}
                                                 onChange={e => setSelectedTextQuestion(e.target.value)}
-                                                disabled={isLoadingWordCloud || availableTextQuestions.length === 0}
+                                                disabled={isLoadingWordCloud}
                                             >
-                                                <option value="">Selecione uma pergunta</option>
-                                                {availableTextQuestions.map(q => (
+                                                {dashboardData.textQuestions.map(q => (
                                                     <option key={q.id} value={q.id}>
                                                         {q.enunciado}
                                                     </option>

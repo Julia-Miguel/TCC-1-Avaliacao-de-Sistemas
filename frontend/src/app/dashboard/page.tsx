@@ -42,6 +42,7 @@ interface DashboardResponse {
   lastQuestionnaire: LastQuestionnaireInfo | null;
 }
 
+// Componente para o resumo do último questionário
 const LatestQuestionnaireSummary = ({ data }: { data: LastQuestionnaireInfo }) => {
   return (
     <Link
@@ -88,6 +89,7 @@ const LatestQuestionnaireSummary = ({ data }: { data: LastQuestionnaireInfo }) =
   );
 };
 
+// Componente de conteúdo da página do Dashboard
 function DashboardPageContent() {
   const { loggedInAdmin, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -142,40 +144,30 @@ function DashboardPageContent() {
     <div className="page-container space-y-8">
       <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Dashboard Administrativo</h1>
 
-      {/* KPI Cards com estilização do LatestQuestionnaireSummary */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div
-          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-indigo-50 dark:bg-indigo-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
-        >
+        <div className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-indigo-50 dark:bg-indigo-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4">
           <LayoutList className="h-10 w-10 text-indigo-500" />
           <div>
-            <p className="text-sm text-text
-
--muted font-medium">Total de Questionários</p>
+            <p className="text-sm text-text-muted font-medium">Total de Questionários</p>
             <p className="text-2xl font-bold text-foreground">{kpis.totalQuestionarios}</p>
           </div>
         </div>
-        <div
-          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-blue-50 dark:bg-blue-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
-        >
+        <div className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-blue-50 dark:bg-blue-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4">
           <ClipboardList className="h-10 w-10 text-blue-500" />
           <div>
             <p className="text-sm text-text-muted font-medium">Total de Avaliações</p>
             <p className="text-2xl font-bold text-foreground">{kpis.totalAvaliacoes}</p>
           </div>
         </div>
-        <div
-          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-green-50 dark:bg-green-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
-        >
+        <div className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-green-50 dark:bg-green-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4">
           <Users className="h-10 w-10 text-green-500" />
           <div>
             <p className="text-sm text-text-muted font-medium">Total de Respondentes</p>
             <p className="text-2xl font-bold text-foreground">{kpis.totalRespondentes}</p>
           </div>
         </div>
-        <div
-          className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-amber-50 dark:bg-amber-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4"
-        >
+        <div className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-amber-50 dark:bg-amber-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4">
           <TrendingUp className="h-10 w-10 text-amber-500" />
           <div>
             <p className="text-sm text-text-muted font-medium">Taxa de Conclusão Global</p>
@@ -183,6 +175,7 @@ function DashboardPageContent() {
           </div>
         </div>
       </div>
+      <h2 className="text-2xl sm:text-2xl font-bold text-foreground">Último questionário atualizado</h2>
 
       {/* Último Questionário */}
       {lastQuestionnaire ? (
@@ -193,7 +186,7 @@ function DashboardPageContent() {
           <p className="text-text-muted text-lg mb-4">Nenhum questionário encontrado.</p>
           <Link
             href="/questionarios/create"
-            className="btn btn-primary inline-flex items-center questionnaire-card cursor-pointer transition-all duration-300 ease-in-out no-underline hover:no-underline block"
+            className="btn btn-primary items-center questionnaire-card cursor-pointer transition-all duration-300 ease-in-out no-underline hover:no-underline block"
           >
             <Plus size={18} className="mr-2" /> Criar Questionário
           </Link>
@@ -203,6 +196,7 @@ function DashboardPageContent() {
   );
 }
 
+// Componente principal que envolve com o AuthGuard
 export default function Dashboard() {
   return (
     <AdminAuthGuard>

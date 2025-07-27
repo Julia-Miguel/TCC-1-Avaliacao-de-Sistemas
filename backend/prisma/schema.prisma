@@ -13,6 +13,7 @@ generator client {
 enum TipoUsuario {
   ADMIN_EMPRESA
   CLIENTE_PLATAFORMA
+  CLIENTE_AVALIACAO
 }
 
 model Empresa {
@@ -31,8 +32,8 @@ model Usuario {
   id                   Int            @id @default(autoincrement())
   nome                 String?
   email                String         @unique
-  senha                String
-  tipo                 TipoUsuario
+  senha                String?
+  tipo                 TipoUsuario @default(CLIENTE_AVALIACAO)
   empresaId            Int?
   empresa              Empresa?       @relation(fields: [empresaId], references: [id])
   questionariosCriados Questionario[] @relation("CriadorQuestionario")
@@ -77,13 +78,14 @@ model Avaliacao {
 model UsuAval {
   id                 Int      @id @default(autoincrement())
   avaliacaoId        Int
-  // ✅ CORREÇÃO: Deletar esta entrada quando a avaliação for deletada
   avaliacao          Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
   usuarioId          Int?
   usuario            Usuario?  @relation(fields: [usuarioId], references: [id])
   anonymousSessionId String?
   status             String
   isFinalizado       Boolean   @default(false)
+  started_at         DateTime?
+  finished_at        DateTime?
   respostas          Resposta[]
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt

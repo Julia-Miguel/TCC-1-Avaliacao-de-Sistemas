@@ -1,14 +1,11 @@
-// ✅ ARQUIVO CORRIGIDO: src/controller/questionarios/CreateQuestionarioController.js
+// src/controller/questionarios/CreateQuestionarioController.js
 import { prisma } from '../../database/client.js';
 
 export class CreateQuestionarioController {
   async handle(request, response) {
-    // O middleware de autenticação já nos deu as informações do usuário em 'request.user'
     if (!request.user || !request.user.usuarioId) { 
         return response.status(401).json({ message: "Usuário não autenticado ou ID do usuário não encontrado no token." });
     }
-
-    // Pega o ID do admin logado a partir do token
     const { usuarioId: criadorId } = request.user; 
     const { titulo } = request.body;
 
@@ -17,21 +14,18 @@ export class CreateQuestionarioController {
     }
 
     try {
-      // Verifica se o usuário criador realmente existe no banco de dados
       const criadorExiste = await prisma.usuario.findUnique({
         where: { id: parseInt(criadorId) }
       });
 
       if (!criadorExiste) {
-        // Esta é a mensagem de erro que você está a ver no frontend
         return response.status(400).json({ message: "Usuário criador não encontrado. Verifique o token." });
       }
 
       const questionario = await prisma.questionario.create({
         data: {
           titulo: titulo.trim(),
-          // ✅ A forma mais direta e segura de associar
-          criadorId: parseInt(criadorId) 
+          criadorId: parseInt(criadorId)
         }
       });
       return response.status(201).json(questionario);

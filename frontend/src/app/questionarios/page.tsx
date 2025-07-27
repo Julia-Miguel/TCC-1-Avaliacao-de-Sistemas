@@ -89,15 +89,17 @@ function ListQuestionariosContent() {
   };
 
   const handleDeleteQuestionario = async (id: number) => {
-    if (!window.confirm("Deseja realmente excluir este questionário?")) return;
+    if (!window.confirm("Deseja realmente excluir este questionário? Esta ação não pode ser desfeita.")) return;
     try {
-      await api.delete('/questionarios', { data: { id } });
+      await api.delete(`/questionarios/${id}`); 
+      
       setQuestionarios(prev => prev.filter(q => q.id !== id));
       setMenuAberto(null);
       alert("Questionário excluído com sucesso!");
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao excluir o questionário!");
+    } catch (err: any) {
+      console.error("Erro ao excluir o questionário:", err);
+      const errorMessage = err.response?.data?.message || "Erro ao excluir o questionário. Verifique se ele não possui avaliações associadas.";
+      alert(errorMessage);
     }
   };
 

@@ -23,4 +23,6 @@ avaliacaoRouter.put('/avaliacao/:id', authMiddleware, updateAvaliacaoController.
 // ✅ Rota Corrigida
 avaliacaoRouter.delete('/avaliacao/:id', authMiddleware, deleteAvaliacaoController.handle);
 
+
+
 export { avaliacaoRouter };

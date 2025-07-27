@@ -1,22 +1,23 @@
-// backend/src/controller/dashboard/GetTextAnalysisController.js
+// ✅ ARQUIVO CORRIGIDO: backend/src/controller/dashboard/GetTextAnalysisController.js
 import { prisma } from '../../database/client.js';
 import { stopwords } from '../../utils/stopwords_pt.js';
 import Sentiment from 'sentiment';
-import ptbr from 'sentiment-ptbr'; // O vocabulário em português
+import ptbr from 'sentiment-ptbr';
 
-// A instância do Sentiment é criada sem registrar a linguagem aqui.
 const sentiment = new Sentiment();
 
 export class GetTextAnalysisController {
     async handle(request, response) {
         const { empresaId } = request.user;
-        const { perguntaId, questionarioId } = request.query;
+        // 1. Recebe o novo parâmetro 'semestre' da query
+        const { perguntaId, questionarioId, semestre } = request.query;
 
         if (!perguntaId) {
             return response.status(400).json({ message: "O 'perguntaId' é obrigatório." });
         }
 
         try {
+            // 2. Monta a base do filtro que sempre se aplica
             const baseWhere = {
                 perguntaId: parseInt(perguntaId),
                 pergunta: {
@@ -24,19 +25,24 @@ export class GetTextAnalysisController {
                 },
                 usuAval: {
                     avaliacao: {
-                        questionario: {
-                            criador: {
-                                empresaId: parseInt(empresaId)
-                            }
+                        criador: {
+                            empresaId: parseInt(empresaId)
                         }
                     }
                 }
             };
 
+            // Adiciona o filtro de questionarioId se ele for fornecido
             if (questionarioId) {
                 baseWhere.usuAval.avaliacao.questionarioId = parseInt(questionarioId);
             }
+            
+            // 3. Adiciona o filtro de semestre APENAS se ele for fornecido e não for "todos"
+            if (semestre && semestre !== 'todos') {
+                baseWhere.usuAval.avaliacao.semestre = semestre;
+            }
 
+            // A consulta agora usa o 'baseWhere' que pode ou não conter o filtro de semestre
             const respostas = await prisma.resposta.findMany({
                 where: baseWhere,
                 select: {
@@ -51,7 +57,7 @@ export class GetTextAnalysisController {
                 });
             }
 
-            // --- Lógica da Word Cloud (sem alteração) ---
+            // --- Lógica da Word Cloud e Análise de Sentimento (sem alterações) ---
             const wordFrequencies = {};
             for (const item of respostas) {
                 const words = item.resposta
@@ -71,16 +77,12 @@ export class GetTextAnalysisController {
                 .sort((a, b) => b.value - a.value)
                 .slice(0, 100);
 
-            // --- Lógica da Análise de Sentimento (CORRIGIDA) ---
             let positiveCount = 0;
             let negativeCount = 0;
             let neutralCount = 0;
 
             for (const item of respostas) {
-                // A correção está aqui: passamos o vocabulário 'ptbr' na opção 'extras'.
-                // Isso adiciona as palavras em português à análise sem quebrar a inicialização.
                 const result = sentiment.analyze(item.resposta, { extras: ptbr });
-                
                 if (result.score > 0) positiveCount++;
                 else if (result.score < 0) negativeCount++;
                 else neutralCount++;
