@@ -1,4 +1,3 @@
-// frontend/src/app/dashboard/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -7,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import {
   TrendingUp,
+  TrendingDown,
+  TrendingUpDown,
   ClipboardList,
   Users,
   LayoutList,
@@ -14,6 +15,7 @@ import {
   Loader2,
   MessageSquare,
   Plus,
+  Clock,
 } from 'lucide-react';
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
 import Link from 'next/link';
@@ -41,6 +43,17 @@ interface DashboardResponse {
   kpis: KpiData;
   lastQuestionnaire: LastQuestionnaireInfo | null;
 }
+
+// Função para definir o ícone e cor com base na taxa de conclusão
+const getCompletionIcon = (taxa: number) => {
+  if (taxa < 50) {
+    return <TrendingDown className="h-10 w-10 text-red-500" />;
+  } else if (taxa < 80) {
+    return <TrendingUpDown className="h-10 w-10 text-yellow-500" />;
+  } else {
+    return <TrendingUp className="h-10 w-10 text-green-500" />;
+  }
+};
 
 // Componente para o resumo do último questionário
 const LatestQuestionnaireSummary = ({ data }: { data: LastQuestionnaireInfo }) => {
@@ -78,7 +91,7 @@ const LatestQuestionnaireSummary = ({ data }: { data: LastQuestionnaireInfo }) =
               <p className="text-lg text-foreground">{data.totalEvaluations}</p>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <TrendingUp className="text-purple-500" size={24} />
+              <Clock className="text-purple-500" size={24} />
               <p className="text-sm text-text-muted font-medium">Tempo Estimado</p>
               <p className="text-lg text-foreground">{data.estimatedTime}</p>
             </div>
@@ -168,13 +181,14 @@ function DashboardPageContent() {
           </div>
         </div>
         <div className="questionnaire-card cursor-pointer transition-all duration-300 ease-in-out bg-amber-50 dark:bg-amber-700/30 p-6 rounded-xl shadow-lg border border-main-border flex items-center space-x-4">
-          <TrendingUp className="h-10 w-10 text-amber-500" />
+          {getCompletionIcon(kpis.taxaDeConclusao)}
           <div>
             <p className="text-sm text-text-muted font-medium">Taxa de Conclusão Global</p>
             <p className="text-2xl font-bold text-foreground">{kpis.taxaDeConclusao}%</p>
           </div>
         </div>
       </div>
+
       <h2 className="text-2xl sm:text-2xl font-bold text-foreground">Último questionário atualizado</h2>
 
       {/* Último Questionário */}

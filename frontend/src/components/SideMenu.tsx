@@ -2,12 +2,12 @@
 "use client";
 
 import {
-  Home,
+  Link2,
   Users,
-  HelpCircle,
-  FileText,
-  BarChart2,
-  Settings,
+  ClipboardList,
+  LayoutDashboard,
+  FileQuestion,
+  UserRoundCheck,
   Menu,
   LogOut,
   ChevronDown,
@@ -22,13 +22,12 @@ import ThemeToggle from "@/components/menu/ThemeToggle";
 import { useState } from "react";
 
 const menuItems = [
-  { label: "Dashboard", icon: BarChart2, href: "/dashboard" },
-  { label: "Questionários", icon: FileText, href: "/questionarios" },
-  { label: "Perguntas Base", icon: HelpCircle, href: "/perguntas" },
-  { label: "Associar P-Q", icon: FileText, href: "/queperg" },
-  { label: "Avaliações", icon: FileText, href: "/avaliacao" },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { label: "Questionários", icon: ClipboardList, href: "/questionarios" },
+  { label: "Perguntas Base", icon: FileQuestion, href: "/perguntas" },
+  { label: "Associar P-Q", icon: Link2, href: "/queperg" },
+  { label: "Avaliações", icon: UserRoundCheck, href: "/avaliacao" },
   { label: "Usuários", icon: Users, href: "/usuario" },
-  // Adicione outros links de admin aqui
 ];
 
 interface SideMenuProps {

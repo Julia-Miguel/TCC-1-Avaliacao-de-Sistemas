@@ -1,12 +1,12 @@
+// ✅ ARQUIVO CORRIGIDO: frontend/src/components/dashboard/WordCloud.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import cloud from 'd3-cloud';
 import { scaleOrdinal } from 'd3-scale';
 import { schemeCategory10 } from 'd3-scale-chromatic';
-import { ChartContainer } from './ChartContainer';
 
-// Interfaces
+// Interfaces (sem alteração)
 interface WordData {
     text: string;
     value: number;
@@ -40,19 +40,19 @@ export const WordCloud = ({ words, title }: WordCloudProps) => {
         }
 
         const layout = cloud()
-            .size([500, 280]) // Tamanho fixo do layout
-            .words(words) // Passa os dados diretamente
+            .size([500, 280])
+            .words(words)
             .padding(5)
-            .rotate(() => 0) // Palavras na horizontal
+            .rotate(() => 0)
             .font('Inter, sans-serif')
-            .fontSize(d => (d as WordData).value * 2 + 12) // Escala linear para tamanhos mais visíveis
+            .fontSize(d => (d as WordData).value * 2 + 12)
             .on('end', (computedWords: ProcessedWord[]) => setLayoutWords(computedWords));
 
         layout.start();
     }, [words]);
 
     return (
-        <ChartContainer title={title}>
+        <>
             {layoutWords.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-text-muted">
                     <p>Processando ou sem dados para exibir...</p>
@@ -69,8 +69,8 @@ export const WordCloud = ({ words, title }: WordCloudProps) => {
                                     style={{
                                         fontSize: `${word.size}px`,
                                         fontFamily: word.font || 'Inter, sans-serif',
-                                        fill: colorScale(i.toString()) as string,
-                                        margin: '10px', // Adicionar margem para espaçamento
+                                        fill: colorScale(i.toString()),
+                                        margin: '10px',
                                     }}
                                 >
                                     {word.text}
@@ -80,6 +80,6 @@ export const WordCloud = ({ words, title }: WordCloudProps) => {
                     </svg>
                 </div>
             )}
-        </ChartContainer>
+        </>
     );
 };
