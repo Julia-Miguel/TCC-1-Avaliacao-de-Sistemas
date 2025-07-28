@@ -46,7 +46,7 @@ export default function SideMenu({ collapsed, setCollapsed }: SideMenuProps) {
        <Link href={loggedInAdmin ? "/dashboard" : "/"} className="side-menu-logo-link">
           <ApplicationLogo className="block h-8 w-auto text-primary" />
        </Link>
-        {!collapsed && <span className="side-menu-title">Evaluation</span>}
+        {!collapsed && <span className="side-menu-title"> Q+ </span>}
         <button
           className="hamburger-toggle"
           onClick={() => setCollapsed(!collapsed)}

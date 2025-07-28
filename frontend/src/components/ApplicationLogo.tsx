@@ -11,7 +11,7 @@ export default function ApplicationLogo({ className, ...props }: Readonly<Applic
   return (
     <div className={className} {...props} suppressHydrationWarning>
       <Image
-        src="/logo.png"
+        src="/logos.png"
         alt="Logo da Aplicação"
         width={36}
         height={36}

@@ -102,13 +102,13 @@ export default function EditQuestionarioPage() {
 }
 
 function getCompletionIcon(taxa: number) {
-  if (taxa < 50) {
-    return { icon: TrendingDown, color: "text-red-500", bg: "bg-red-50 dark:bg-red-700/30" };
-  } else if (taxa < 80) {
-    return { icon: TrendingUpDown, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-700/30" };
-  } else {
-    return { icon: TrendingUp, color: "text-green-500", bg: "bg-green-50 dark:bg-green-700/30" };
-  }
+    if (taxa < 50) {
+        return { icon: TrendingDown, color: "text-red-500", bg: "bg-red-50 dark:bg-red-700/30" };
+    } else if (taxa < 80) {
+        return { icon: TrendingUpDown, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-700/30" };
+    } else {
+        return { icon: TrendingUp, color: "text-green-500", bg: "bg-green-50 dark:bg-green-700/30" };
+    }
 }
 
 
@@ -135,6 +135,10 @@ function EditQuestionarioFormContent() {
 
     const [semestresExpandidos, setSemestresExpandidos] = useState<Set<string>>(new Set());
     const [selectedSemestre, setSelectedSemestre] = useState<string>('todos');
+    const [isModalAberto, setIsModalAberto] = useState(false);
+    const [opcoesMestras, setOpcoesMestras] = useState([{ texto: "", tempId: `temp-master-opt-${Date.now()}` }]);
+    const [perguntasSelecionadas, setPerguntasSelecionadas] = useState(new Set());
+    const addOpcaoMestra = () => setOpcoesMestras([...opcoesMestras, { texto: "", tempId: `temp-master-opt-${Date.now()}` }]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -488,6 +492,73 @@ function EditQuestionarioFormContent() {
         );
     }
 
+    const toggleSelecaoPergunta = (id: string | number) => {
+        setPerguntasSelecionadas(prev => {
+            const novoSet = new Set(prev);
+            if (novoSet.has(id)) {
+                novoSet.delete(id);
+            } else {
+                novoSet.add(id);
+            }
+            return novoSet;
+        });
+    };
+
+    const handleOpcaoMestraChange = (index: number, value: string) => {
+        setOpcoesMestras(prev =>
+            prev.map((opt, i) => (i === index ? { ...opt, texto: value } : opt))
+        );
+    };
+
+    const removeOpcaoMestra = (indexToRemove: number) => {
+        setOpcoesMestras(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
+
+    function gerarOpcoesComTempId(opcoes: { texto: string }[]): Opcao[] {
+        return opcoes.map(opt => ({
+            texto: opt.texto,
+            tempId: `temp-opt-${Date.now()}-${Math.random()}`
+        }));
+    }
+
+    // A função principal que faz a mágica acontecer
+    const handleConfirmarAutomacao = () => {
+        // Pega as opções mestras que não estão vazias
+        const novasOpcoes = opcoesMestras
+            .filter(opt => opt.texto.trim() !== "")
+            .map(opt => ({ texto: opt.texto.trim() }));
+
+        if (novasOpcoes.length === 0) {
+            alert("Por favor, adicione pelo menos uma opção mestra.");
+            return;
+        }
+
+        // Atualiza o estado principal 'quePergs'
+        setQuePergs(prevQuePergs =>
+            prevQuePergs.map(qp => {
+                // Verifica se o ID da pergunta atual está na lista de perguntas selecionadas
+                if (perguntasSelecionadas.has(qp.pergunta.id ?? qp.pergunta.tempId)) {
+                    // Se estiver, atualiza o tipo para 'MULTIPLA_ESCOLHA' e substitui as opções
+                    return {
+                        ...qp,
+                        pergunta: {
+                            ...qp.pergunta,
+                            tipos: 'MULTIPLA_ESCOLHA',
+                            opcoes: gerarOpcoesComTempId(novasOpcoes)
+                        }
+                    };
+                }
+                // Se não estiver selecionada, retorna a pergunta como estava
+                return qp;
+            })
+        );
+
+        // Fecha o modal e reseta os estados
+        setIsModalAberto(false);
+        setOpcoesMestras([{ texto: "", tempId: `temp-master-opt-${Date.now()}` }]);
+        setPerguntasSelecionadas(new Set());
+    };
+
     return (
         <div className="page-container">
             <div className="mb-6 flex space-x-2 border-b border-border pb-2">
@@ -516,6 +587,9 @@ function EditQuestionarioFormContent() {
                     <div className="form-header">
                         <h3>Editando Questionário: {titulo || "..."}</h3>
                         <div className="form-header-actions">
+                            <button type="button" onClick={() => setIsModalAberto(true)} className="btn btn-secondary">
+                                Automatizar
+                            </button>
                             <button type="button" onClick={() => router.push("/questionarios")} className="btn btn-secondary" disabled={isLoading}>Cancelar</button>
                             <button type="submit" className="btn btn-primary" disabled={isLoading}>
                                 {isLoading ? "Salvando..." : "Salvar Alterações"}
@@ -851,6 +925,84 @@ function EditQuestionarioFormContent() {
                             </div>
                         </>
                     )}
+                </div>
+            )}
+            {isModalAberto && (
+                <div className="modal-backdrop">
+                    <div className="modal-content">
+                        <h3 className="text-xl font-semibold text-foreground mb-4">Automatizar Opções de Múltipla Escolha</h3>
+
+                        {/* Opções mestras */}
+                        <div className="mb-6">
+                            <h4 className="form-label">Opções Mestras:</h4>
+                            {opcoesMestras.map((opcao, index) => (
+                                <div key={opcao.tempId} className="flex items-center gap-2 mb-2">
+                                    <input
+                                        type="text"
+                                        className="input-edit-mode flex-1"
+                                        placeholder={`Opção ${index + 1}`}
+                                        value={opcao.texto}
+                                        onChange={(e) => handleOpcaoMestraChange(index, e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeOpcaoMestra(index)}
+                                        className="btn btn-danger btn-sm"
+                                    >
+                                        Remover
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={addOpcaoMestra}
+                                className="btn btn-outline btn-sm mt-2"
+                            >
+                                + Adicionar Opção
+                            </button>
+                        </div>
+
+                        {/* Seletor de perguntas */}
+                        <div className="mb-6">
+                            <h4 className="form-label">Replicar em:</h4>
+                            <div className="space-y-2">
+                                {quePergs.map((qp, index) => {
+                                    const id = qp.pergunta.id ?? qp.pergunta.tempId;
+                                    if (!id) return null;
+
+                                    return (
+                                        <label key={id} className="flex items-start gap-2 text-sm leading-relaxed">
+                                            <input
+                                                type="checkbox"
+                                                checked={perguntasSelecionadas.has(id)}
+                                                onChange={() => toggleSelecaoPergunta(id)}
+                                                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary shrink-0"
+                                            />
+                                            <span className="break-words">{qp.pergunta.enunciado || `Pergunta ${index + 1}`}</span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Ações */}
+                        <div className="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsModalAberto(false)}
+                                className="btn btn-secondary"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmarAutomacao}
+                                className="btn btn-primary"
+                            >
+                                Confirmar e Aplicar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
