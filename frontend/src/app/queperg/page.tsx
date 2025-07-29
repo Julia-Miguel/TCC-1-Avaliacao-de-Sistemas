@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/services/api';
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { Plus, Trash2, Edit, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
 
 // Define a estrutura dos dados que esperamos da API
 interface QuePerg {
@@ -90,43 +90,38 @@ function QuePergPageContent() {
           </Link>
         </div>
       </div>
-
-      <div className="bg-card-bg p-4 rounded-lg shadow-md border border-main-border">
+      <div className="bg-card-background p-4 rounded-lg shadow-md border border-main-border">
         {quepergs.length === 0 ? (
           <div className="text-center py-10">
-            <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhuma associação encontrada</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <AlertCircle className="mx-auto h-12 w-12 text-text-muted" />
+            <h3 className="mt-2 text-sm font-medium text-foreground">Nenhuma associação encontrada</h3>
+            <p className="mt-1 text-sm text-text-muted">
               Parece que não há perguntas associadas ao primeiro questionário ou não há questionários cadastrados.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Questionário</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pergunta</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criado em</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Questionário</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Pergunta</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Tipo</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Criado em</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card-background divide-y divide-gray-200 dark:divide-gray-700">
                 {quepergs.map((qp) => (
                   <tr key={qp.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{qp.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{qp.questionario.titulo}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">{qp.pergunta.enunciado}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{qp.pergunta.tipos}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(qp.criado_em).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{qp.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted">{qp.questionario.titulo}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted max-w-xs truncate">{qp.pergunta.enunciado}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted">{qp.pergunta.tipos}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted">{new Date(qp.criado_em).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        {/* Botão de editar pode ser implementado no futuro */}
-                        {/* <Link href={`/queperg/edit/${qp.id}`} className="btn-icon text-blue-600 hover:text-blue-900">
-                          <Edit size={18} />
-                        </Link> */}
                         <button onClick={() => handleDelete(qp.id)} className="btn-icon text-red-600 hover:text-red-900">
                           <Trash2 size={18} />
                         </button>
