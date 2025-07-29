@@ -1,7 +1,3 @@
-# Nome do Projeto
-
-Descrição breve do projeto (ex.: "Aplicação web para [descreva o propósito]"). Este README contém instruções para configurar e rodar o projeto localmente.
-
 ## Pré-requisitos
 
 Antes de começar, certifique-se de ter instalado:
