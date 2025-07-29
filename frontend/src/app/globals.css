@@ -455,8 +455,6 @@ table:not(.Create form table) td .btn:last-child {
 .page-container {
   padding: var(--spacing-lg) var(--spacing-xl);
   overflow-x: hidden;
-  margin-left: var(--side-menu-width);
-
 }
 
 @media (max-width: 768px) {

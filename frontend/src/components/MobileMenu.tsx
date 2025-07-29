@@ -2,61 +2,53 @@
 "use client";
 
 import { useState } from "react";
-import { menuItems } from "./menuItems";
-import { Menu as HamburgerIcon } from "lucide-react";
+import { Menu } from "lucide-react";
+import SideMenu from "./SideMenu"; // Reutilizamos o SideMenu!
+import ApplicationLogo from "./ApplicationLogo";
 import Link from "next/link";
+import "./SideMenu.css";
+
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Função para fechar o menu, que será passada para o SideMenu
+  const closeMenu = () => setIsOpen(false);
+
   return (
-    <div className="bg-background-element p-4 flex justify-between items-center border-b border-border">
-      <span className="text-foreground font-bold text-lg">Evaluation</span>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="text-foreground focus:outline-none"
-        aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
-      >
-        <HamburgerIcon size={24} />
-      </button>
+    <>
+      {/* Barra superior fixa */}
+      <header className="mobile-header">
+        <Link href="/dashboard" className="mobile-header-logo-link">
+          <ApplicationLogo className="block h-8 w-auto text-primary" />
+          <span className="mobile-header-title">Q+</span>
+        </Link>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="mobile-header-button"
+          aria-label="Abrir menu"
+        >
+          <Menu size={24} />
+        </button>
+      </header>
+
+      {/* Overlay que aparece quando o menu está aberto */}
       {isOpen && (
-        <div className="absolute top-16 left-0 w-full bg-background-element shadow-lg z-50">
-          <ul className="p-4">
-            {menuItems.map((item) => (
-              <li key={item.id} className="mb-4">
-                {item.items ? (
-                  <>
-                    <span className="font-semibold text-foreground text-base">
-                      {item.label}
-                    </span>
-                    <ul className="ml-4 mt-2 space-y-2">
-                      {item.items.map((subItem) => (
-                        <li key={subItem.id}>
-                          <Link
-                            href={subItem.href}
-                            className="text-text-muted hover:text-primary transition-colors"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            {subItem.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : (
-                  <Link
-                    href={item.href}
-                    className="text-text-muted hover:text-primary transition-colors text-base"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
+        <div className="mobile-menu-overlay" onClick={closeMenu}>
+          <div
+            className="mobile-menu-drawer"
+            onClick={(e) => e.stopPropagation()} // Evita que o clique dentro do menu o feche
+          >
+            {/* O SideMenu é renderizado aqui dentro! */}
+            <SideMenu
+              collapsed={false}
+              setCollapsed={() => {}} // Não precisamos da função de recolher no mobile
+              isMobile={true} // Prop para indicar o modo móvel
+              onCloseMenu={closeMenu} // Passamos a função para fechar
+            />
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

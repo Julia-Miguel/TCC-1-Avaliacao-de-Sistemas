@@ -74,3 +74,6 @@ node prisma/seeds.js
 - **Erro de dependências**: Caso enfrente problemas com dependências, tente usar `npm install --force` ou verifique a compatibilidade das versões do Node.js.
 - **Erro de conexão com o banco de dados**: Certifique-se de que o `DATABASE_URL` está correto e que o banco de dados está acessível.
 - **CORS**: Verifique se o `FRONTEND_URL` no `.env` do backend corresponde à URL do frontend.
+
+
+### login teste: empresa@gmail.com  123      t@gmail.com 123456

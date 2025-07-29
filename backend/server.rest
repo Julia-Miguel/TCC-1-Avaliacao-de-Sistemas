@@ -1,7 +1,7 @@
 ############################ Questionários ############################
 ### Pegar todos os questionários
 
-GET http://localhost:4444/questionarios
+GET http://localhost:4444/api/questionarios
 
 ### Criação de um questionário
 POST http://localhost:4444/questionarios
@@ -247,17 +247,17 @@ Content-Type: application/json
 ############################ Empresa ############################
 
 ### Pegar a empresa
-GET http://localhost:4444/empresas
+GET http://localhost:4444/api/empresas
 
 ### Criar uma empresa
 ### Registrar uma Nova Empresa
-POST http://localhost:4444/empresas/register
+POST http://localhost:4444/api/empresas/register
 Content-Type: application/json
 
 {
-    "nome": "Hospital Modelo Beta",
-    "emailResponsavel": "teste@gmail.com",
-    "senhaEmpresa": "123456"
+    "nome": "empresa teste",
+    "emailResponsavel": "empresa@gmail.com",
+    "senhaEmpresa": "123"
 }
 
 
@@ -299,14 +299,14 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:4444/usuarios/register-admin
+POST http://localhost:4444/api/usuarios/register-admin
 Content-Type: application/json
 
 {
-    "nome": "Admin Beta Principal",
-    "email": "eu@gmail.com",
-    "senha": "senhadificil",
-    "empresaId": 243
+    "nome": "tester",
+    "email": "t@gmail.com",
+    "senha": "123456",
+    "empresaId": 244
 }
 
 

@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronDown,
   ChevronUp,
+  X, // Adicionado
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -33,26 +34,41 @@ const menuItems = [
 interface SideMenuProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  isMobile?: boolean; // Nova prop para modo móvel
+  onCloseMenu?: () => void; // Nova prop para fechar o menu no mobile
 }
 
-export default function SideMenu({ collapsed, setCollapsed }: SideMenuProps) {
+export default function SideMenu({
+  collapsed,
+  setCollapsed,
+  isMobile = false,
+  onCloseMenu,
+}: SideMenuProps) {
   const pathname = usePathname();
   const { loggedInAdmin, logoutAdmin } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // Função para fechar o menu ao clicar num link no modo móvel
+  const handleLinkClick = () => {
+    if (isMobile && onCloseMenu) {
+      onCloseMenu();
+    }
+  };
+
   return (
     <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
       <div className="side-menu-header">
-       <Link href={loggedInAdmin ? "/dashboard" : "/"} className="side-menu-logo-link">
+        <Link href={loggedInAdmin ? "/dashboard" : "/"} className="side-menu-logo-link">
           <ApplicationLogo className="block h-8 w-auto text-primary" />
-       </Link>
+        </Link>
         {!collapsed && <span className="side-menu-title"> Q+ </span>}
         <button
           className="hamburger-toggle"
-          onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? "Expandir menu" : "Recolher menu"}
+          onClick={isMobile ? onCloseMenu : () => setCollapsed(!collapsed)}
+          title={isMobile ? "Fechar menu" : (collapsed ? "Expandir menu" : "Recolher menu")}
         >
-          <Menu />
+          {/* Mostra o ícone 'X' no mobile e o 'Menu' no desktop */}
+          {isMobile ? <X /> : <Menu />}
         </button>
       </div>
 
@@ -65,6 +81,7 @@ export default function SideMenu({ collapsed, setCollapsed }: SideMenuProps) {
               href={href}
               className={`side-menu-link ${isActive ? "active" : ""}`}
               title={label}
+              onClick={handleLinkClick} // Adicionado para fechar o menu no clique
             >
               <Icon className="side-menu-icon" />
               {!collapsed && <span className="side-menu-label">{label}</span>}
@@ -74,28 +91,28 @@ export default function SideMenu({ collapsed, setCollapsed }: SideMenuProps) {
       </nav>
 
       <div className="side-menu-footer">
-          {!collapsed && loggedInAdmin && (
-              <div className="user-profile-section">
-                  <button className="user-profile-button" onClick={() => setUserMenuOpen(!userMenuOpen)}>
-                      <div className="user-info">
-                          <span className="user-name">{loggedInAdmin.nome}</span>
-                          <span className="user-email">{loggedInAdmin.email}</span>
-                      </div>
-                      {userMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                  </button>
-                  {userMenuOpen && (
-                      <div className="user-profile-menu">
-                          <button onClick={logoutAdmin} className="logout-button">
-                              <LogOut size={16} className="mr-2" />
-                              Sair
-                          </button>
-                      </div>
-                  )}
+        {!collapsed && loggedInAdmin && (
+          <div className="user-profile-section">
+            <button className="user-profile-button" onClick={() => setUserMenuOpen(!userMenuOpen)}>
+              <div className="user-info">
+                <span className="user-name">{loggedInAdmin.nome}</span>
+                <span className="user-email">{loggedInAdmin.email}</span>
               </div>
-          )}
-          <div className="theme-toggle-wrapper">
-            <ThemeToggle />
+              {userMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+            {userMenuOpen && (
+              <div className="user-profile-menu">
+                <button onClick={logoutAdmin} className="logout-button">
+                  <LogOut size={16} className="mr-2" />
+                  Sair
+                </button>
+              </div>
+            )}
           </div>
+        )}
+        <div className="theme-toggle-wrapper">
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );
