@@ -112,7 +112,7 @@ function ListAvaliacaoContent() {
   };
 
   const handleOpenShareModal = (avaliacao: AvaliacaoInterface) => {
-    const link = `${getBaseUrl()}/responder/${avaliacao.id}`;
+    const link = `${process.env.NEXT_PUBLIC_APP_URL}/responder/${avaliacao.id}`;
     setShareableLink(link);
     setSelectedAvaliacaoForShare(avaliacao);
     setShowShareModal(true);
@@ -127,7 +127,7 @@ function ListAvaliacaoContent() {
   const fallbackCopyTextToClipboard = (text: string) => {
     const textArea = document.createElement("textarea");
     textArea.value = text;
-    
+
     // Evita que a página role ao focar no textarea
     textArea.style.position = "fixed";
     textArea.style.top = "0";
