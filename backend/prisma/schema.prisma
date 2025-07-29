@@ -64,7 +64,7 @@ model Avaliacao {
   semestre           String
   requerLoginCliente Boolean      @default(false)
   questionarioId     Int
-  // ✅ CORREÇÃO: Deletar avaliações quando o questionário for deletado
+  token              String     @unique @default(uuid())
   questionario       Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
   criadorId          Int
   criador            Usuario      @relation("CriadorAvaliacao", fields: [criadorId], references: [id])

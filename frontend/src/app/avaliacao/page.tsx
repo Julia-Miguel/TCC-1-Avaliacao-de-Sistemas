@@ -9,7 +9,7 @@ import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
 import { PlusIcon, Edit3, Trash2, ExternalLink, ListChecks, Share2, X, Copy, CheckCircle2 } from 'lucide-react';
 import QRCode from "react-qr-code";
 
-// --- Interfaces (sem mudanças) ---
+// --- Interfaces ---
 interface UsuarioSimplificado {
   id: number;
   nome?: string | null;
@@ -27,6 +27,7 @@ interface UsuAvalSimplificado {
 }
 interface AvaliacaoInterface {
   id: number;
+  token: string;
   semestre: string;
   requerLoginCliente: boolean;
   questionario: QuestionarioSimplificado;
@@ -104,15 +105,8 @@ function ListAvaliacaoContent() {
     }
   };
 
-  const getBaseUrl = () => {
-    if (typeof window !== "undefined") {
-      return window.location.origin;
-    }
-    return "";
-  };
-
   const handleOpenShareModal = (avaliacao: AvaliacaoInterface) => {
-    const link = `${process.env.NEXT_PUBLIC_APP_URL}/responder/${avaliacao.id}`;
+    const link = `${window.location.origin}/responder/${avaliacao.token}`;
     setShareableLink(link);
     setSelectedAvaliacaoForShare(avaliacao);
     setShowShareModal(true);
@@ -123,21 +117,16 @@ function ListAvaliacaoContent() {
     setShowShareModal(false);
   };
 
-  // Função de fallback para copiar texto em contextos não seguros
   const fallbackCopyTextToClipboard = (text: string) => {
     const textArea = document.createElement("textarea");
     textArea.value = text;
-
-    // Evita que a página role ao focar no textarea
     textArea.style.position = "fixed";
     textArea.style.top = "0";
     textArea.style.left = "0";
     textArea.style.opacity = "0";
-
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-
     try {
       const successful = document.execCommand('copy');
       if (successful) {
@@ -150,13 +139,10 @@ function ListAvaliacaoContent() {
       console.error("Falha ao usar o fallback de cópia: ", err);
       alert("Não foi possível copiar o link. Por favor, copie manualmente.");
     }
-
     document.body.removeChild(textArea);
   };
 
-  // Nova função principal que decide qual método usar
   const handleCopyLink = () => {
-    // Tenta usar a API moderna se o contexto for seguro
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(shareableLink).then(() => {
         setCopied(true);
@@ -166,7 +152,6 @@ function ListAvaliacaoContent() {
         fallbackCopyTextToClipboard(shareableLink);
       });
     } else {
-      // Usa o fallback para HTTP ou navegadores mais antigos
       fallbackCopyTextToClipboard(shareableLink);
     }
   };
@@ -232,8 +217,8 @@ function ListAvaliacaoContent() {
                   </td>
                   <td data-label="Login Cliente?">
                     <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${av.requerLoginCliente
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                       {av.requerLoginCliente ? 'Sim' : 'Não'}
                     </span>
@@ -249,7 +234,7 @@ function ListAvaliacaoContent() {
                       <Share2 size={14} />
                     </button>
                     <Link
-                      href={`/responder/${av.id}`}
+                      href={`/responder/${av.token}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-sm btn-outline p-1.5 inline-flex items-center"
@@ -279,16 +264,14 @@ function ListAvaliacaoContent() {
         </div>
       )}
 
-      {/* Modal com estrutura e espaçamento melhorados */}
+      {/* Modal (sem alterações, já estava perfeito) */}
       <dialog
         ref={shareDialogRef}
         onClose={handleCloseShareModal}
         className="p-4 rounded-xl backdrop:bg-black/70 bg-transparent"
       >
         {selectedAvaliacaoForShare && (
-          // A linha abaixo é a que foi modificada
           <form method="dialog" className="bg-element-bg dark:bg-gray-800 rounded-lg shadow-2xl w-[90vw] max-w-md">
-            {/* Header */}
             <header className="flex items-center justify-between p-6 border-b border-border">
               <div>
                 <h4 className="text-xl font-semibold text-foreground">
@@ -308,7 +291,6 @@ function ListAvaliacaoContent() {
               </button>
             </header>
 
-            {/* Content (sem alterações aqui, já estava bom) */}
             <main className="p-6 space-y-6">
               <div>
                 <label htmlFor="share-link" className="form-label text-xs uppercase tracking-wider text-text-muted">Link Público:</label>
@@ -341,7 +323,6 @@ function ListAvaliacaoContent() {
               </div>
             </main>
 
-            {/* Footer */}
             <footer className="px-6 py-4 bg-page-bg dark:bg-gray-900/50 border-t border-border text-right">
               <button type="submit" className="btn btn-outline">
                 Fechar

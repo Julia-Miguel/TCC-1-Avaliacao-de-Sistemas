@@ -11,24 +11,27 @@ export class GetPublicAvaliacaoByIdController {
 
     try {
       const avaliacao = await prisma.avaliacao.findUnique({
-        where: { id: avaliacaoId },
+        where: {
+          token: id
+        },
         include: {
-          empresa: true,
           questionario: {
             include: {
               perguntas: {
-                orderBy: { ordem: 'asc' },
                 include: {
                   pergunta: {
                     include: {
-                      opcoes: true,
-                    },
-                  },
+                      opcoes: true
+                    }
+                  }
                 },
-              },
-            },
-          },
-        },
+                orderBy: {
+                  ordem: 'asc'
+                }
+              }
+            }
+          }
+        }
       });
 
       // --- INÍCIO DAS VERIFICAÇÕES DE ROBUSTEZ ---
@@ -44,7 +47,7 @@ export class GetPublicAvaliacaoByIdController {
       if (!avaliacao.questionario) {
         return response.status(500).json({ message: "Configuração inválida: A avaliação não possui um questionário vinculado." });
       }
-      
+
       // Garante que 'perguntas' seja um array, mesmo que vazio.
       const perguntasDoQuestionario = avaliacao.questionario.perguntas || [];
 

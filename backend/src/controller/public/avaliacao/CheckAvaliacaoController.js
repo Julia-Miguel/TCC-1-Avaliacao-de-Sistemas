@@ -1,26 +1,26 @@
-// backend/src/controller/public/avaliacao/CheckAvaliacaoController.js
+// ✅ CÓDIGO CORRIGIDO PARA: backend/src/controller/public/avaliacao/CheckAvaliacaoController.js
 import { prisma } from '../../../database/client.js';
 
 export class CheckAvaliacaoController {
   async handle(request, response) {
-    const { avaliacaoId: avaliacaoIdParam } = request.params;
-    const avaliacaoId = parseInt(avaliacaoIdParam, 10);
+    const { avaliacaoId: token } = request.params;
 
-    if (isNaN(avaliacaoId)) {
-      return response.status(400).json({ message: "ID da avaliação na URL é inválido." });
+    if (!token) {
+      return response.status(400).json({ message: "Token da avaliação na URL é inválido." });
     }
 
     try {
       const avaliacao = await prisma.avaliacao.findUnique({
-        where: { id: avaliacaoId },
-        select: { requerLoginCliente: true } // Seleciona apenas o campo necessário
+        where: {
+          token: token,
+        },
+        select: { requerLoginCliente: true } 
       });
 
       if (!avaliacao) {
         return response.status(404).json({ message: "Avaliação não encontrada." });
       }
 
-      // Retorna apenas a informação que o frontend precisa
       return response.status(200).json({ requerLoginCliente: avaliacao.requerLoginCliente });
 
     } catch (error) {

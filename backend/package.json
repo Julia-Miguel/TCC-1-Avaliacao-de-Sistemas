@@ -25,7 +25,8 @@
     "react-qr-code": "^2.0.15",
     "sentiment": "^5.0.2",
     "sentiment-ptbr": "^1.0.3",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
