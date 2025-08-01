@@ -1,9 +1,7 @@
-// ✅ CÓDIGO CORRIGIDO PARA: backend/src/controller/public/avaliacao/StartAvaliacaoController.js
 import { prisma } from '../../../database/client.js';
 
 export class StartAvaliacaoController {
     async handle(request, response) {
-        // Renomeamos o parâmetro para 'token' para ficar mais claro
         const { avaliacaoId: token } = request.params;
         const { usuarioId, anonymousSessionId } = request.body;
 
@@ -12,11 +10,16 @@ export class StartAvaliacaoController {
         }
 
         try {
-            // ETAPA 1: BUSCAR A AVALIAÇÃO PELO TOKEN
-            const avaliacao = await prisma.avaliacao.findUnique({
-                where: { token: token }, // <-- MUDANÇA PRINCIPAL AQUI
+            // ETAPA 1: BUSCAR A AVALIAÇÃO PRINCIPAL E A EMPRESA ASSOCIADA
+            const avaliacaoPrincipal = await prisma.avaliacao.findUnique({
+                where: { token: token },
                 include: {
-                    criador: { include: { empresa: true } },
+                    criador: { 
+                        select: { 
+                            empresaId: true, // Pega o ID da empresa para o filtro de segurança
+                            empresa: { select: { nome: true } }
+                        } 
+                    },
                     questionario: {
                         include: {
                             perguntas: {
@@ -30,25 +33,22 @@ export class StartAvaliacaoController {
                 },
             });
 
-            if (!avaliacao) {
+            if (!avaliacaoPrincipal) {
                 return response.status(404).json({ message: "Avaliação não encontrada." });
             }
 
-            // A partir daqui, usamos o ID interno da avaliação, que já temos
-            const avaliacaoIdInterno = avaliacao.id;
+            // Pega o ID da empresa da avaliação principal
+            const empresaIdDaAvaliacao = avaliacaoPrincipal.criador.empresaId;
+            if (!empresaIdDaAvaliacao) {
+                return response.status(500).json({ message: "Não foi possível identificar a empresa desta avaliação." });
+            }
 
-            // ETAPA 2: VERIFICAR SE JÁ RESPONDEU E CRIAR SESSÃO
-            const whereClause = usuarioId
-                ? { usuarioId: parseInt(usuarioId) }
-                : { anonymousSessionId };
-
+            // ETAPA 2: VERIFICAR SE JÁ RESPONDEU E CRIAR SESSÃO (lógica existente)
+            const avaliacaoIdInterno = avaliacaoPrincipal.id;
+            const whereClause = usuarioId ? { usuarioId: parseInt(usuarioId) } : { anonymousSessionId };
             let usuAval = await prisma.usuAval.findFirst({
-                where: {
-                    avaliacaoId: avaliacaoIdInterno,
-                    ...whereClause
-                }
+                where: { avaliacaoId: avaliacaoIdInterno, ...whereClause }
             });
-
             if (!usuAval) {
                 usuAval = await prisma.usuAval.create({
                     data: {
@@ -61,25 +61,76 @@ export class StartAvaliacaoController {
                 });
             }
 
-            // ETAPA 3: MONTAR E ENVIAR A RESPOSTA PARA O FRONTEND
-            const hasResponded = usuAval.isFinalizado;
-            if (hasResponded) {
+            if (usuAval.isFinalizado) {
                 return response.json({ hasResponded: true });
             }
 
-            const responseData = {
-                tituloQuestionario: avaliacao.questionario.titulo,
-                nomeEmpresa: avaliacao.criador.empresa.nome,
-                perguntas: (avaliacao.questionario.perguntas || [])
+            // Mapeia as perguntas principais
+            let perguntasFinais = (avaliacaoPrincipal.questionario.perguntas || [])
+                .filter(quePerg => quePerg.pergunta)
+                .map(quePerg => ({
+                    id: quePerg.pergunta.id,
+                    enunciado: quePerg.pergunta.enunciado,
+                    obrigatoria: quePerg.pergunta.obrigatoria,
+                    tipo: quePerg.pergunta.tipos,
+                    opcoes: quePerg.pergunta.opcoes || [],
+                    isSatisfactionQuestion: false,
+                }));
+
+            // ✅ ETAPA 3 (CORRIGIDA): BUSCAR O QUESTIONÁRIO DE SATISFAÇÃO DA EMPRESA CORRETA
+            const questionarioSatisfacao = await prisma.questionario.findFirst({
+                where: {
+                    eh_satisfacao: true,
+                    ativo: true,
+                    // Filtro de segurança: garante que o questionário de satisfação
+                    // pertence à mesma empresa da avaliação principal.
+                    criador: {
+                        empresaId: empresaIdDaAvaliacao
+                    }
+                },
+                include: {
+                    perguntas: {
+                        orderBy: { ordem: 'asc' },
+                        include: {
+                            pergunta: { include: { opcoes: true } },
+                        },
+                    },
+                },
+            });
+            
+            // Se encontrou, anexa as perguntas dele
+            if (questionarioSatisfacao) {
+                const perguntasDeSatisfacao = (questionarioSatisfacao.perguntas || [])
                     .filter(quePerg => quePerg.pergunta)
                     .map(quePerg => ({
                         id: quePerg.pergunta.id,
                         enunciado: quePerg.pergunta.enunciado,
-                        obrigatoria: quePerg.pergunta.obrigatoria,
+                        obrigatoria: false,
                         tipo: quePerg.pergunta.tipos,
                         opcoes: quePerg.pergunta.opcoes || [],
-                    })),
-                hasResponded: hasResponded,
+                        isSatisfactionQuestion: true,
+                    }));
+                
+                if (perguntasDeSatisfacao.length > 0 && perguntasFinais.length > 0) {
+                    perguntasFinais.push({
+                        id: -1,
+                        tipo: 'SEPARADOR',
+                        enunciado: 'Avaliação do Usuário',
+                        obrigatoria: false,
+                        opcoes: [],
+                        isSatisfactionQuestion: true,
+                    });
+                }
+
+                perguntasFinais.push(...perguntasDeSatisfacao);
+            }
+
+            // ETAPA FINAL: MONTAR E ENVIAR A RESPOSTA PARA O FRONTEND
+            const responseData = {
+                tituloQuestionario: avaliacaoPrincipal.questionario.titulo,
+                nomeEmpresa: avaliacaoPrincipal.criador.empresa.nome,
+                perguntas: perguntasFinais,
+                hasResponded: usuAval.isFinalizado,
             };
 
             return response.status(200).json(responseData);

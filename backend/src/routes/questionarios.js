@@ -7,7 +7,8 @@ import { CreateQuestionarioController } from '../controller/questionarios/Create
 import { UpdateQuestionarioController } from '../controller/questionarios/UpdateQuestionarioController.js';
 import { DeleteQuestionarioController } from '../controller/questionarios/DeleteQuestionarioController.js';
 import { GetQuestionarioAvaliacoesComRespostasController } from '../controller/questionarios/GetQuestionarioAvaliacoesComRespostasController.js';
-import { ReorderQuestionariosController } from '../controller/questionarios/ReorderQuestionariosController.js'; // Importe o novo controller
+import { ReorderQuestionariosController } from '../controller/questionarios/ReorderQuestionariosController.js';
+import { ToggleAtivoQuestionarioController } from '../controller/questionarios/ToggleAtivoQuestionarioController.js'; // NOVO IMPORT
 
 const questionarioRouter = Router();
 
@@ -17,7 +18,8 @@ const createQuestionarioController = new CreateQuestionarioController();
 const updateQuestionarioController = new UpdateQuestionarioController();
 const deleteQuestionarioController = new DeleteQuestionarioController();
 const getQuestionarioAvaliacoesComRespostasController = new GetQuestionarioAvaliacoesComRespostasController();
-const reorderQuestionariosController = new ReorderQuestionariosController(); // Crie a instância
+const reorderQuestionariosController = new ReorderQuestionariosController();
+const toggleAtivoQuestionarioController = new ToggleAtivoQuestionarioController();
 
 // Rota PÚBLICA (Exemplo - se você quisesse que a listagem fosse pública)
 // questionarioRouter.get('/questionarios', getAllQuestionarioController.handle);
@@ -33,7 +35,6 @@ questionarioRouter.patch('/questionarios/:id', authMiddleware, updateQuestionari
 questionarioRouter.delete('/questionarios/:id', authMiddleware, deleteQuestionarioController.handle);
 questionarioRouter.get('/questionarios/:questionarioId/avaliacoes-com-respostas', authMiddleware, getQuestionarioAvaliacoesComRespostasController.handle);
 questionarioRouter.patch('/reorder', authMiddleware, reorderQuestionariosController.handle);
-
-
+questionarioRouter.patch('/questionarios/toggle-ativo/:id', authMiddleware, toggleAtivoQuestionarioController.handle);
 
 export { questionarioRouter };

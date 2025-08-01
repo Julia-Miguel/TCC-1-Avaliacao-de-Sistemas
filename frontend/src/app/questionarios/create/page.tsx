@@ -1,104 +1,107 @@
-// frontend/src/app/questionarios/create/page.tsx (VERSÃO UNIFICADA)
 'use client';
 
-import { useState, Suspense } from "react"; // Adicionado Suspense
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import api from '@/services/api';
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import api from "@/services/api";
-import { useRouter } from "next/navigation";
-import "../../globals.css"; // Caminho para o globals.css
-import "../../questionario.css"; // Seu CSS específico para questionários
-import { useAuth } from "@/contexts/AuthContext";
-import Link from "next/link"; // Para o botão Voltar
+import '../../globals.css';
 
-// Componente com o conteúdo da página de criação
 function CreateQuestionarioContent() {
-  const [titulo, setTitulo] = useState("");
   const router = useRouter();
-  const { loggedInAdmin } = useAuth(); // Pega o admin logado do contexto
-  const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+
+  const isSatisfactionQuery = searchParams.get('satisfacao') === 'true';
+
+  const [titulo, setTitulo] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Define o título padrão se for um questionário de satisfação
+  useEffect(() => {
+    if (isSatisfactionQuery) {
+      setTitulo('Satisfação');
+    }
+  }, [isSatisfactionQuery]);
 
-  const handleNewQuestionario = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(null);
-
     if (!titulo.trim()) {
       setError("O título não pode estar vazio.");
       return;
     }
-    if (!loggedInAdmin) {
-      setError("Você precisa estar logado como administrador para criar um questionário.");
-      // O AdminAuthGuard já deve ter prevenido isso, mas é uma segurança extra.
-      return;
-    }
 
-    setIsLoading(true);
-    // O backend agora pega o criadorId do token (via req.user.usuarioId),
-    // então só precisamos enviar o título.
-    const data = {
-      titulo: titulo.trim(),
-    };
+    setIsSubmitting(true);
+    setError(null);
 
     try {
-      await api.post("/questionarios", data); // O token já é enviado pelo interceptor
-      alert("Questionário cadastrado com sucesso!");
-      router.push("/questionarios"); // Redireciona para a lista após o sucesso
+      // Envia o payload com a marcação de satisfação se necessário
+      const payload = {
+        titulo,
+        eh_satisfacao: isSatisfactionQuery,
+      };
+
+      const response = await api.post('/questionarios', payload);
+      const novoQuestionario = response.data;
+
+      // Redireciona para a página de edição do questionário recém-criado
+      router.push(`/questionarios/${novoQuestionario.id}`);
+
     } catch (err: any) {
-      console.error("Erro no frontend ao cadastrar questionário:", err.response?.data || err.message);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Erro ao cadastrar o questionário!");
-      }
+      console.error("Erro ao criar questionário:", err);
+      const errorMessage = err.response?.data?.message || "Ocorreu um erro ao criar o questionário.";
+      setError(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleReset = () => {
-    setTitulo("");
-    setError(null);
-  }
-
   return (
-    // Usando as classes de estilização que definimos no globals.css
-    // A classe 'Create' do seu CSS original pode ser mapeada para 'editor-form-card' ou uma nova.
-    // Vou usar a estrutura do editor-form-card para consistência.
-    <div className="page-container"> {/* Para centralizar e dar padding */}
-      <div className="editor-form-card" style={{maxWidth: '700px'}}> {/* Card do formulário */}
-        <div className="form-header">
-            <h3>Cadastro de Novo Questionário</h3>
-            {/* Pode adicionar botões de ação no header aqui se quiser */}
-        </div>
-        
-        <form onSubmit={handleNewQuestionario} className="display-section"> {/* display-section para padding */}
-          {error && <p style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
-          
-          <div className="form-group"> {/* Do seu CSS original, ou use o novo .form-label + input */}
-            <label htmlFor="titulo" className="form-label">Título do Questionário</label>
+    <div className="page-container">
+      <h2 className="text-2xl font-bold mb-6 text-foreground">
+        {isSatisfactionQuery ? "Criar Questionário de Satisfação" : "Criar Novo Questionário"}
+      </h2>
+      
+      <div className="p-8 bg-card-background shadow-lg rounded-xl border border-border">
+        <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <label htmlFor="titulo" className="form-label">
+              Título do Questionário
+            </label>
             <input
-              type="text"
               id="titulo"
+              type="text"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
+              className="input-edit-mode w-full"
+              placeholder="Ex: Pesquisa de Clima Organizacional"
               required
-              minLength={3}
-              placeholder="Digite o título do questionário"
-              className="input-edit-mode title-input" // Sua classe ou a global para inputs
-              disabled={isLoading}
+              disabled={isSubmitting}
             />
+             {isSatisfactionQuery && (
+              <p className="text-sm text-text-muted mt-2">
+                Este será o questionário único de satisfação do sistema.
+              </p>
+            )}
           </div>
-          <div className="form-header-actions" style={{ justifyContent: 'flex-start', paddingTop: 'var(--spacing-lg)', borderTop: '1px solid var(--border-color)'}}>
-            <button type="submit" className="btn btn-primary" disabled={isLoading}>
-              {isLoading ? "Cadastrando..." : "Cadastrar"}
+
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => router.push('/questionarios')}
+              className="btn btn-secondary"
+              disabled={isSubmitting}
+            >
+              Cancelar
             </button>
-            <button type="button" onClick={handleReset} className="btn btn-secondary" disabled={isLoading}>
-              Limpar
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Salvando...' : 'Salvar e Criar Perguntas'}
             </button>
-            <Link href="/questionarios" className="btn btn-outline"> {/* Usando btn-outline para Voltar */}
-                Cancelar / Voltar
-            </Link>
           </div>
         </form>
       </div>
@@ -106,15 +109,13 @@ function CreateQuestionarioContent() {
   );
 }
 
-// Componente de página que exportamos como padrão
+
 export default function CreateQuestionarioPage() {
   return (
-    // Suspense pode não ser estritamente necessário aqui se CreateQuestionarioContent não usar useSearchParams
-    // mas não prejudica.
-    <Suspense fallback={<div className="page-container center-content"><p>Carregando...</p></div>}>
-      <AdminAuthGuard>
+    <AdminAuthGuard>
+      <Suspense fallback={<div>Carregando...</div>}>
         <CreateQuestionarioContent />
-      </AdminAuthGuard>
-    </Suspense>
+      </Suspense>
+    </AdminAuthGuard>
   );
 }

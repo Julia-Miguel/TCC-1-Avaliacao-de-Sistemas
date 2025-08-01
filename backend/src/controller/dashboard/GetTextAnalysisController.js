@@ -1,4 +1,3 @@
-// ✅ ARQUIVO CORRIGIDO: backend/src/controller/dashboard/GetTextAnalysisController.js
 import { prisma } from '../../database/client.js';
 import { stopwords } from '../../utils/stopwords_pt.js';
 import Sentiment from 'sentiment';
@@ -9,47 +8,57 @@ const sentiment = new Sentiment();
 export class GetTextAnalysisController {
     async handle(request, response) {
         const { empresaId } = request.user;
-        // 1. Recebe o novo parâmetro 'semestre' da query
         const { perguntaId, questionarioId, semestre } = request.query;
 
-        if (!perguntaId) {
-            return response.status(400).json({ message: "O 'perguntaId' é obrigatório." });
+        // Validação de parâmetros de entrada
+        if (!perguntaId || !questionarioId) {
+            return response.status(400).json({ message: "Os IDs da pergunta e do questionário são obrigatórios." });
         }
+        
+        const intQuestionarioId = parseInt(questionarioId);
+        const intPerguntaId = parseInt(perguntaId);
+        const intEmpresaId = parseInt(empresaId);
 
         try {
-            // 2. Monta a base do filtro que sempre se aplica
-            const baseWhere = {
-                perguntaId: parseInt(perguntaId),
-                pergunta: {
-                    tipos: 'TEXTO',
-                },
+            // Etapa 1: Verifica se o questionário é o de satisfação para definir a estratégia de busca
+            const questionario = await prisma.questionario.findUnique({
+                where: { id: intQuestionarioId },
+                select: { eh_satisfacao: true }
+            });
+
+            if (!questionario) {
+                return response.status(404).json({ message: "Questionário não encontrado." });
+            }
+
+            // Etapa 2: Monta o filtro de busca de forma dinâmica
+            const whereClause = {
+                perguntaId: intPerguntaId,
+                pergunta: { tipos: 'TEXTO' }, // Garante que a pergunta é do tipo texto
                 usuAval: {
+                    isFinalizado: true, // Apenas respostas de avaliações finalizadas
                     avaliacao: {
-                        criador: {
-                            empresaId: parseInt(empresaId)
-                        }
+                        criador: { empresaId: intEmpresaId } // Garante que a avaliação pertence à empresa
                     }
                 }
             };
-
-            // Adiciona o filtro de questionarioId se ele for fornecido
-            if (questionarioId) {
-                baseWhere.usuAval.avaliacao.questionarioId = parseInt(questionarioId);
-            }
             
-            // 3. Adiciona o filtro de semestre APENAS se ele for fornecido e não for "todos"
-            if (semestre && semestre !== 'todos') {
-                baseWhere.usuAval.avaliacao.semestre = semestre;
+            // Lógica condicional: se NÃO for de satisfação, adiciona o filtro extra
+            if (!questionario.eh_satisfacao) {
+                whereClause.usuAval.avaliacao.questionarioId = intQuestionarioId;
             }
 
-            // A consulta agora usa o 'baseWhere' que pode ou não conter o filtro de semestre
+            // Adiciona o filtro de semestre se ele for especificado
+            if (semestre && semestre !== 'todos') {
+                whereClause.usuAval.avaliacao.semestre = semestre;
+            }
+
+            // Etapa 3: Executa a busca com o filtro montado
             const respostas = await prisma.resposta.findMany({
-                where: baseWhere,
-                select: {
-                    resposta: true
-                }
+                where: whereClause,
+                select: { resposta: true }
             });
 
+            // Etapa 4: Processa os dados (lógica original, está perfeita)
             if (respostas.length === 0) {
                 return response.json({
                     wordCloud: [],
@@ -57,37 +66,24 @@ export class GetTextAnalysisController {
                 });
             }
 
-            // --- Lógica da Word Cloud e Análise de Sentimento (sem alterações) ---
             const wordFrequencies = {};
             for (const item of respostas) {
-                const words = item.resposta
-                    .toLowerCase()
-                    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
-                    .replace(/\s{2,}/g, " ")
-                    .split(/\s+/);
-                
+                const words = item.resposta.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").replace(/\s{2,}/g, " ").split(/\s+/);
                 for (const word of words) {
                     if (word && !stopwords.has(word) && word.length > 2) {
                         wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
                     }
                 }
             }
-            const wordCloudData = Object.entries(wordFrequencies)
-                .map(([text, value]) => ({ text, value }))
-                .sort((a, b) => b.value - a.value)
-                .slice(0, 100);
+            const wordCloudData = Object.entries(wordFrequencies).map(([text, value]) => ({ text, value })).sort((a, b) => b.value - a.value).slice(0, 100);
 
-            let positiveCount = 0;
-            let negativeCount = 0;
-            let neutralCount = 0;
-
+            let positiveCount = 0, negativeCount = 0, neutralCount = 0;
             for (const item of respostas) {
                 const result = sentiment.analyze(item.resposta, { extras: ptbr });
                 if (result.score > 0) positiveCount++;
                 else if (result.score < 0) negativeCount++;
                 else neutralCount++;
             }
-
             const totalSentimentos = positiveCount + negativeCount + neutralCount;
             const sentimento = {
                 positive: totalSentimentos > 0 ? parseFloat(((positiveCount / totalSentimentos) * 100).toFixed(1)) : 0,

@@ -9,7 +9,7 @@ import '../../globals.css';
 import { CheckSquare, SendHorizonal } from 'lucide-react';
 import ApplicationLogo from '@/components/ApplicationLogo';
 
-// --- Interfaces (sem mudanças) ---
+// --- Interfaces ---
 interface Opcao {
   id: number;
   texto: string;
@@ -17,7 +17,8 @@ interface Opcao {
 interface Pergunta {
   id: number;
   enunciado: string;
-  tipo: 'TEXTO' | 'MULTIPLA_ESCOLHA';
+  // ✅ CORREÇÃO APLICADA AQUI
+  tipo: 'TEXTO' | 'MULTIPLA_ESCOLHA' | 'SEPARADOR';
   obrigatoria: boolean;
   opcoes: Opcao[];
 }
@@ -34,7 +35,6 @@ interface AvaliacaoCheck {
 // --- Componente Principal ---
 function ResponderAvaliacaoContent() {
   const params = useParams();
-  // <<< ESTA É A CORREÇÃO! Lemos "params.token" em vez de "params.avaliacaoId" >>>
   const token = params.token as string;
 
   const [avaliacaoData, setAvaliacaoData] = useState<AvaliacaoParaResponder | null>(null);
@@ -57,7 +57,7 @@ function ResponderAvaliacaoContent() {
       if (crypto && typeof crypto.randomUUID === 'function') {
         sessionId = crypto.randomUUID();
       } else {
-        sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
           const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
         });
@@ -69,7 +69,6 @@ function ResponderAvaliacaoContent() {
 
   const carregarPerguntas = useCallback(async (usuarioInfo: { usuarioId: number } | { anonymousSessionId: string }) => {
     try {
-      // Usamos a variável 'token' aqui
       const response = await api.post<AvaliacaoParaResponder>(`/public/avaliacoes/${token}/iniciar`, usuarioInfo);
       setAvaliacaoData(response.data);
       if (response.data.hasResponded) {
@@ -84,13 +83,11 @@ function ResponderAvaliacaoContent() {
   }, [token]);
 
   useEffect(() => {
-    // Agora 'token' terá um valor, e o código continuará
     if (!token) return;
 
     const verificarNecessidadeIdentificacao = async () => {
       setIsLoading(true);
       try {
-        // Usamos a variável 'token' aqui
         const response = await api.get<AvaliacaoCheck>(`/public/avaliacoes/${token}/check`);
         if (response.data.requerLoginCliente) {
           setPrecisaIdentificar(true);
@@ -160,11 +157,9 @@ function ResponderAvaliacaoContent() {
     };
 
     try {
-      // Usamos a variável 'token' aqui
       await api.post(`/public/avaliacoes/${token}/respostas`, payload);
       setSubmissionSuccess(true);
-    } catch (err: any)
-    {
+    } catch (err: any) {
       console.error("Erro ao enviar respostas:", err);
       setError(err.response?.data?.message || "Ocorreu um erro ao enviar suas respostas. Tente novamente.");
     } finally {
@@ -172,18 +167,17 @@ function ResponderAvaliacaoContent() {
     }
   };
 
-  // --- RENDERIZAÇÃO (sem mudanças) ---
   if (isLoading) {
     return <div className="text-center p-8 text-text-muted">Carregando...</div>;
   }
 
   if (submissionSuccess) {
     return (
-        <div className="w-full max-w-2xl mx-auto text-center py-16 px-4">
-            <CheckSquare className="mx-auto h-20 w-20 text-green-500" strokeWidth={1.5} />
-            <h1 className="mt-6 text-3xl font-bold text-foreground">Obrigado!</h1>
-            <p className="mt-3 text-lg text-text-muted">Sua avaliação foi registrada com sucesso.</p>
-        </div>
+      <div className="w-full max-w-2xl mx-auto text-center py-16 px-4">
+        <CheckSquare className="mx-auto h-20 w-20 text-green-500" strokeWidth={1.5} />
+        <h1 className="mt-6 text-3xl font-bold text-foreground">Obrigado!</h1>
+        <p className="mt-3 text-lg text-text-muted">Sua avaliação foi registrada com sucesso.</p>
+      </div>
     );
   }
 
@@ -193,113 +187,128 @@ function ResponderAvaliacaoContent() {
 
   if (precisaIdentificar && !identificado) {
     return (
-        <div className="w-full max-w-md mx-auto py-16 px-4 text-center">
-            <ApplicationLogo className="h-16 w-16 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-foreground">Identificação Necessária</h2>
-            <p className="mt-2 text-text-muted">Para prosseguir, por favor, informe seu nome e e-mail.</p>
-            <form onSubmit={handleIdentificacaoSubmit} className="mt-8 space-y-4 text-left">
-                <div className="form-group">
-                    <label htmlFor="nome" className="form-label">Nome Completo</label>
-                    <input id="nome" type="text" value={nome} onChange={(e) => setNome(e.target.value)} required className="input-edit-mode w-full" />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="email" className="form-label">E-mail</label>
-                    <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="input-edit-mode w-full" />
-                </div>
-                <button type="submit" className="btn btn-primary w-full btn-lg mt-2">
-                    Iniciar Avaliação
-                </button>
-            </form>
-        </div>
+      <div className="w-full max-w-md mx-auto py-16 px-4 text-center">
+        <ApplicationLogo className="h-16 w-16 mx-auto mb-6" />
+        <h2 className="text-2xl font-bold text-foreground">Identificação Necessária</h2>
+        <p className="mt-2 text-text-muted">Para prosseguir, por favor, informe seu nome e e-mail.</p>
+        <form onSubmit={handleIdentificacaoSubmit} className="mt-8 space-y-4 text-left">
+          <div className="form-group">
+            <label htmlFor="nome" className="form-label">Nome Completo</label>
+            <input id="nome" type="text" value={nome} onChange={(e) => setNome(e.target.value)} required className="input-edit-mode w-full" />
+          </div>
+          <div className="form-group">
+            <label htmlFor="email" className="form-label">E-mail</label>
+            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="input-edit-mode w-full" />
+          </div>
+          <button type="submit" className="btn btn-primary w-full btn-lg mt-2">
+            Iniciar Avaliação
+          </button>
+        </form>
+      </div>
     );
   }
 
   if (avaliacaoData) {
-    const progresso = (Object.values(respostas).filter(r => r && r.trim() !== '').length / avaliacaoData.perguntas.length) * 100;
+    const perguntasReais = avaliacaoData.perguntas.filter(p => p.tipo !== 'SEPARADOR');
+    const progresso = (Object.values(respostas).filter(r => r && r.trim() !== '').length / (perguntasReais.length || 1)) * 100;
 
     return (
-        <div className="w-full max-w-3xl mx-auto py-8 px-4">
-            <header className="mb-8 text-center">
-                <div className="flex justify-center items-center mb-4">
-                    <ApplicationLogo className="h-12 w-12" />
-                </div>
-                <h1 className="text-3xl sm:text-4xl font-bold text-foreground">{avaliacaoData.tituloQuestionario}</h1>
-                <p className="mt-2 text-md sm:text-lg text-text-muted">Avaliação de: {avaliacaoData.nomeEmpresa}</p>
-            </header>
+      <div className="w-full max-w-3xl mx-auto py-8 px-4">
+        <header className="mb-8 text-center">
+          <div className="flex justify-center items-center mb-4">
+            <ApplicationLogo className="h-12 w-12" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">{avaliacaoData.tituloQuestionario}</h1>
+          <p className="mt-2 text-md sm:text-lg text-text-muted">Avaliação de: {avaliacaoData.nomeEmpresa}</p>
+        </header>
 
-            <div className="mb-8">
-                <div className="w-full bg-border rounded-full h-2.5">
-                    <div
-                        className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${progresso}%` }}
-                    ></div>
-                </div>
-                <p className="text-right text-sm text-text-muted mt-2">{Math.round(progresso)}% Concluído</p>
-            </div>
-
-            <form onSubmit={handleSubmitRespostas} className="space-y-8">
-                {avaliacaoData.perguntas.map((pergunta, index) => (
-                    <div key={pergunta.id} className="p-6 bg-card-background dark:bg-gray-800 shadow-lg rounded-xl border border-border">
-                        <label className="form-label text-lg font-semibold text-foreground">
-                            {index + 1}. {pergunta.enunciado}
-                            {pergunta.obrigatoria && <span className="text-red-500 ml-1">*</span>}
-                        </label>
-
-                        {pergunta.tipo?.toUpperCase() === 'TEXTO' && (
-                            <textarea
-                                id={`pergunta-${pergunta.id}`}
-                                rows={5}
-                                className="input-edit-mode w-full mt-3"
-                                value={respostas[pergunta.id] || ''}
-                                onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
-                                placeholder="Digite sua resposta aqui..."
-                                disabled={isSubmitting}
-                            />
-                        )}
-
-                        {pergunta.tipo?.toUpperCase() === 'MULTIPLA_ESCOLHA' && (
-                            <div className="mt-4 space-y-3">
-                                {pergunta.opcoes.map(opcao => (
-                                    <div key={opcao.id} className="flex items-center p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                        <input
-                                            id={`pergunta-${pergunta.id}-opcao-${opcao.id}`}
-                                            name={`pergunta-${pergunta.id}`}
-                                            type="radio"
-                                            value={opcao.texto}
-                                            checked={respostas[pergunta.id] === opcao.texto}
-                                            onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
-                                            className="h-5 w-5 text-primary focus:ring-primary"
-                                            disabled={isSubmitting}
-                                        />
-                                        <label
-                                            htmlFor={`pergunta-${pergunta.id}-opcao-${opcao.id}`}
-                                            className="ml-3 block text-md text-foreground cursor-pointer"
-                                        >
-                                            {opcao.texto}
-                                        </label>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ))}
-
-                <div className="pt-6 flex justify-end">
-                    <button type="submit" className="btn btn-primary btn-lg inline-flex items-center gap-2" disabled={isSubmitting || isLoading}>
-                        {isSubmitting ? "Enviando..." : "Enviar Respostas"}
-                        {!isSubmitting && <SendHorizonal size={18} />}
-                    </button>
-                </div>
-            </form>
-
-            <footer className="mt-16 text-center">
-                <div className="inline-flex items-center gap-2">
-                    <p className="text-sm text-text-muted">Powered by</p>
-                    <ApplicationLogo className="h-6 w-6" />
-                    <p className="text-sm font-semibold text-text-base">Evaluation</p>
-                </div>
-            </footer>
+        <div className="mb-8">
+          <div className="w-full bg-border rounded-full h-2.5">
+            <div
+              className="bg-primary h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${progresso}%` }}
+            ></div>
+          </div>
+          <p className="text-right text-sm text-text-muted mt-2">{Math.round(progresso)}% Concluído</p>
         </div>
+
+        <form onSubmit={handleSubmitRespostas} className="space-y-8">
+          {avaliacaoData.perguntas.map((pergunta) => {
+
+            if (pergunta.tipo === 'SEPARADOR') {
+              return (
+                <div key="satisfaction-separator" className="relative text-center my-10">
+                  <hr className="border-dashed border-gray-300 dark:border-gray-600" />
+                  <h2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-900 px-4 text-lg font-semibold text-gray-500">
+                    {pergunta.enunciado}
+                  </h2>
+                </div>
+              );
+            }
+
+            return (
+              <div key={pergunta.id} className="p-6 bg-card-background dark:bg-gray-800 shadow-lg rounded-xl border border-border">
+                <label className="form-label text-lg font-semibold text-foreground">
+                  {perguntasReais.findIndex(p => p.id === pergunta.id) + 1}. {pergunta.enunciado}
+                  {pergunta.obrigatoria && <span className="text-red-500 ml-1">*</span>}
+                </label>
+
+                {pergunta.tipo?.toUpperCase() === 'TEXTO' && (
+                  <textarea
+                    id={`pergunta-${pergunta.id}`}
+                    rows={5}
+                    className="input-edit-mode w-full mt-3"
+                    value={respostas[pergunta.id] || ''}
+                    onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
+                    placeholder="Digite sua resposta aqui..."
+                    disabled={isSubmitting}
+                  />
+                )}
+
+                {pergunta.tipo?.toUpperCase() === 'MULTIPLA_ESCOLHA' && (
+                  <div className="mt-4 space-y-3">
+                    {pergunta.opcoes.map(opcao => (
+                      <div key={opcao.id} className="flex items-center p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <input
+                          id={`pergunta-${pergunta.id}-opcao-${opcao.id}`}
+                          name={`pergunta-${pergunta.id}`}
+                          type="radio"
+                          value={opcao.texto}
+                          checked={respostas[pergunta.id] === opcao.texto}
+                          onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
+                          className="h-5 w-5 text-primary focus:ring-primary"
+                          disabled={isSubmitting}
+                        />
+                        <label
+                          htmlFor={`pergunta-${pergunta.id}-opcao-${opcao.id}`}
+                          className="ml-3 block text-md text-foreground cursor-pointer"
+                        >
+                          {opcao.texto}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          <div className="pt-6 flex justify-end">
+            <button type="submit" className="btn btn-primary btn-lg inline-flex items-center gap-2" disabled={isSubmitting || isLoading}>
+              {isSubmitting ? "Enviando..." : "Enviar Respostas"}
+              {!isSubmitting && <SendHorizonal size={18} />}
+            </button>
+          </div>
+        </form>
+
+        <footer className="mt-16 text-center">
+          <div className="inline-flex items-center gap-2">
+            <p className="text-sm text-text-muted">Powered by</p>
+            <ApplicationLogo className="h-6 w-6" />
+            <p className="text-sm font-semibold text-text-base">Evaluation</p>
+          </div>
+        </footer>
+      </div>
     );
   }
 

@@ -106,7 +106,8 @@ function ListAvaliacaoContent() {
   };
 
   const handleOpenShareModal = (avaliacao: AvaliacaoInterface) => {
-    const link = `${window.location.origin}/responder/${avaliacao.token}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const link = `${appUrl}/responder/${avaliacao.token}`;
     setShareableLink(link);
     setSelectedAvaliacaoForShare(avaliacao);
     setShowShareModal(true);
@@ -217,8 +218,8 @@ function ListAvaliacaoContent() {
                   </td>
                   <td data-label="Login Cliente?">
                     <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${av.requerLoginCliente
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                       {av.requerLoginCliente ? 'Sim' : 'Não'}
                     </span>

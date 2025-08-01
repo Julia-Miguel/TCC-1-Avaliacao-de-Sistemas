@@ -18,9 +18,7 @@ const deleteAvaliacaoController = new DeleteAvaliacaoController();
 avaliacaoRouter.post('/avaliacao', authMiddleware, createAvaliacaoController.handle);
 avaliacaoRouter.get('/avaliacao', authMiddleware, getAllAvaliacaoController.handle);
 avaliacaoRouter.get('/avaliacao/:id', authMiddleware, getByIdAvaliacaoController.handle);
-// ✅ Rota Corrigida
 avaliacaoRouter.put('/avaliacao/:id', authMiddleware, updateAvaliacaoController.handle);
-// ✅ Rota Corrigida
 avaliacaoRouter.delete('/avaliacao/:id', authMiddleware, deleteAvaliacaoController.handle);
 
 

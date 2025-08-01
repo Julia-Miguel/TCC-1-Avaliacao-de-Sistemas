@@ -833,3 +833,36 @@ body.dark-mode .word-cloud-section {
     transform: translateY(0);
   }
 }
+
+
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.switch.checked {
+  background-color: #2563eb; /* Azul primário, ajuste se necessário */
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.switch.checked .switch-thumb {
+  transform: translateX(20px);
+}

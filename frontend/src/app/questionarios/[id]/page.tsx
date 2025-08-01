@@ -232,44 +232,43 @@ function EditQuestionarioFormContent() {
         }));
     }
 
-    useEffect(() => {
-        if (!questionarioId) {
-            setError("ID do Questionário não encontrado na URL.");
-            setIsLoading(false);
-            return;
-        }
-        setIsLoading(true);
-        setError(null);
-        const loadData = async () => {
-            try {
-                const respQuestionario = await api.get<{
-                    id: number;
-                    titulo: string;
-                    perguntas: QuePerg[];
-                }>(`/questionarios/${questionarioId}`);
+// CÓDIGO CORRIGIDO
+useEffect(() => {
+    if (!questionarioId) {
+        setError("ID do Questionário não encontrado na URL.");
+        setIsLoading(false);
+        return;
+    }
+    setIsLoading(true);
+    setError(null);
+    const loadData = async () => {
+        try {
+            // A busca de dados do questionário (para a aba 'editar') continua a mesma
+            const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
+            setTitulo(respQuestionario.data.titulo);
+            const sortedQuePergs = (respQuestionario.data.perguntas || []).sort((a, b) => a.ordem - b.ordem);
+            setQuePergs(sanitizeQuePergs(sortedQuePergs));
 
-                setTitulo(respQuestionario.data.titulo);
+            const respAvaliacoes = await api.get<{ titulo: string, avaliacoes: AvaliacaoComDetalhes[] }>(`/questionarios/${questionarioId}/avaliacoes-com-respostas`);
+            
+            // Usamos o array 'avaliacoes' de dentro do objeto da resposta
+            setAvaliacoesComRespostas(respAvaliacoes.data.avaliacoes || []);
 
-                // Ordena as perguntas pela ordem
-                const sortedQuePergs = respQuestionario.data.perguntas.toSorted((a, b) => a.ordem - b.ordem); const sanitizedQuePergs = sanitizeQuePergs(sortedQuePergs);
-                setQuePergs(sanitizedQuePergs);
-                const respAvaliacoes = await api.get<AvaliacaoComDetalhes[]>(`/questionarios/${questionarioId}/avaliacoes-com-respostas`);
-                setAvaliacoesComRespostas(respAvaliacoes.data);
-            } catch (err: any) {
-                console.error("Erro ao carregar dados do questionário:", err);
-                if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-                    setError("Acesso não autorizado ou negado. Faça o login novamente.");
-                } else if (err.response && err.response.status === 404) {
-                    setError("Questionário não encontrado. Verifique o ID ou se ele pertence à sua empresa.");
-                } else {
-                    setError("Não foi possível carregar os dados para edição. Tente novamente.");
-                }
-            } finally {
-                setIsLoading(false);
+        } catch (err: any) {
+            console.error("Erro ao carregar dados do questionário:", err);
+            if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+                setError("Acesso não autorizado ou negado. Faça o login novamente.");
+            } else if (err.response && err.response.status === 404) {
+                setError("Questionário não encontrado. Verifique o ID ou se ele pertence à sua empresa.");
+            } else {
+                setError("Não foi possível carregar os dados. Tente novamente.");
             }
-        };
-        loadData();
-    }, [questionarioId]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    loadData();
+}, [questionarioId]);
 
     const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => {
         setQuePergs(prevQuePergs =>

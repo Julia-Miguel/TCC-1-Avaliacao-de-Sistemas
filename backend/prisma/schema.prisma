@@ -53,6 +53,8 @@ model Questionario {
   ordem        Int         @default(0)
   perguntas    QuePerg[]
   avaliacoes   Avaliacao[]
+  eh_satisfacao Boolean     @default(false)
+  ativo         Boolean     @default(true)
   created_at   DateTime    @default(now())
   updated_at   DateTime    @updatedAt
 
