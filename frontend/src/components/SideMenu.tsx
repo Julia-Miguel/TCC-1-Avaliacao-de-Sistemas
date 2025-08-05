@@ -1,4 +1,3 @@
-// frontend/src/components/SideMenu.tsx
 "use client";
 
 import {
@@ -9,10 +8,11 @@ import {
   FileQuestion,
   UserRoundCheck,
   Menu,
+  UserCog,
   LogOut,
   ChevronDown,
   ChevronUp,
-  X, // Adicionado
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -32,10 +32,10 @@ const menuItems = [
 ];
 
 interface SideMenuProps {
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
-  isMobile?: boolean; // Nova prop para modo móvel
-  onCloseMenu?: () => void; // Nova prop para fechar o menu no mobile
+  readonly collapsed: boolean;
+  readonly setCollapsed: (collapsed: boolean) => void;
+  readonly isMobile?: boolean;
+  readonly onCloseMenu?: () => void;
 }
 
 export default function SideMenu({
@@ -48,12 +48,17 @@ export default function SideMenu({
   const { loggedInAdmin, logoutAdmin } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // Função para fechar o menu ao clicar num link no modo móvel
   const handleLinkClick = () => {
     if (isMobile && onCloseMenu) {
       onCloseMenu();
     }
   };
+
+  const buttonTitle = isMobile
+    ? "Fechar menu"
+    : collapsed
+    ? "Expandir menu"
+    : "Recolher menu";
 
   return (
     <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
@@ -65,9 +70,8 @@ export default function SideMenu({
         <button
           className="hamburger-toggle"
           onClick={isMobile ? onCloseMenu : () => setCollapsed(!collapsed)}
-          title={isMobile ? "Fechar menu" : (collapsed ? "Expandir menu" : "Recolher menu")}
+          title={buttonTitle}
         >
-          {/* Mostra o ícone 'X' no mobile e o 'Menu' no desktop */}
           {isMobile ? <X /> : <Menu />}
         </button>
       </div>
@@ -81,7 +85,7 @@ export default function SideMenu({
               href={href}
               className={`side-menu-link ${isActive ? "active" : ""}`}
               title={label}
-              onClick={handleLinkClick} // Adicionado para fechar o menu no clique
+              onClick={handleLinkClick}
             >
               <Icon className="side-menu-icon" />
               {!collapsed && <span className="side-menu-label">{label}</span>}
@@ -100,17 +104,23 @@ export default function SideMenu({
               </div>
               {userMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
-            {userMenuOpen && (
-              <div className="user-profile-menu">
-                <button onClick={logoutAdmin} className="logout-button">
-                  <LogOut size={16} className="mr-2" />
-                  Sair
-                </button>
-              </div>
-            )}
+            <div className={`user-profile-menu ${userMenuOpen ? "open" : ""}`}>
+              <Link
+                href={`/usuario/update/${loggedInAdmin.id}`}
+                className="profile-menu-item"
+              >
+                <UserCog size={16} className="mr-2" />
+                Editar Perfil
+              </Link>
+              <button onClick={logoutAdmin} className="logout-button">
+                <LogOut size={16} className="mr-2" />
+                Sair
+              </button>
+            </div>
           </div>
         )}
         <div className="theme-toggle-wrapper">
+          {!collapsed && <span className="theme-toggle-label">Tema</span>}
           <ThemeToggle />
         </div>
       </div>

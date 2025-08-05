@@ -1,4 +1,3 @@
-// frontend/src/app/layout.tsx
 'use client';
 
 import { Geist, Geist_Mono } from "next/font/google";
@@ -48,11 +47,11 @@ export default function RootLayout({
                 <div className="hidden md:flex h-screen">
                   <SideMenu collapsed={collapsed} setCollapsed={setCollapsed} />
                   <div
-                    className="flex flex-col flex-1 h-screen"
-                    style={{
-                      transition: "margin-left 0.3s",
-                      marginLeft: collapsed ? "4rem" : "16rem", // Ajustado para a largura da sidebar
-                    }}
+                    className={`
+                      flex flex-col flex-1 h-screen 
+                      transition-[margin-left] ease-in-out duration-300
+                      ${collapsed ? "md:ml-16" : "md:ml-64"}
+                    `}
                   >
                     <main className="flex-1 overflow-y-auto">
                       <div className="page-container p-4 md:p-6">
@@ -75,7 +74,6 @@ export default function RootLayout({
                 </div>
               </>
             ) : (
-          // AQUI: o <main> para centralizar o conteúdo das páginas públicas
               <main className="min-h-screen flex flex-col items-center justify-start bg-page-bg p-4 sm:p-6 md:p-8">
                 <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
                   {children}
