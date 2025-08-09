@@ -5,8 +5,8 @@ import { prisma } from '../../database/client.js';
 export class UpdateQuestionarioController {
   async handle(request, response) {
     const { id: questionarioIdParam } = request.params;
-    const { titulo, perguntas: perguntasPayload } = request.body; // <-- AGORA PEGAMOS 'perguntas'
-    const { empresaId } = request.user; // ID da empresa do admin logado
+    const { titulo, perguntas: perguntasPayload } = request.body;
+    const { empresaId } = request.user;
     const questionarioId = parseInt(questionarioIdParam);
 
     if (isNaN(questionarioId)) {
@@ -17,10 +17,7 @@ export class UpdateQuestionarioController {
     }
 
     try {
-        // Inicia uma transação para garantir que todas as operações sejam atômicas
-        // Se algo falhar, tudo é revertido.
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Verificar e atualizar o questionário principal
             const questionario = await tx.questionario.findFirst({
                 where: {
                     id: questionarioId,
@@ -50,8 +47,6 @@ export class UpdateQuestionarioController {
             });
 
             const existingQuePergs = questionario.perguntas;
-            const existingPerguntaIds = existingQuePergs.map(qp => qp.perguntaId);
-            const payloadPerguntaIds = perguntasPayload.map(p => p.id).filter(Boolean); // IDs das perguntas existentes no payload
 
             // 2. Deletar associações QuePerg e perguntas órfãs removidas do frontend
             const quePergsToDelete = existingQuePergs.filter(existingQp => {

@@ -25,8 +25,8 @@ import { useState } from "react";
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Questionários", icon: ClipboardList, href: "/questionarios" },
-  { label: "Perguntas Base", icon: FileQuestion, href: "/perguntas" },
-  { label: "Associar P-Q", icon: Link2, href: "/queperg" },
+//  { label: "Perguntas Base", icon: FileQuestion, href: "/perguntas" },
+//  { label: "Associar P-Q", icon: Link2, href: "/queperg" },
   { label: "Avaliações", icon: UserRoundCheck, href: "/avaliacao" },
   { label: "Usuários", icon: Users, href: "/usuario" },
 ];

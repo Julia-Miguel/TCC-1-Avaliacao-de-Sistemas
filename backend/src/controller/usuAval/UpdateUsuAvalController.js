@@ -1,4 +1,3 @@
-import { parse } from 'path';
 import { prisma } from '../../database/client.js';
 
 export class UpdateUsuAvalController {

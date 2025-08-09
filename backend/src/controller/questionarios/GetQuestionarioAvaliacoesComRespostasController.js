@@ -66,7 +66,6 @@ export class GetQuestionarioAvaliacoesComRespostasController {
             const avaliacoesComRespostas = await prisma.avaliacao.findMany({
                 where: whereClause,
                 include: {
-                    // Incluímos o _count original aqui
                     _count: {
                         select: { usuarios: true }
                     },

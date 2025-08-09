@@ -1,9 +1,8 @@
-// ✅ ARQUIVO CORRIGIDO: src/controller/quePerg/CreateQuePergController.js
+// src/controller/quePerg/CreateQuePergController.js
 import { prisma } from '../../database/client.js';
 
 export class CreateQuePergController {
   async handle(request, response) {
-    // ✅ CORREÇÃO: Usando camelCase para corresponder ao teste
     const { perguntaId, questionarioId } = request.body;
 
     if (!perguntaId || !questionarioId) {
@@ -13,7 +12,6 @@ export class CreateQuePergController {
     try {
         const quePerg = await prisma.quePerg.create({
           data: {
-            // O Prisma espera os IDs para a conexão
             questionarioId: parseInt(questionarioId),
             perguntaId: parseInt(perguntaId)
           }

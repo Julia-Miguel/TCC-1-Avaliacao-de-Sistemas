@@ -1,5 +1,4 @@
 import { prisma } from '../../database/client.js';
-import { Prisma } from '@prisma/client';
 
 export class DeleteUsuAvalController {
 

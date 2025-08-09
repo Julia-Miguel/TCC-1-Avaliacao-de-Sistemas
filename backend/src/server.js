@@ -19,11 +19,11 @@ const app = express();
 
 const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
 
-console.log('Origens permitidas no backend (FRONTEND_URL):', allowedOrigins); // Novo log aqui
+console.log('Origens permitidas no backend (FRONTEND_URL):', allowedOrigins);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('Origem da requisição recebida:', origin); // Novo log aqui
+    console.log('Origem da requisição recebida:', origin);
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {

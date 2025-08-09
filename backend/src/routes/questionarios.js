@@ -8,7 +8,7 @@ import { UpdateQuestionarioController } from '../controller/questionarios/Update
 import { DeleteQuestionarioController } from '../controller/questionarios/DeleteQuestionarioController.js';
 import { GetQuestionarioAvaliacoesComRespostasController } from '../controller/questionarios/GetQuestionarioAvaliacoesComRespostasController.js';
 import { ReorderQuestionariosController } from '../controller/questionarios/ReorderQuestionariosController.js';
-import { ToggleAtivoQuestionarioController } from '../controller/questionarios/ToggleAtivoQuestionarioController.js'; // NOVO IMPORT
+import { ToggleAtivoQuestionarioController } from '../controller/questionarios/ToggleAtivoQuestionarioController.js';
 
 const questionarioRouter = Router();
 
@@ -21,13 +21,7 @@ const getQuestionarioAvaliacoesComRespostasController = new GetQuestionarioAvali
 const reorderQuestionariosController = new ReorderQuestionariosController();
 const toggleAtivoQuestionarioController = new ToggleAtivoQuestionarioController();
 
-// Rota PÚBLICA (Exemplo - se você quisesse que a listagem fosse pública)
-// questionarioRouter.get('/questionarios', getAllQuestionarioController.handle);
-// questionarioRouter.get('/questionarios/:id', getByIdQuestionarioController.handle);
-
-
 // Rotas PROTEGIDAS (Exigem token de ADMIN_EMPRESA)
-// Supondo que toda a gestão de questionários é apenas para admins logados:
 questionarioRouter.get('/questionarios', authMiddleware, getAllQuestionarioController.handle);
 questionarioRouter.get('/questionarios/:id', authMiddleware, getByIdQuestionarioController.handle);
 questionarioRouter.post('/questionarios', authMiddleware, createQuestionarioController.handle);

@@ -12,15 +12,11 @@ export class CreateUsuarioController {
           error: 'Campos obrigatórios ausentes: nome, email, senha, tipo.',
         });
       }
-
-      // Validação do enum
       if (!Object.values(TipoUsuario).includes(tipo)) {
         return response.status(400).json({
           error: `Tipo de usuário inválido: '${tipo}'. Use um dos: ${Object.values(TipoUsuario).join(', ')}.`,
         });
       }
-
-      // 🔒 Verificação de e-mail duplicado
       const existingUser = await prisma.usuario.findUnique({
         where: { email },
       });

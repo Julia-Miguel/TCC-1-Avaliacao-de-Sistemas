@@ -1,4 +1,4 @@
-// ✅ ARQUIVO CORRIGIDO: src/routes/usuario.js
+// src/routes/usuario.js
 
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware.js';
@@ -27,14 +27,14 @@ const loginAdminEmpresaUsuarioController = new LoginAdminEmpresaUsuarioControlle
 const createClientePlataformaUsuarioController = new CreateClientePlataformaUsuarioController();
 const loginClientePlataformaUsuarioController = new LoginClientePlataformaUsuarioController();
 
-// --- Rotas Públicas (NÃO usam authMiddleware) ---
+// --- Rotas Públicas ---
 usuarioRouter.post('/clientes/register', createClientePlataformaUsuarioController.handle);
 usuarioRouter.post('/clientes/login', loginClientePlataformaUsuarioController.handle);
 usuarioRouter.post('/usuarios/register-admin', createAdminEmpresaUsuarioController.handle);
 usuarioRouter.post('/usuarios/login-admin', loginAdminEmpresaUsuarioController.handle);
 usuarioRouter.post('/usuario', createUsuarioController.handle);
 
-// --- Rotas Protegidas (USAM authMiddleware individualmente) ---
+// --- Rotas Protegidas ---
 usuarioRouter.get('/usuario', authMiddleware, getAllUsuarioController.handle);
 usuarioRouter.get('/usuario/:id', authMiddleware, getByIdUsuarioController.handle);
 usuarioRouter.put('/usuario', authMiddleware, updateUsuarioController.handle);

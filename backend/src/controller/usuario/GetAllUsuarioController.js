@@ -2,7 +2,6 @@ import { prisma } from '../../database/client.js';
 
 export class GetAllUsuarioController {
   async handle(request, response) {
-    // Extrai o ID da empresa do usuário logado (fornecido pelo authMiddleware)
     const { empresaId } = request.user;
 
     if (!empresaId) {

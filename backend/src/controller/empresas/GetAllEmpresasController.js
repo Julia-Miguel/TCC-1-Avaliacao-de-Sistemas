@@ -4,7 +4,6 @@ export class GetAllEmpresasController {
     async handle(request, response) {
         try {
             const empresas = await prisma.empresa.findMany({
-                // Excluir a senha do retorno
                 select: {
                     id: true,
                     nome: true,

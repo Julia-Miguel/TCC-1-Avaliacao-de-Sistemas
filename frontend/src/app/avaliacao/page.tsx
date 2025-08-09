@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense, useRef } from "react";
 import api from "@/services/api";
 import Link from "next/link";
 import "../globals.css";
+import "../responsividade.css";
 import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
 import { PlusIcon, Edit3, Trash2, ExternalLink, ListChecks, Share2, X, Copy, CheckCircle2 } from 'lucide-react';
 import QRCode from "react-qr-code";
@@ -39,7 +40,6 @@ interface AvaliacaoInterface {
   created_at: string;
   updated_at: string;
 }
-// --- Fim das Interfaces ---
 
 function ListAvaliacaoContent() {
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoInterface[]>([]);
@@ -176,7 +176,7 @@ function ListAvaliacaoContent() {
             <PlusIcon size={18} className="mr-2" />
             Nova Avaliação
           </Link>
-          <Link href="/" className="btn btn-outline">
+          <Link href="/dashboard" className="btn btn-outline">
             Voltar
           </Link>
         </div>
@@ -195,7 +195,7 @@ function ListAvaliacaoContent() {
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto bg-card-background dark:bg-gray-800 shadow-md rounded-lg border border-border">
+        <div className="overflow-x-auto bg-card-background">
           <table className="min-w-full responsive-table">
             <thead>
               <tr>
@@ -265,7 +265,6 @@ function ListAvaliacaoContent() {
         </div>
       )}
 
-      {/* Modal (sem alterações, já estava perfeito) */}
       <dialog
         ref={shareDialogRef}
         onClose={handleCloseShareModal}

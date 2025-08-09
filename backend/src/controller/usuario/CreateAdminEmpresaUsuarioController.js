@@ -46,10 +46,10 @@ export class CreateAdminEmpresaUsuarioController {
                     nome,
                     email,
                     senha: senhaHashed,
-                    tipo: 'ADMIN_EMPRESA', // Definindo o tipo
-                    empresaId: parseInt(empresaId) // Vinculando à empresa
+                    tipo: 'ADMIN_EMPRESA',
+                    empresaId: parseInt(empresaId) 
                 },
-                select: { // Selecionando os campos para retornar (sem a senha)
+                select: {
                     id: true,
                     nome: true,
                     email: true,

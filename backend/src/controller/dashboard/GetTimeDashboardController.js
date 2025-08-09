@@ -2,7 +2,6 @@ import { prisma } from '../../database/client.js';
 
 export class GetTimeDashboardController {
   async handle(request, response) {
-    // A autenticação é garantida pelo authMiddleware
     const { empresaId } = request.user;
     const { questionarioId } = request.query;
 
@@ -17,8 +16,6 @@ export class GetTimeDashboardController {
       if (isNaN(intQuestionarioId) || isNaN(intEmpresaId)) {
         return response.status(400).json({ message: "IDs inválidos." });
       }
-
-      // Busca todas as participações (usuAval) finalizadas para um questionário específico
       const completedResponses = await prisma.usuAval.findMany({
         where: {
           isFinalizado: true,
@@ -41,11 +38,9 @@ export class GetTimeDashboardController {
         return response.json({ estimatedTime: 'Dados insuficientes' });
       }
 
-      // Calcula a duração de cada resposta em segundos
       const totalDurationInSeconds = completedResponses.reduce((acc, res) => {
         const start = new Date(res.started_at);
         const end = new Date(res.finished_at);
-        // getTime() retorna milissegundos, então dividimos por 1000 para obter segundos
         const duration = (end.getTime() - start.getTime()) / 1000;
         return acc + duration;
       }, 0);

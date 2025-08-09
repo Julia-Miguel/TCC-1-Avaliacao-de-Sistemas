@@ -2,11 +2,9 @@ import { prisma } from '../../database/client.js';
 
 export class CreateQuestionarioController {
   async handle(request, response) {
-    // Extrai os dados do usuário autenticado e do corpo da requisição
     const { usuarioId: criadorId, empresaId: adminEmpresaId } = request.user;
     const { titulo, eh_satisfacao } = request.body;
 
-    // Validações iniciais
     if (!criadorId || !adminEmpresaId) {
       return response.status(401).json({ message: "Usuário não autenticado ou ID da empresa não encontrado no token." });
     }
@@ -15,12 +13,7 @@ export class CreateQuestionarioController {
     }
 
     try {
-      // Se a flag 'eh_satisfacao' for verdadeira, verifica se já existe um para esta empresa
       if (eh_satisfacao === true) {
-        
-        // ✅ CORREÇÃO APLICADA AQUI
-        // A busca agora inclui um filtro para verificar apenas
-        // os questionários da empresa do usuário logado.
         const satisfacaoExistente = await prisma.questionario.findFirst({
           where: {
             eh_satisfacao: true,

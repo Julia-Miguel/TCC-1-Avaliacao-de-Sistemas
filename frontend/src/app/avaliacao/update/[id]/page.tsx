@@ -5,7 +5,8 @@ import { useEffect, useState, Suspense } from "react";
 import api from "@/services/api";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import "../../../globals.css"; // Seu globals.css unificado
+import "../../../globals.css";
+import "../../../responsividade.css";
 import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
 
 interface AvaliacaoData { // Renomeado para evitar conflito com nome do componente

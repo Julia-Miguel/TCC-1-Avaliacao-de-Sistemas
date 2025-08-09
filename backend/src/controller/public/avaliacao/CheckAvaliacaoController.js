@@ -1,4 +1,4 @@
-// ✅ CÓDIGO CORRIGIDO PARA: backend/src/controller/public/avaliacao/CheckAvaliacaoController.js
+// backend/src/controller/public/avaliacao/CheckAvaliacaoController.js
 import { prisma } from '../../../database/client.js';
 
 export class CheckAvaliacaoController {

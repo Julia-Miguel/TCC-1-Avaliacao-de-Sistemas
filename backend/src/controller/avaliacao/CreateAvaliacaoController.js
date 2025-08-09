@@ -1,9 +1,8 @@
-// ✅ ARQUIVO CORRIGIDO: src/controller/avaliacao/CreateAvaliacaoController.js
+// src/controller/avaliacao/CreateAvaliacaoController.js
 import { prisma } from '../../database/client.js';
 
 export class CreateAvaliacaoController {
     async handle(request, response) {
-        // ✅ CORREÇÃO: Usando 'questionarioId' (camelCase) para corresponder ao frontend
         const { semestre, questionarioId, requerLoginCliente } = request.body;
 
         if (!request.user || !request.user.usuarioId) {
@@ -16,7 +15,6 @@ export class CreateAvaliacaoController {
         }
 
         try {
-            // A sua lógica de verificação de permissão já está ótima aqui.
             const questionarioVinculado = await prisma.questionario.findFirst({
                 where: {
                     id: parseInt(questionarioId),
@@ -33,7 +31,7 @@ export class CreateAvaliacaoController {
             const avaliacao = await prisma.avaliacao.create({
                 data: {
                     semestre,
-                    requerLoginCliente: !!requerLoginCliente, // Garante que é booleano
+                    requerLoginCliente: !!requerLoginCliente,
                     questionarioId: parseInt(questionarioId),
                     criadorId: parseInt(criadorId)
                 }

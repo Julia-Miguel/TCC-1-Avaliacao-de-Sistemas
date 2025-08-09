@@ -10,13 +10,12 @@ export class StartAvaliacaoController {
         }
 
         try {
-            // ETAPA 1: BUSCAR A AVALIAÇÃO PRINCIPAL E A EMPRESA ASSOCIADA
             const avaliacaoPrincipal = await prisma.avaliacao.findUnique({
                 where: { token: token },
                 include: {
                     criador: { 
                         select: { 
-                            empresaId: true, // Pega o ID da empresa para o filtro de segurança
+                            empresaId: true,
                             empresa: { select: { nome: true } }
                         } 
                     },
@@ -36,14 +35,10 @@ export class StartAvaliacaoController {
             if (!avaliacaoPrincipal) {
                 return response.status(404).json({ message: "Avaliação não encontrada." });
             }
-
-            // Pega o ID da empresa da avaliação principal
             const empresaIdDaAvaliacao = avaliacaoPrincipal.criador.empresaId;
             if (!empresaIdDaAvaliacao) {
                 return response.status(500).json({ message: "Não foi possível identificar a empresa desta avaliação." });
             }
-
-            // ETAPA 2: VERIFICAR SE JÁ RESPONDEU E CRIAR SESSÃO (lógica existente)
             const avaliacaoIdInterno = avaliacaoPrincipal.id;
             const whereClause = usuarioId ? { usuarioId: parseInt(usuarioId) } : { anonymousSessionId };
             let usuAval = await prisma.usuAval.findFirst({
@@ -65,7 +60,6 @@ export class StartAvaliacaoController {
                 return response.json({ hasResponded: true });
             }
 
-            // Mapeia as perguntas principais
             let perguntasFinais = (avaliacaoPrincipal.questionario.perguntas || [])
                 .filter(quePerg => quePerg.pergunta)
                 .map(quePerg => ({
@@ -77,13 +71,10 @@ export class StartAvaliacaoController {
                     isSatisfactionQuestion: false,
                 }));
 
-            // ✅ ETAPA 3 (CORRIGIDA): BUSCAR O QUESTIONÁRIO DE SATISFAÇÃO DA EMPRESA CORRETA
             const questionarioSatisfacao = await prisma.questionario.findFirst({
                 where: {
                     eh_satisfacao: true,
                     ativo: true,
-                    // Filtro de segurança: garante que o questionário de satisfação
-                    // pertence à mesma empresa da avaliação principal.
                     criador: {
                         empresaId: empresaIdDaAvaliacao
                     }
@@ -98,7 +89,6 @@ export class StartAvaliacaoController {
                 },
             });
             
-            // Se encontrou, anexa as perguntas dele
             if (questionarioSatisfacao) {
                 const perguntasDeSatisfacao = (questionarioSatisfacao.perguntas || [])
                     .filter(quePerg => quePerg.pergunta)
@@ -124,8 +114,6 @@ export class StartAvaliacaoController {
 
                 perguntasFinais.push(...perguntasDeSatisfacao);
             }
-
-            // ETAPA FINAL: MONTAR E ENVIAR A RESPOSTA PARA O FRONTEND
             const responseData = {
                 tituloQuestionario: avaliacaoPrincipal.questionario.titulo,
                 nomeEmpresa: avaliacaoPrincipal.criador.empresa.nome,

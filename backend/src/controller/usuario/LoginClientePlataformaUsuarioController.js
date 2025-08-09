@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'seu-segredo-super-secreto-para-jwt';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN_CLIENTE || '24h'; // Pode ter uma expiração diferente para clientes
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN_CLIENTE || '24h';
 
 export class LoginClientePlataformaUsuarioController {
     async handle(request, response) {
@@ -33,8 +33,6 @@ export class LoginClientePlataformaUsuarioController {
 
             const tokenPayload = {
                 usuarioId: clienteUsuario.id,
-                // empresaId não é aplicável diretamente ao token do CLIENTE_PLATAFORMA
-                // Se necessário, a empresa será inferida pelo contexto da avaliação que ele está respondendo.
                 tipo: clienteUsuario.tipo,
                 nome: clienteUsuario.nome,
                 email: clienteUsuario.email
@@ -49,7 +47,7 @@ export class LoginClientePlataformaUsuarioController {
             return response.status(200).json({
                 message: "Login do cliente bem-sucedido!",
                 cliente: clienteSemSenha,
-                token: token // Este será o 'clienteToken' no frontend
+                token: token
             });
 
         } catch (error) {

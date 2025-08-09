@@ -5,7 +5,7 @@ import api from "@/services/api";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import "../../globals.css";
-import "../../teste.css";
+import "../../responsividade.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
 import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, TrendingDown, TrendingUpDown, FileText, CheckSquare, Users, Loader2, Filter, Clock } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -15,6 +15,7 @@ import {
     DndContext,
     closestCenter,
     PointerSensor,
+    TouchSensor,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
@@ -145,6 +146,12 @@ function EditQuestionarioFormContent() {
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
+            activationConstraint: {
+                delay: 150,
+                tolerance: 5,
+            },
+        }),
+        useSensor(TouchSensor, {
             activationConstraint: {
                 delay: 150,
                 tolerance: 5,

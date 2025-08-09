@@ -18,7 +18,6 @@ perguntasRouter.post('/perguntas', authMiddleware, createPerguntasController.han
 perguntasRouter.get('/perguntas', authMiddleware, getAllPerguntasController.handle);
 perguntasRouter.get('/perguntas/:id', authMiddleware, getByIdPerguntasController.handle);
 perguntasRouter.patch('/perguntas/:id', authMiddleware, updatePerguntasController.handle);
-// ✅ Rota de DELETE Corrigida para incluir o :id
 perguntasRouter.delete('/perguntas/:id', authMiddleware, deletePerguntasController.handle);
 
 export { perguntasRouter };

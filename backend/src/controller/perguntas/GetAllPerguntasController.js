@@ -2,7 +2,6 @@ import { prisma } from '../../database/client.js';
 
 export class GetAllPerguntasController {
   async handle(request, response) {
-    // Extrai o ID da empresa do usuário logado
     const { empresaId } = request.user;
 
     if (!empresaId) {

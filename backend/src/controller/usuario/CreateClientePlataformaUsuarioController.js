@@ -6,8 +6,7 @@ export class CreateClientePlataformaUsuarioController {
     async handle(request, response) {
         const { nome, email, senha } = request.body;
 
-        // Validação básica
-        if (!email || !senha) { // Nome pode ser opcional dependendo da sua regra
+        if (!email || !senha) {
             return response.status(400).json({
                 message: "Dados incompletos. Email e senha são obrigatórios."
             });

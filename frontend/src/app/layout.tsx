@@ -30,6 +30,7 @@ export default function RootLayout({
     "/empresas/registrar", 
     "/empresas/login", 
     "/admin/login",
+    "/admin/registrar",
     "/clientes/login",
     "/clientes/registrar",
     "/responder" 

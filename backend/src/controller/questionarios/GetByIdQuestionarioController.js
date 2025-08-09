@@ -5,9 +5,7 @@ export class GetByIdQuestionarioController {
     async handle(request, response) {
         const { id: questionarioIdParam } = request.params;
         const questionarioId = parseInt(questionarioIdParam);
-
-        // Esta informação virá do token JWT decodificado pelo authMiddleware
-        const { empresaId } = request.user; // Assumindo que o middleware adiciona req.user
+        const { empresaId } = request.user;
 
         if (!empresaId) {
             return response.status(400).json({ message: "ID da Empresa não identificado no token do usuário." });
@@ -20,7 +18,7 @@ export class GetByIdQuestionarioController {
             const questionario = await prisma.questionario.findFirst({
                 where: {
                     id: questionarioId,
-                    criador: { // Garante que o questionário pertence à empresa do admin logado
+                    criador: {
                         empresaId: parseInt(empresaId)
                     }
                 },

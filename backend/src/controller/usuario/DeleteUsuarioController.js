@@ -1,12 +1,14 @@
-// src/controller/usuario/DeleteUsuarioController.js
 import { prisma } from '../../database/client.js';
 
 export class DeleteUsuarioController {
     async handle(request, response) {
-        // ✅ CORREÇÃO: Pegando o 'id' dos parâmetros da URL
         const { id } = request.params;
+        const { id: loggedInUserId } = request.user;
 
         try {
+            if (parseInt(id) !== parseInt(loggedInUserId)) {
+                return response.status(403).json({ message: "Você só pode excluir o seu próprio usuário." });
+            }
             await prisma.usuario.delete({
                 where: {
                     id: parseInt(id)
@@ -14,7 +16,6 @@ export class DeleteUsuarioController {
             });
             return response.status(200).json({ message: 'Usuário excluído com sucesso.' });
         } catch (error) {
-            // Adiciona tratamento para caso o usuário não seja encontrado
             if (error.code === 'P2025') {
                 return response.status(404).json({ message: "Usuário não encontrado." });
             }

@@ -86,7 +86,7 @@ body.dark-mode {
   --color-background-page: #111827;
   --color-background-element: #1F2937;
 
-  --color-border: #4B5563; /* Updated for more visible borders */
+  --color-border: #4B5563;
   --color-border-input: #4B5563;
 
   --color-success: #34D399;
@@ -459,12 +459,6 @@ table:not(.Create form table) td .btn:last-child {
   padding: var(--spacing-lg) var(--spacing-xl);
 }
 
-@media (max-width: 768px) {
-  .page-container {
-    margin-left: 0;
-  }
-}
-
 .table-header-actions {
   display: flex;
   justify-content: space-between;
@@ -645,7 +639,6 @@ body.dark-mode .pergunta-editor-item {
   border-style: solid;
 }
 
-/* Novas classes para o questionário recente */
 .questionnaire-card {
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
@@ -657,7 +650,7 @@ body.dark-mode .pergunta-editor-item {
 
 body.dark-mode .questionnaire-card {
     background-color: #1F2937;
-    border-color: #4B5563; /* Updated for visibility */
+    border-color: #4B5563;
 }
 
 .questionnaire-card:hover {
@@ -675,15 +668,12 @@ body.dark-mode .questionnaire-card {
     border: 1px solid var(--border-color);
 }
 
-
-/* Adicionado ao final do globals.css */
-
 .text-analysis-container {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Duas colunas de largura igual */
-    gap: var(--spacing-lg); /* Espaçamento entre as colunas */
-    max-width: 1200px; /* Largura máxima para o container */
-    margin: 0 auto; /* Centralizar o container */
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .text-input-section,
@@ -737,20 +727,6 @@ body.dark-mode .word-cloud-section {
     box-shadow: 0 4px 24px 0 rgba(96,165,250,0.10), var(--shadow-md);
 }
 
-@media (max-width: 768px) {
-    .text-analysis-container {
-        grid-template-columns: 1fr; /* Empilhar as seções em telas menores */
-    }
-    .word-cloud-section {
-        min-height: 220px;
-        padding: var(--spacing-md);
-    }
-    .word-cloud-section svg {
-        max-width: 100%;
-        max-height: 180px;
-    }
-}
-
 /* Modal Flutuante */
 .modal-backdrop {
   position: fixed;
@@ -795,8 +771,6 @@ body.dark-mode .word-cloud-section {
   }
 }
 
-
-
 .switch {
   position: relative;
   display: inline-block;
@@ -810,7 +784,7 @@ body.dark-mode .word-cloud-section {
 }
 
 .switch.checked {
-  background-color: #2563eb; /* Azul primário, ajuste se necessário */
+  background-color: #2563eb;
 }
 
 .switch-thumb {
@@ -826,162 +800,4 @@ body.dark-mode .word-cloud-section {
 
 .switch.checked .switch-thumb {
   transform: translateX(20px);
-}
-
-
-
-
-/* --- Classes para Responsividade de Tabelas --- */
-@media (max-width: 768px) {
-  /* Esconde o cabeçalho da tabela tradicional */
-  .responsive-table thead {
-    display: none;
-  }
-
-  /* Transforma a tabela e as linhas em blocos */
-  .responsive-table, .responsive-table tbody, .responsive-table tr {
-    display: block;
-    width: 100%;
-  }
-
-  .responsive-table tr {
-    margin-bottom: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-  }
-
-  /* Transforma as células em linhas, com um label */
-  .responsive-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    text-align: right;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .responsive-table tr:last-child td:last-child {
-      border-bottom: none;
-  }
-
-  .responsive-table td::before {
-    content: attr(data-label); /* Pega o texto do atributo data-label */
-    font-weight: 500;
-    text-align: left;
-    margin-right: 1rem;
-    color: var(--foreground);
-  }
-
-  /* Ajusta o grupo de botões de ação */
-  .responsive-table .actions-group {
-    justify-content: flex-end;
-  }
-}
-
-/* --- Ajustes Gerais para Telas Pequenas --- */
-@media (max-width: 640px) {
-  .page-container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .form-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .form-header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .pergunta-editor-item .flex {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-}
-
-
-
-
-@media (max-width: 768px) {
-  .editor-form-card .form-header-actions {
-    flex-direction: row-reverse !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-    justify-content: flex-start !important;
-  }
-  .editor-form-card .form-header-actions .btn {
-    flex: 0 1 auto;
-    white-space: nowrap;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.75rem;
-    margin-left: var(--spacing-xs);
-  }
-  .editor-form-card .form-header-actions .btn:last-child {
-    margin-left: 0;
-  }
-}
-
-
-@media (max-width: 768px) {
-  .page-container > .mb-6.flex.flex-wrap.justify-center {
-    flex-direction: row-reverse !important;  
-    justify-content: flex-start !important;  
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-  }
-
-
-  .page-container > .mb-6.flex.flex-wrap.justify-center > .btn {
-    flex: 0 1 auto;
-    white-space: nowrap;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.75rem;
-    margin-left: var(--spacing-xs);      
-    margin-right: 0;                    
-  }
-
-  .page-container > .mb-6.flex.flex-wrap.justify-center > .btn:last-child {
-    margin-left: 0;                     
-  }
-}
-
-
-@media (max-width: 768px) {
-  .editor-form-card {
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-  }
-
-  .display-section {
-    padding: var(--spacing-sm) !important; 
-  }
-}
-
-@media (max-width: 768px) {
-  .page-container {
-    padding: var(--spacing-sm) !important;
-  }
-}
-
-/* Ajusta o cabeçalho das páginas em telas menores */
-@media (max-width: 768px) {
-  .table-header-actions {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-
-  .table-header-actions .button-group {
-    /* Opcional: faz o grupo de botões ocupar toda a largura */
-    width: 100%; 
-  }
 }

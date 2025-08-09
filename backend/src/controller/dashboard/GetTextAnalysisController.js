@@ -33,11 +33,11 @@ export class GetTextAnalysisController {
             // Etapa 2: Monta o filtro de busca de forma dinâmica
             const whereClause = {
                 perguntaId: intPerguntaId,
-                pergunta: { tipos: 'TEXTO' }, // Garante que a pergunta é do tipo texto
+                pergunta: { tipos: 'TEXTO' },
                 usuAval: {
-                    isFinalizado: true, // Apenas respostas de avaliações finalizadas
+                    isFinalizado: true,
                     avaliacao: {
-                        criador: { empresaId: intEmpresaId } // Garante que a avaliação pertence à empresa
+                        criador: { empresaId: intEmpresaId }
                     }
                 }
             };
@@ -58,7 +58,7 @@ export class GetTextAnalysisController {
                 select: { resposta: true }
             });
 
-            // Etapa 4: Processa os dados (lógica original, está perfeita)
+            // Etapa 4: Processa os dados
             if (respostas.length === 0) {
                 return response.json({
                     wordCloud: [],

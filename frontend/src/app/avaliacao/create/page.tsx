@@ -5,7 +5,8 @@ import { useState, useEffect, Suspense } from "react";
 import api from "@/services/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import "../../globals.css"; // Seu globals.css unificado
+import "../../globals.css";
+import "../../responsividade.css";
 import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
 
 interface Questionario {

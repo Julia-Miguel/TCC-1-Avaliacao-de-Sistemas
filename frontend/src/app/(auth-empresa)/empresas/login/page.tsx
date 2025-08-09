@@ -6,7 +6,6 @@ import api from '@/services/api'; //
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import '../../../globals.css'; 
-// import ApplicationLogo from '@/components/ApplicationLogo'; // Descomente se for usar o logo aqui
 
 interface EmpresaLogada {
   id: number;
@@ -32,7 +31,6 @@ export default function LoginEmpresaPage() {
         senhaEmpresa,
       });
       const empresaLogada = response.data.empresa;
-      // Redireciona para a página de login do admin, passando o ID e nome da empresa
       router.push(`/admin/login?empresaId=${empresaLogada.id}&empresaNome=${encodeURIComponent(empresaLogada.nome)}`);
 
     } catch (err: any) {
@@ -49,10 +47,6 @@ export default function LoginEmpresaPage() {
 
   return (
     <>
-      {/* O ApplicationLogo pode ser adicionado no layout (auth-empresa)/layout.tsx ou aqui */}
-      {/* <div className="flex justify-center mb-6"> */}
-      {/* <ApplicationLogo className="w-16 h-16 text-primary" /> */}
-      {/* </div> */}
       <h3 className="text-center text-xl sm:text-2xl font-semibold text-text-base mb-6">
         Login da Empresa
       </h3>
@@ -73,7 +67,7 @@ export default function LoginEmpresaPage() {
             value={emailResponsavel}
             onChange={(e) => setEmailResponsavel(e.target.value)}
             required
-            className="input-edit-mode" // Estilo global de input
+            className="input-edit-mode"
             placeholder="email@suaempresa.com"
             disabled={isLoading}
           />
@@ -111,12 +105,6 @@ export default function LoginEmpresaPage() {
           >
             Não tem conta? Registrar Empresa
           </Link>
-        </div>
-        
-        <div className="text-center mt-6">
-            <Link href="/" className="text-sm text-primary hover:text-primary-hover transition-colors">
-                Voltar para Home
-            </Link>
         </div>
       </form>
     </>

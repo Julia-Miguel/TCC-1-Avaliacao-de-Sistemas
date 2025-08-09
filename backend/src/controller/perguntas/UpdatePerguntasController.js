@@ -11,7 +11,6 @@ export class UpdatePerguntasController {
                 where: {
                     id: parseInt(id)
                 },
-                // ✅ CORREÇÃO: 'data' só inclui os campos que foram enviados
                 data: {
                     enunciado,
                     tipos,
@@ -20,7 +19,7 @@ export class UpdatePerguntasController {
             });
             return response.json(pergunta);
         } catch (error) {
-            if (error.code === 'P2025') { // Código de erro do Prisma para "não encontrado"
+            if (error.code === 'P2025') {
                 return response.status(404).json({ message: "Pergunta não encontrada." });
             }
             return response.status(400).json({ message: "Erro ao atualizar pergunta.", error: error.message });

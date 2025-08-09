@@ -1,9 +1,9 @@
-// ✅ ARQUIVO CORRIGIDO: src/controller/avaliacao/UpdateAvaliacaoController.js
+// src/controller/avaliacao/UpdateAvaliacaoController.js
 import { prisma } from '../../database/client.js';
 
 export class UpdateAvaliacaoController {
     async handle(request, response) {
-        const { id } = request.params; // Correção aqui
+        const { id } = request.params;
         const { semestre } = request.body;
 
         try {

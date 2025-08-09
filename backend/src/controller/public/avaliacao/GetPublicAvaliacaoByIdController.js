@@ -34,8 +34,6 @@ export class GetPublicAvaliacaoByIdController {
         }
       });
 
-      // --- INÍCIO DAS VERIFICAÇÕES DE ROBUSTEZ ---
-
       if (!avaliacao || !avaliacao.isPublica) {
         return response.status(404).json({ message: "Avaliação não encontrada ou não é pública." });
       }
@@ -48,12 +46,7 @@ export class GetPublicAvaliacaoByIdController {
         return response.status(500).json({ message: "Configuração inválida: A avaliação não possui um questionário vinculado." });
       }
 
-      // Garante que 'perguntas' seja um array, mesmo que vazio.
       const perguntasDoQuestionario = avaliacao.questionario.perguntas || [];
-
-      // --- FIM DAS VERIFICAÇÕES DE ROBUSTEZ ---
-
-      // Mapeia os dados do banco para o formato esperado pelo frontend
       const responseData = {
         avaliacaoId: avaliacao.id,
         semestreAvaliacao: avaliacao.semestre,
@@ -61,13 +54,13 @@ export class GetPublicAvaliacaoByIdController {
         nomeEmpresa: avaliacao.empresa.nome,
         tituloQuestionario: avaliacao.questionario.titulo,
         perguntas: perguntasDoQuestionario
-          .filter(quePerg => quePerg.pergunta) // Filtra para garantir que a pergunta existe
+          .filter(quePerg => quePerg.pergunta)
           .map(quePerg => ({
             id: quePerg.pergunta.id,
             enunciado: quePerg.pergunta.enunciado,
             obrigatoria: quePerg.pergunta.obrigatoria,
             tipo: quePerg.pergunta.tipo,
-            opcoes: quePerg.pergunta.opcoes || [], // Garante que opções seja um array
+            opcoes: quePerg.pergunta.opcoes || [],
           })),
       };
 

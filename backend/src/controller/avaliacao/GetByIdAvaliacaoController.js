@@ -1,4 +1,4 @@
-// ✅ ARQUIVO CORRIGIDO: src/controller/avaliacao/GetByIdAvaliacaoController.js
+// src/controller/avaliacao/GetByIdAvaliacaoController.js
 import { prisma } from '../../database/client.js';
 
 export class GetByIdAvaliacaoController {
@@ -10,7 +10,6 @@ export class GetByIdAvaliacaoController {
             const avaliacao = await prisma.avaliacao.findFirst({
                 where: {
                     id: parseInt(id),
-                    // ✅ CORREÇÃO: Adicionando verificação de segurança
                     criador: {
                         empresaId: parseInt(empresaId)
                     }

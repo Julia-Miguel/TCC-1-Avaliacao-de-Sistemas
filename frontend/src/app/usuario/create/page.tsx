@@ -1,58 +1,138 @@
 'use client';
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import api from "@/services/api";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import "../../globals.css";
+import "../../responsividade.css";
+import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
 
-export default function CreateUsuario() {
+function CreateUsuarioContent() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [tipo, setTipo] = useState("");
+  const [senha, setSenha] = useState("");
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleNewUsuario = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const data = { nome, email, tipo };
+    setError(null);
+
+    if (!nome.trim() || !email.trim() || !senha.trim()) {
+      setError("Todos os campos são obrigatórios.");
+      return;
+    }
+    if (senha.length < 6) {
+        setError("A senha deve ter no mínimo 6 caracteres.");
+        return;
+    }
+    
+    setIsLoading(true);
+
+    // O tipo é fixo, então enviamos diretamente para a API.
+    const data = { 
+      nome, 
+      email, 
+      senha, 
+      tipo: 'ADMIN_EMPRESA' 
+    };
+
     try {
       await api.post("/usuario", data);
-      alert("Usuário cadastrado com sucesso!");
+      alert("Novo administrador cadastrado com sucesso!");
       router.push("/usuario");
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao cadastrar o usuário!");
+    } catch (err: any) {
+      console.error("Erro ao cadastrar usuário:", err.response?.data ?? err.message);
+      setError(err.response?.data?.message ?? "Erro ao cadastrar o usuário!");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleResetForm = () => {
+    setNome('');
+    setEmail('');
+    setSenha('');
+    setError(null);
+  }
+
   return (
-    <div className="Create">
-      <h3>Cadastro de Usuário</h3>
-      <form onSubmit={handleNewUsuario}>
-        <table>
-          <thead>
-            <tr>
-              <th>Campo</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><label htmlFor="nome">Nome</label></td>
-              <td><input type="text" name="nome" id="nome" value={nome} onChange={e => setNome(e.target.value)} /></td>
-            </tr>
-            <tr>
-              <td><label htmlFor="email">Email</label></td>
-              <td><input type="email" name="email" id="email" value={email} onChange={e => setEmail(e.target.value)} /></td>
-            </tr>
-            <tr>
-              <td><label htmlFor="tipo">Tipo</label></td>
-              <td><input type="text" name="tipo" id="tipo" value={tipo} onChange={e => setTipo(e.target.value)} /></td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="submit">Cadastrar</button>
-        <button type="reset">Limpar</button>
-      </form>
+    <div className="page-container">
+      <div className="editor-form-card" style={{maxWidth: '700px'}}>
+        <div className="form-header">
+          <h3>Criar Novo Administrador</h3>
+          <Link href="/usuario" className="btn btn-outline btn-sm">Voltar</Link>
+        </div>
+        
+        <form onSubmit={handleNewUsuario} className="display-section">
+          {error && <p className="text-sm text-center text-error bg-red-50 dark:bg-red-700/10 p-3 rounded-md border border-error mb-4">{error}</p>}
+          
+          <div className="form-group">
+            <label htmlFor="nome" className="form-label">Nome</label>
+            <input
+              type="text"
+              id="nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              className="input-edit-mode"
+              placeholder="Nome do novo administrador"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email" className="form-label">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="input-edit-mode"
+              placeholder="email@empresa.com"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="senha" className="form-label">Senha Provisória</label>
+            <input
+              type="password"
+              id="senha"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              required
+              minLength={6}
+              className="input-edit-mode"
+              placeholder="Mínimo de 6 caracteres"
+              disabled={isLoading}
+            />
+          </div>
+          
+          <div className="form-actions">
+            <button type="button" onClick={handleResetForm} className="btn btn-secondary" disabled={isLoading}>
+              Limpar
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={isLoading}>
+              {isLoading ? "Cadastrando..." : "Cadastrar Administrador"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
+  );
+}
+
+export default function CreateUsuarioPage() {
+  return (
+    <Suspense fallback={<div className="page-container center-content"><p>Carregando...</p></div>}>
+      <AdminAuthGuard>
+        <CreateUsuarioContent />
+      </AdminAuthGuard>
+    </Suspense>
   );
 }

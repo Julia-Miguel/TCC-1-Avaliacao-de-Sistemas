@@ -1,9 +1,8 @@
-// ✅ ARQUIVO CORRIGIDO: src/controller/quePerg/DeleteQuePergController.js
+// src/controller/quePerg/DeleteQuePergController.js
 import { prisma } from '../../database/client.js';
 
 export class DeleteQuePergController {
     async handle(request, response) {
-        // ✅ CORREÇÃO: A obter o 'id' dos parâmetros do URL
         const { id } = request.params;
 
         try {

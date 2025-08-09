@@ -20,7 +20,6 @@ quePergRouter.post('/queperg', authMiddleware, createQuePergController.handle);
 quePergRouter.get('/queperg', authMiddleware, getAllQuePergController.handle);
 quePergRouter.get('/queperg/:id', authMiddleware, getByIdQuePergController.handle);
 quePergRouter.put('/queperg/:id', authMiddleware, updateQuePergController.handle);
-// ✅ ROTA CORRIGIDA: Usando DELETE com :id
 quePergRouter.delete('/queperg/:id', authMiddleware, deleteQuePergController.handle);
 
 export { quePergRouter };

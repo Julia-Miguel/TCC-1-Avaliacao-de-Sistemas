@@ -11,33 +11,30 @@ export class GetAllAvaliacaoController {
     try {
       const avaliacoes = await prisma.avaliacao.findMany({
         where: {
-            criador: { // Filtra pelas avaliações cujo criador...
-                empresaId: parseInt(adminEmpresaId) // ...pertence a esta empresa.
+            criador: {
+                empresaId: parseInt(adminEmpresaId)
             }
         },
         include: {
           questionario: {
             select: {
-              id: true, // Adicionado ID para consistência
+              id: true,
               titulo: true,
             },
           },
-          criador: { // Adicionado para ver quem criou a avaliação
+          criador: {
             select: { id: true, nome: true, email: true }
           },
-          // A inclusão de 'usuarios' (UsuAval) pode trazer muitos dados.
-          // Considere se é realmente necessário na listagem principal ou se busca sob demanda.
-          // Para agora, manterei como estava no seu código, mas com _count pode ser melhor.
-          usuarios: { // Relação UsuAval
+          usuarios: {
             select: {
               id: true,
               status: true,
               isFinalizado: true,
-              usuario: { select: { id: true, nome: true } }, // Respondente logado
-              anonymousSessionId: true // Para respondentes anônimos
+              usuario: { select: { id: true, nome: true } },
+              anonymousSessionId: true
             }
           },
-          _count: { // Contagem de respondentes
+          _count: {
             select: { usuarios: true }
           }
         },

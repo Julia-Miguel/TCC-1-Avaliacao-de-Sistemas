@@ -1,6 +1,6 @@
 import { prisma } from "../../database/client.js";
 
-// Função auxiliar para formatar o tempo (sem alterações)
+// Função auxiliar para formatar o tempo
 const formatTime = (milliseconds) => {
   if (milliseconds <= 0) {
     return 'N/A';
@@ -15,9 +15,7 @@ const formatTime = (milliseconds) => {
   return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
 };
 
-// Função para dados do DASHBOARD PRINCIPAL (sem alterações)
 async function getPrincipalDashboardData(empresaId) {
-    // ... seu código existente aqui ...
     const [totalQuestionarios, totalAvaliacoes, totalRespondentes, totalFinalizados] = await Promise.all([
         prisma.questionario.count({ where: { criador: { empresaId } } }),
         prisma.avaliacao.count({ where: { criador: { empresaId } } }),
@@ -95,9 +93,7 @@ async function getPrincipalDashboardData(empresaId) {
     return { kpis, lastQuestionnaire: lastQuestionnaireInfo };
 }
 
-// Função para dados do DASHBOARD ESPECÍFICO (COM A ALTERAÇÃO)
 async function getSpecificDashboardData({ questionarioId, empresaId, semestre }) {
-    // ... (código existente para buscar perguntas, etc.) ...
     const perguntasDoQuestionario = await prisma.pergunta.findMany({
         where: { questionarios: { some: { questionarioId } } },
         select: { id: true, tipos: true, enunciado: true }
@@ -130,7 +126,6 @@ async function getSpecificDashboardData({ questionarioId, empresaId, semestre })
     const taxaDeConclusao = totalRespondentes > 0 ? parseFloat(((totalFinalizados / totalRespondentes) * 100).toFixed(1)) : 0;
     const totalAvaliacoes = await prisma.avaliacao.count({ where: { questionarioId, criador: { empresaId } } });
 
-    // ===== INÍCIO DA ADIÇÃO DO CÁLCULO DE TEMPO =====
     let estimatedTime = 'N/A';
     if (totalFinalizados > 0) {
         const totalTimeInMillis = finalizadosComTempo.reduce((acc, curr) => {
@@ -140,9 +135,7 @@ async function getSpecificDashboardData({ questionarioId, empresaId, semestre })
         const averageTimeInMillis = totalTimeInMillis / totalFinalizados;
         estimatedTime = formatTime(averageTimeInMillis);
     }
-    // ===== FIM DA ADIÇÃO DO CÁLCULO DE TEMPO =====
 
-    // ... (código existente para buscar gráficos e perguntas de texto) ...
     const perguntasMultiplaEscolha = perguntasDoQuestionario.filter(p => p.tipos === 'MULTIPLA_ESCOLHA');
     const graficos = [];
 
@@ -174,13 +167,12 @@ async function getSpecificDashboardData({ questionarioId, empresaId, semestre })
     const textQuestions = perguntasDoQuestionario.filter(p => p.tipos === 'TEXTO').map(p => ({ id: p.id, enunciado: p.enunciado }));
 
     return {
-        kpis: { totalAvaliacoes, totalRespondentes, totalFinalizados, taxaDeConclusao, estimatedTime }, // <<< Adicionado aqui
+        kpis: { totalAvaliacoes, totalRespondentes, totalFinalizados, taxaDeConclusao, estimatedTime },
         graficos,
         textQuestions,
     };
 }
 
-// --- CONTROLLER PRINCIPAL UNIFICADO (sem alterações) ---
 export class GetDashboardDataController {
   async handle(request, response) {
     const { empresaId } = request.user;

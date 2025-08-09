@@ -12,7 +12,6 @@ export class CreatePerguntasController {
                     obrigatoria: !!obrigatoria,
                 },
             });
-            // ✅ CORREÇÃO: Retornando status 201
             return response.status(201).json(pergunta);
         } catch (error) {
             return response.status(400).json({ message: "Erro ao criar pergunta.", error: error.message });

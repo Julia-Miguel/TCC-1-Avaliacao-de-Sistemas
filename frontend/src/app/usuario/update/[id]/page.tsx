@@ -1,35 +1,40 @@
 'use client';
 
 import { useEffect, useState, Suspense } from "react";
-import api from "@/services/api";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import api from "@/services/api";
 import "../../../globals.css";
+import "../../../responsividade.css";
+import { useAuth } from "@/contexts/AuthContext";
 import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
 
 interface Usuario {
   id: number;
-  token: string;
   nome: string;
   email: string;
   tipo: string;
 }
 
 function UpdateUsuarioContent() {
-  const [token, setToken] = useState<string | null>(null);
+  const [usuarioParaExibir, setUsuarioParaExibir] = useState<Usuario | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [tipo, setTipo] = useState("CLIENTE");
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
 
+  const { loggedInAdmin } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const urlToken = params.id as string;
+  const usuarioIdUrl = params.id as string;
 
   useEffect(() => {
-    if (!urlToken) {
-      setError("Token do Usuário não fornecido na URL.");
+    if (!usuarioIdUrl || !loggedInAdmin) {
+      if (!loggedInAdmin) {
+        setError("Acesso negado. Você precisa estar logado.");
+      }
       setIsLoading(false);
       return;
     }
@@ -38,40 +43,48 @@ function UpdateUsuarioContent() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await api.get<Usuario>(`/usuario/${urlToken}`);
-        const usuario = response.data;
-        setToken(usuario.token);
-        setNome(usuario.nome);
-        setEmail(usuario.email);
-        setTipo(usuario.tipo);
+        const response = await api.get<Usuario>(`/usuario/${usuarioIdUrl}`);
+        const usuarioDaApi = response.data;
+
+        setUsuarioParaExibir(usuarioDaApi);
+        setNome(usuarioDaApi.nome);
+        setEmail(usuarioDaApi.email);
+
+        if (loggedInAdmin.id === usuarioDaApi.id) {
+          setCanEdit(true);
+        } else {
+          setCanEdit(false);
+        }
+
       } catch (err: any) {
         console.error("Erro ao carregar dados do usuário:", err);
-        if (err.response?.status === 404) {
-            setError("Usuário não encontrado ou você não tem permissão para acessá-lo.");
-        } else {
-            setError("Ocorreu um erro ao buscar os dados do usuário.");
-        }
+        setError("Não foi possível carregar os dados. O usuário pode não existir.");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUsuario();
-  }, [urlToken]);
+  }, [usuarioIdUrl, loggedInAdmin]);
 
   const handleUpdateUsuario = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) {
-      setError("Token do usuário não está definido. Não é possível atualizar.");
+
+    if (!canEdit) {
+      setError("Você não tem permissão para realizar esta ação.");
       return;
     }
+
     setIsLoading(true);
     setError(null);
 
-    const data = { token, nome, email, tipo };
-
     try {
-      await api.put("/usuario", data);
+      await api.put("/usuario", {
+        id: usuarioParaExibir?.id,
+        nome,
+        email,
+        tipo: usuarioParaExibir?.tipo
+      });
       alert("Usuário atualizado com sucesso!");
       router.push("/usuario");
     } catch (err: any) {
@@ -81,17 +94,25 @@ function UpdateUsuarioContent() {
     }
   };
 
-  if (isLoading && !error) {
-    return <div className="page-container center-content"><p>Carregando dados do usuário...</p></div>;
+  if (isLoading) {
+    return <div className="page-container center-content"><p>Carregando perfil...</p></div>;
   }
 
-  if (error && !nome) {
+  if (error && !usuarioParaExibir) {
     return (
       <div className="page-container center-content">
         <p style={{ color: 'red' }}>{error}</p>
         <Link href="/usuario" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
-          Voltar para Lista de Usuários
+          Voltar para a Lista
         </Link>
+      </div>
+    );
+  }
+
+  if (!usuarioParaExibir) {
+    return (
+      <div className="page-container center-content">
+        <p>Usuário não encontrado.</p>
       </div>
     );
   }
@@ -100,20 +121,32 @@ function UpdateUsuarioContent() {
     <div className="page-container">
       <div className="editor-form-card" style={{ maxWidth: '700px' }}>
         <div className="form-header">
-          <h3>Atualização de Usuário</h3>
+          <h3>{canEdit ? "Editar Meu Perfil" : `Visualizando Perfil de ${usuarioParaExibir.nome}`}</h3>
           <Link href="/usuario" className="btn btn-outline btn-sm">Voltar</Link>
         </div>
+
+        {!canEdit && (
+          <div style={{ padding: '1rem', backgroundColor: '#f0f0f0', color: '#555', textAlign: 'center', margin: '0 1rem 1rem', borderRadius: '8px' }}>
+            <p>Este é o perfil de outro usuário. A edição não é permitida.</p>
+          </div>
+        )}
+
+        {error && <p style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
+
         <form onSubmit={handleUpdateUsuario} className="display-section">
-          {error && <p style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
           <table>
             <tbody>
               <tr>
                 <th scope="row"><label htmlFor="nome" className="form-label">Nome</label></th>
                 <td>
                   <input
-                    type="text" id="nome" value={nome}
+                    type="text"
+                    id="nome"
+                    value={nome}
                     onChange={(e) => setNome(e.target.value)}
-                    required className="input-edit-mode" disabled={isLoading}
+                    required
+                    className="input-edit-mode"
+                    disabled={!canEdit || isLoading}
                   />
                 </td>
               </tr>
@@ -121,35 +154,49 @@ function UpdateUsuarioContent() {
                 <th scope="row"><label htmlFor="email" className="form-label">Email</label></th>
                 <td>
                   <input
-                    type="email" id="email" value={email}
+                    type="email"
+                    id="email"
+                    value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required className="input-edit-mode" disabled={isLoading}
+                    required
+                    className="input-edit-mode"
+                    disabled={!canEdit || isLoading}
                   />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row"><label htmlFor="tipo" className="form-label">Tipo</label></th>
-                <td>
-                  <select
-                    id="tipo" value={tipo}
-                    onChange={(e) => setTipo(e.target.value)}
-                    required className="input-edit-mode" disabled={isLoading}
-                  >
-                    <option value="CLIENTE">Cliente</option>
-                    <option value="ADMIN">Administrador</option>
-                  </select>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div className="form-actions">
-            <button type="button" onClick={() => router.push('/usuario')} className="btn btn-secondary" disabled={isLoading}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={isLoading}>
-              {isLoading ? "Salvando..." : "Salvar Alterações"}
-            </button>
-          </div>
+
+          {canEdit && (
+            <div className="form-actions">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isLoading}
+              >
+                {isLoading ? "Salvando..." : "Salvar Alterações"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={isLoading}
+                onClick={async () => {
+                  if (confirm("Tem certeza que deseja excluir sua conta?")) {
+                    try {
+                      await api.delete(`/usuario/${usuarioParaExibir?.id}`);
+                      alert("Usuário excluído com sucesso!");
+                      router.push("/logout");
+                    } catch (err: any) {
+                      setError(err.response?.data?.message ?? "Erro ao excluir usuário!");
+                    }
+                  }
+                }}
+                style={{ marginLeft: "0.5rem" }}
+              >
+                Excluir Conta
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

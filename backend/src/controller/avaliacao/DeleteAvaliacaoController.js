@@ -1,9 +1,9 @@
-// ✅ ARQUIVO CORRIGIDO: src/controller/avaliacao/DeleteAvaliacaoController.js
+// src/controller/avaliacao/DeleteAvaliacaoController.js
 import { prisma } from '../../database/client.js';
 
 export class DeleteAvaliacaoController {
     async handle(request, response) {
-        const { id } = request.params; // Correção aqui
+        const { id } = request.params;
 
         try {
             await prisma.avaliacao.delete({

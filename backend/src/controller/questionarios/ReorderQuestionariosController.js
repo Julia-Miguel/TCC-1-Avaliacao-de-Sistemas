@@ -17,7 +17,6 @@ export class ReorderQuestionariosController {
           prisma.questionario.update({
             where: {
               id: Number(id),
-              // Segurança: Garante que o usuário só pode reordenar questionários da sua própria empresa
               criador: { empresaId: Number(empresaId) }
             },
             data: { ordem: index },

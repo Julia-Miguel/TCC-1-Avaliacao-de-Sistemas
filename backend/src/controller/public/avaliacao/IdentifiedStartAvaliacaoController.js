@@ -11,19 +11,16 @@ export class IdentifiedStartAvaliacaoController {
     }
 
     try {
-      // 1. Encontra um usuário com este e-mail ou cria um novo
-      // O 'upsert' é perfeito para isso: atualiza se existir, cria se não existir.
       const usuario = await prisma.usuario.upsert({
         where: { email: email },
-        update: { nome: nome }, // Atualiza o nome caso a pessoa use um diferente
+        update: { nome: nome },
         create: {
           nome,
           email,
-          tipo: 'CLIENTE_PLATAFORMA', // Tipo específico para respondentes
+          tipo: 'CLIENTE_PLATAFORMA',
         },
       });
 
-      // 2. Inicia a sessão de avaliação (UsuAval) para este usuário
       const usuAval = await prisma.usuAval.create({
         data: {
           avaliacaoId,
@@ -34,7 +31,6 @@ export class IdentifiedStartAvaliacaoController {
         },
       });
 
-      // 3. Busca os dados completos da avaliação para enviar ao frontend
       const avaliacaoCompleta = await prisma.avaliacao.findUnique({
         where: { id: avaliacaoId },
         include: {
@@ -52,8 +48,6 @@ export class IdentifiedStartAvaliacaoController {
       });
       
       const responseData = {
-        // ... (monta o objeto de resposta com as perguntas)
-        // (código omitido por ser igual ao do outro controller)
       };
 
       return response.status(200).json(responseData);
