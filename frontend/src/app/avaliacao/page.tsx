@@ -196,7 +196,7 @@ function ListAvaliacaoContent() {
         </div>
       ) : (
         <div className="overflow-x-auto bg-card-background dark:bg-gray-800 shadow-md rounded-lg border border-border">
-          <table className="min-w-full">
+          <table className="min-w-full responsive-table">
             <thead>
               <tr>
                 <th>ID</th>

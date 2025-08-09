@@ -37,7 +37,7 @@ usuarioRouter.post('/usuario', createUsuarioController.handle);
 // --- Rotas Protegidas (USAM authMiddleware individualmente) ---
 usuarioRouter.get('/usuario', authMiddleware, getAllUsuarioController.handle);
 usuarioRouter.get('/usuario/:id', authMiddleware, getByIdUsuarioController.handle);
-usuarioRouter.put('/usuario/:id', authMiddleware, updateUsuarioController.handle);
+usuarioRouter.put('/usuario', authMiddleware, updateUsuarioController.handle);
 usuarioRouter.delete('/usuario/:id', authMiddleware, deleteUsuarioController.handle);
 
 export { usuarioRouter };

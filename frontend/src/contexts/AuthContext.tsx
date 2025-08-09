@@ -1,14 +1,14 @@
 // frontend/src/contexts/AuthContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 
-// Interface
 interface AdminUser {
-  id: number; // AQUI: Alterado de 'usuarioId' para 'id' para corresponder à API
+  id: number;
   empresaId: number;
+  token: string;
   tipo: string;
   nome: string;
   email: string;
@@ -40,10 +40,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoggedInAdmin(user);
       } catch (error) {
         console.error("Falha ao carregar dados de autenticação do localStorage", error);
-        localStorage.clear(); // Limpa tudo se os dados estiverem corrompidos
+        localStorage.clear();
       }
     }
-    setIsLoading(false); // Finaliza o carregamento inicial
+    setIsLoading(false);
   }, []);
 
   const loginAdmin = useCallback((user: AdminUser, token: string) => {
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('adminUser', JSON.stringify(user));
     api.defaults.headers.Authorization = `Bearer ${token}`;
     setLoggedInAdmin(user);
-    router.push('/'); // Redireciona para a página principal após o login
+    router.push('/');
   }, [router]);
 
   const logoutAdmin = useCallback(() => {
@@ -59,15 +59,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('adminUser');
     delete api.defaults.headers.Authorization;
     setLoggedInAdmin(null);
-    router.push('/empresas/login'); // Volta para o início do fluxo de login
+    router.push('/empresas/login');
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ loggedInAdmin, isLoading, loginAdmin, logoutAdmin }}>
+    <AuthContext.Provider
+      value={useMemo(
+        () => ({
+          loggedInAdmin,
+          isLoading,
+          loginAdmin,
+          logoutAdmin,
+        }),
+        [loggedInAdmin, isLoading, loginAdmin, logoutAdmin]
+      )}
+    >
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
 // Hook para usar o contexto
 export const useAuth = (): AuthContextType => {

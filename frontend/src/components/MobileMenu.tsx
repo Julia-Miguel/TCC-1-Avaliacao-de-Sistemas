@@ -1,54 +1,82 @@
-// frontend/src/components/MobileMenu.tsx
+// frontend/src/components/menu/MobileMenu.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Menu } from "lucide-react";
-import SideMenu from "./SideMenu"; // Reutilizamos o SideMenu!
+import Draggable from "react-draggable";
+import SideMenu from "./SideMenu";
 import ApplicationLogo from "./ApplicationLogo";
-import Link from "next/link";
 import "./SideMenu.css";
-
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  // 1. A posição agora sempre começará em {x: 0, y: 0}
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const nodeRef = useRef(null);
 
-  // Função para fechar o menu, que será passada para o SideMenu
-  const closeMenu = () => setIsOpen(false);
+  // 2. O useEffect que carregava a posição foi REMOVIDO.
+
+  const toggleMenu = () => setIsOpen((prev) => !prev);
+
+  const handleDragStart = (e: any, data: { x: number; y: number }) => {
+    setDragStartPos({ x: data.x, y: data.y });
+  };
+
+  const handleDragStop = (e: any, data: { x: number; y: number }) => {
+    const newPosition = { x: data.x, y: data.y };
+    
+    // 3. A linha que salvava no localStorage foi REMOVIDA.
+    // A posição só é atualizada no estado do componente.
+    setPosition(newPosition);
+
+    const deltaX = Math.abs(data.x - dragStartPos.x);
+    const deltaY = Math.abs(data.y - dragStartPos.y);
+
+    if (deltaX < 5 && deltaY < 5) {
+      toggleMenu();
+    }
+  };
 
   return (
     <>
-      {/* Barra superior fixa */}
-      <header className="mobile-header">
-        <Link href="/dashboard" className="mobile-header-logo-link">
-          <ApplicationLogo className="block h-8 w-auto text-primary" />
-          <span className="mobile-header-title">Q+</span>
-        </Link>
+      <Draggable
+        nodeRef={nodeRef}
+        position={position}
+        onStart={handleDragStart}
+        onStop={handleDragStop}
+        bounds="parent"
+      >
         <button
-          onClick={() => setIsOpen(true)}
-          className="mobile-header-button"
-          aria-label="Abrir menu"
+          ref={nodeRef}
+          className="fixed top-4 left-4 z-[1100] p-2 rounded-md bg-white shadow-md text-gray-700 hover:bg-gray-100 transition-colors md:hidden cursor-grab active:cursor-grabbing"
+          aria-label="Abrir ou mover menu"
         >
           <Menu size={24} />
         </button>
-      </header>
+      </Draggable>
 
-      {/* Overlay que aparece quando o menu está aberto */}
-      {isOpen && (
-        <div className="mobile-menu-overlay" onClick={closeMenu}>
-          <div
-            className="mobile-menu-drawer"
-            onClick={(e) => e.stopPropagation()} // Evita que o clique dentro do menu o feche
-          >
-            {/* O SideMenu é renderizado aqui dentro! */}
-            <SideMenu
-              collapsed={false}
-              setCollapsed={() => {}} // Não precisamos da função de recolher no mobile
-              isMobile={true} // Prop para indicar o modo móvel
-              onCloseMenu={closeMenu} // Passamos a função para fechar
-            />
-          </div>
+      {/* O resto do componente permanece igual */}
+      <div
+        className={`mobile-overlay ${isOpen ? "open" : ""}`}
+        onClick={toggleMenu}
+      ></div>
+
+      <div
+        className={`mobile-drawer ${isOpen ? "open" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="drawer-header">
+          <ApplicationLogo className="block h-10 w-auto text-primary mb-4" />
         </div>
-      )}
+
+        <SideMenu
+          collapsed={false}
+          setCollapsed={() => {}}
+          isMobile={true}
+          onCloseMenu={toggleMenu}
+        />
+      </div>
     </>
   );
 }

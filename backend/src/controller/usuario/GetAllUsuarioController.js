@@ -16,6 +16,7 @@ export class GetAllUsuarioController {
         },
         select: {
           id: true,
+          token: true,
           nome: true,
           email: true,
           tipo: true,

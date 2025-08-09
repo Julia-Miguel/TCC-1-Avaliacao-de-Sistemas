@@ -3,40 +3,25 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
-const ADMIN_EMAIL = 'eu@gmail.com';
+const EMPRESA_ID = 244; // ID da empresa a ser populada
 
 async function main() {
   console.log('🌱 Iniciando o processo de seeding...');
 
-  const adminUser = await prisma.usuario.findUnique({
-    where: { email: ADMIN_EMAIL },
+  // Busca o primeiro usuário dessa empresa (pode ajustar para buscar admin específico)
+  const adminUser = await prisma.usuario.findFirst({
+    where: { empresaId: EMPRESA_ID },
     include: { empresa: true },
   });
 
-  if (!adminUser || !adminUser.empresa) {
-    console.error(`❌ Admin "${ADMIN_EMAIL}" não encontrado ou sem empresa.`);
+  if (!adminUser) {
+    console.error(`❌ Nenhum usuário encontrado para a empresa ID ${EMPRESA_ID}.`);
     process.exit(1);
   }
 
   const empresaId = adminUser.empresaId;
 
-  // LIMPEZA DOS DADOS TRANSACIONAIS
-  console.log('🧹 Limpando dados antigos...');
-  await prisma.resposta.deleteMany({});
-  await prisma.usuAval.deleteMany({});
-  await prisma.avaliacao.deleteMany({});
-  await prisma.opcao.deleteMany({});
-  const qs = await prisma.questionario.findMany({
-    where: { criador: { empresaId } }, select: { id: true }
-  });
-  const idsQs = qs.map(q => q.id);
-  if (idsQs.length > 0) {
-    await prisma.quePerg.deleteMany({ where: { questionarioId: { in: idsQs } } });
-    await prisma.pergunta.deleteMany({
-      where: { questionarios: { some: { questionarioId: { in: idsQs } } } }
-    });
-    await prisma.questionario.deleteMany({ where: { id: { in: idsQs } } });
-  }
+  console.log(`🏢 Populando dados para a empresa ID ${empresaId} (${adminUser.empresa.nome})`);
 
   // FUNÇÃO AUXILIAR PARA CRIAR QUESTIONÁRIO
   async function criarQuestionario({ titulo, perguntas, totalRespostas = 5 }) {
@@ -60,7 +45,7 @@ async function main() {
             : undefined,
         },
         include: {
-          opcoes: true, // importante para usar nas respostas
+          opcoes: true,
         }
       });
 
@@ -112,8 +97,7 @@ async function main() {
     console.log(`✅ Criado: ${titulo} (${totalRespostas} respostas)`);
   }
 
-
-  // CRIAR VÁRIOS QUESTIONÁRIOS
+  // CRIAR QUESTIONÁRIOS
   await criarQuestionario({
     titulo: 'Satisfação com o Evento Anual',
     totalRespostas: 50,
@@ -134,7 +118,6 @@ async function main() {
       },
     ]
   });
-
 
   await criarQuestionario({
     titulo: 'Avaliação Interna dos Funcionários',

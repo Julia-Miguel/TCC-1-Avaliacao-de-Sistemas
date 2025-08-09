@@ -54,11 +54,15 @@ export default function SideMenu({
     }
   };
 
-  const buttonTitle = isMobile
-    ? "Fechar menu"
-    : collapsed
-    ? "Expandir menu"
-    : "Recolher menu";
+  let buttonTitle: string;
+
+  if (isMobile) {
+    buttonTitle = "Fechar menu";
+  } else if (collapsed) {
+    buttonTitle = "Expandir menu";
+  } else {
+    buttonTitle = "Recolher menu";
+  }
 
   return (
     <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
@@ -106,7 +110,7 @@ export default function SideMenu({
             </button>
             <div className={`user-profile-menu ${userMenuOpen ? "open" : ""}`}>
               <Link
-                href={`/usuario/update/${loggedInAdmin.id}`}
+                href={`/usuario/update/${loggedInAdmin.token}`}
                 className="profile-menu-item"
               >
                 <UserCog size={16} className="mr-2" />

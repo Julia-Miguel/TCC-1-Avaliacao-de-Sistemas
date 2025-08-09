@@ -30,6 +30,7 @@ model Empresa {
 
 model Usuario {
   id                   Int            @id @default(autoincrement())
+  token                String   @unique @default(uuid())
   nome                 String?
   email                String         @unique
   senha                String?
@@ -128,10 +129,8 @@ model QuePerg {
   id             Int          @id @default(autoincrement())
   questionarioId Int
   perguntaId     Int
-  ordem          Int          @default(0) // Ordem da pergunta dentro do questionário
-  // ✅ CORREÇÃO: Deletar esta associação quando o questionário for deletado
+  ordem          Int          @default(0)
   questionario   Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
-  // ✅ CORREÇÃO: Deletar esta associação quando a pergunta for deletada
   pergunta       Pergunta     @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
@@ -144,7 +143,6 @@ model Resposta {
   usuAvalId  Int
   perguntaId Int
   resposta   String
-  // ✅ CORREÇÃO: Deletar esta resposta quando a participação for deletada
   usuAval    UsuAval  @relation(fields: [usuAvalId], references: [id], onDelete: Cascade)
   pergunta   Pergunta @relation(fields: [perguntaId], references: [id])
   created_at DateTime @default(now())

@@ -5,8 +5,9 @@ import api from "@/services/api";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import "../../globals.css";
+import "../../teste.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
-import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, TrendingDown, TrendingUpDown, FileText, CheckSquare, Users, Loader2, Filter } from "lucide-react";
+import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, TrendingDown, TrendingUpDown, FileText, CheckSquare, Users, Loader2, Filter, Clock } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
 import { WordCloud } from "@/components/dashboard/WordCloud";
@@ -23,12 +24,14 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableItem } from '@/components/SortableItem';
+import { div } from "framer-motion/client";
 
 interface KpiData {
     totalAvaliacoes: number;
     totalRespondentes: number;
     totalFinalizados: number;
     taxaDeConclusao: number;
+    estimatedTime: string;
 }
 interface GraficoData {
     perguntaId: number;
@@ -159,6 +162,17 @@ function EditQuestionarioFormContent() {
     };
 
     useEffect(() => {
+        if (isModalAberto) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [isModalAberto]);
+
+    useEffect(() => {
         if (viewMode === 'analise' && questionarioId) {
             setIsLoadingDashboard(true);
 
@@ -232,43 +246,43 @@ function EditQuestionarioFormContent() {
         }));
     }
 
-// CÓDIGO CORRIGIDO
-useEffect(() => {
-    if (!questionarioId) {
-        setError("ID do Questionário não encontrado na URL.");
-        setIsLoading(false);
-        return;
-    }
-    setIsLoading(true);
-    setError(null);
-    const loadData = async () => {
-        try {
-            // A busca de dados do questionário (para a aba 'editar') continua a mesma
-            const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
-            setTitulo(respQuestionario.data.titulo);
-            const sortedQuePergs = (respQuestionario.data.perguntas || []).sort((a, b) => a.ordem - b.ordem);
-            setQuePergs(sanitizeQuePergs(sortedQuePergs));
-
-            const respAvaliacoes = await api.get<{ titulo: string, avaliacoes: AvaliacaoComDetalhes[] }>(`/questionarios/${questionarioId}/avaliacoes-com-respostas`);
-            
-            // Usamos o array 'avaliacoes' de dentro do objeto da resposta
-            setAvaliacoesComRespostas(respAvaliacoes.data.avaliacoes || []);
-
-        } catch (err: any) {
-            console.error("Erro ao carregar dados do questionário:", err);
-            if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-                setError("Acesso não autorizado ou negado. Faça o login novamente.");
-            } else if (err.response && err.response.status === 404) {
-                setError("Questionário não encontrado. Verifique o ID ou se ele pertence à sua empresa.");
-            } else {
-                setError("Não foi possível carregar os dados. Tente novamente.");
-            }
-        } finally {
+    // CÓDIGO CORRIGIDO
+    useEffect(() => {
+        if (!questionarioId) {
+            setError("ID do Questionário não encontrado na URL.");
             setIsLoading(false);
+            return;
         }
-    };
-    loadData();
-}, [questionarioId]);
+        setIsLoading(true);
+        setError(null);
+        const loadData = async () => {
+            try {
+                // A busca de dados do questionário (para a aba 'editar') continua a mesma
+                const respQuestionario = await api.get<QuestionarioData>(`/questionarios/${questionarioId}`);
+                setTitulo(respQuestionario.data.titulo);
+                const sortedQuePergs = (respQuestionario.data.perguntas || []).sort((a, b) => a.ordem - b.ordem);
+                setQuePergs(sanitizeQuePergs(sortedQuePergs));
+
+                const respAvaliacoes = await api.get<{ titulo: string, avaliacoes: AvaliacaoComDetalhes[] }>(`/questionarios/${questionarioId}/avaliacoes-com-respostas`);
+
+                // Usamos o array 'avaliacoes' de dentro do objeto da resposta
+                setAvaliacoesComRespostas(respAvaliacoes.data.avaliacoes || []);
+
+            } catch (err: any) {
+                console.error("Erro ao carregar dados do questionário:", err);
+                if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+                    setError("Acesso não autorizado ou negado. Faça o login novamente.");
+                } else if (err.response && err.response.status === 404) {
+                    setError("Questionário não encontrado. Verifique o ID ou se ele pertence à sua empresa.");
+                } else {
+                    setError("Não foi possível carregar os dados. Tente novamente.");
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadData();
+    }, [questionarioId]);
 
     const handlePerguntaChange = (qIndex: number, novoEnunciado: string) => {
         setQuePergs(prevQuePergs =>
@@ -484,9 +498,7 @@ useEffect(() => {
         return (
             <div className="page-container center-content">
                 <p className="error-message">{error}</p>
-                <Link href="/questionarios" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
-                    Voltar para Lista de Questionários
-                </Link>
+                <Link href="/questionarios" className="btn btn-secondary mt-4">Voltar</Link>
             </div>
         );
     }
@@ -560,38 +572,45 @@ useEffect(() => {
 
     return (
         <div className="page-container">
-            <div className="mb-6 flex space-x-2 border-b border-border pb-2">
+            {/* --- NAVEGAÇÃO COMPACTA PARA MOBILE --- */}
+            <div className="mb-6 flex flex-wrap justify-center sm:justify-start gap-2 border-b border-border pb-2 pt-2">
                 <button
                     onClick={() => { setViewMode('editar'); setSelectedAvaliacaoId(null); }}
                     className={`btn ${viewMode === 'editar' ? 'btn-primary' : 'btn-outline'}`}
                 >
-                    Configurar Perguntas
+                    {/* Texto condicional para o botão */}
+                    <span className="sm:hidden">Configurar</span>
+                    <span className="hidden sm:inline">Configurar Perguntas</span>
                 </button>
                 <button
                     onClick={() => { setViewMode('respostas'); setSelectedAvaliacaoId(null); }}
                     className={`btn ${viewMode === 'respostas' ? 'btn-primary' : 'btn-outline'}`}
                 >
-                    Visualizar Respostas
+                    {/* Texto condicional para o botão */}
+                    <span className="sm:hidden">Respostas</span>
+                    <span className="hidden sm:inline">Visualizar Respostas</span>
                 </button>
                 <button
                     onClick={() => setViewMode('analise')}
                     className={`btn ${viewMode === 'analise' ? 'btn-primary' : 'btn-outline'}`}
                 >
-                    Análise / Dashboard
+                    {/* Texto condicional para o botão */}
+                    <span className="sm:hidden">Dashboard</span>
+                    <span className="hidden sm:inline">Análise / Dashboard</span>
                 </button>
             </div>
 
             {viewMode === 'editar' && (
                 <form onSubmit={handleSaveChanges} className="editor-form-card">
-                    <div className="form-header">
-                        <h3>Editando Questionário: {titulo || "..."}</h3>
-                        <div className="form-header-actions">
+                    <div className="form-header flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <h3 className="text-xl font-semibold break-words">Editando Questionário: {titulo || "..."}</h3>
+                        <div className="form-header-actions flex w-full flex-wrap justify-start gap-2 sm:w-auto sm:justify-end">
                             <button type="button" onClick={() => setIsModalAberto(true)} className="btn btn-secondary">
                                 Automatizar
                             </button>
                             <button type="button" onClick={() => router.push("/questionarios")} className="btn btn-secondary" disabled={isLoading}>Cancelar</button>
                             <button type="submit" className="btn btn-primary" disabled={isLoading}>
-                                {isLoading ? "Salvando..." : "Salvar Alterações"}
+                                {isLoading ? "Salvando..." : "Salvar"}
                             </button>
                         </div>
                     </div>
@@ -610,7 +629,7 @@ useEffect(() => {
                     </div>
 
                     <div className="display-section">
-                        <label className="form-label mb-1" htmlFor="perguntas-do-questionario">Perguntas do Questionário</label>
+                        <label className="form-label mb-1" id="perguntas-do-questionario">Perguntas do Questionário</label>
                         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                             <SortableContext items={quePergs.map(qp => qp.pergunta.id ?? qp.pergunta.tempId).filter(Boolean) as (string | number)[]} strategy={verticalListSortingStrategy}>
                                 {quePergs.map((qp, qIndex) => (
@@ -624,10 +643,10 @@ useEffect(() => {
                                                 placeholder={`Enunciado da Pergunta ${qIndex + 1}`}
                                                 required
                                             />
-                                            <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                                                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                                            <div className="mt-4 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+                                                <div className="flex w-full flex-wrap items-center gap-x-6 gap-y-3 md:w-auto">
                                                     <div className="flex items-center gap-x-2">
-                                                        <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label text-sm font-medium whitespace-nowrap mb-0">
+                                                        <label htmlFor={`tipo-pergunta-${qIndex}`} className="form-label whitespace-nowrap mb-0 text-sm font-medium">
                                                             Tipo:
                                                         </label>
                                                         <select
@@ -643,7 +662,7 @@ useEffect(() => {
                                                         </select>
                                                     </div>
                                                     <div className="flex items-center">
-                                                        <label htmlFor={`obrigatoria-pergunta-${qIndex}`} className="form-label flex items-center gap-2 cursor-pointer whitespace-nowrap mb-0">
+                                                        <label htmlFor={`obrigatoria-pergunta-${qIndex}`} className="form-label mb-0 flex cursor-pointer items-center gap-2 whitespace-nowrap">
                                                             <input
                                                                 type="checkbox"
                                                                 id={`obrigatoria-pergunta-${qIndex}`}
@@ -655,7 +674,7 @@ useEffect(() => {
                                                         </label>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center">
+                                                <div className="flex items-center self-end md:self-center">
                                                     <button
                                                         type="button"
                                                         onClick={() => removePergunta(qIndex)}
@@ -669,10 +688,7 @@ useEffect(() => {
                                             </div>
                                             {qp.pergunta.tipos === 'MULTIPLA_ESCOLHA' && (
                                                 <div className="opcoes-editor-container">
-                                                    <label
-                                                        className="form-label"
-                                                        htmlFor={`opcao-q${qIndex}-o0`}
-                                                    >
+                                                    <label className="form-label" htmlFor={`opcao-q${qIndex}-o0`}>
                                                         Opções de Resposta
                                                     </label>
                                                     {qp.pergunta.opcoes.map((opt, oIndex) => (
@@ -688,23 +704,12 @@ useEffect(() => {
                                                                 disabled={isLoading}
                                                                 required={qp.pergunta.tipos === 'MULTIPLA_ESCOLHA'}
                                                             />
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeOption(qIndex, oIndex)}
-                                                                className="btn-remover-opcao"
-                                                                title="Remover Opção"
-                                                                disabled={isLoading}
-                                                            >
+                                                            <button type="button" onClick={() => removeOption(qIndex, oIndex)} className="btn-remover-opcao" title="Remover Opção" disabled={isLoading}>
                                                                 <Trash2 size={18} />
                                                             </button>
                                                         </div>
                                                     ))}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => addOptionToList(qIndex)}
-                                                        className="btn btn-outline btn-sm mt-2 flex items-center self-start"
-                                                        disabled={isLoading}
-                                                    >
+                                                    <button type="button" onClick={() => addOptionToList(qIndex)} className="btn btn-outline btn-sm mt-2 flex items-center self-start" disabled={isLoading}>
                                                         <PlusIcon size={16} className="mr-1" /> Adicionar Opção
                                                     </button>
                                                 </div>
@@ -724,11 +729,11 @@ useEffect(() => {
             {viewMode === 'respostas' && (
                 <div className="respostas-view-container mt-6">
                     <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-6">
-                        Respostas para o Questionário: <span className="text-primary">{titulo}</span>
+                        Respostas para o Questionário: <span className="text-primary break-words">{titulo}</span>
                     </h3>
 
-                    {!isLoading && Object.keys(avaliacoesAgrupadasPorSemestre).length === 0 && !error && (
-                        <div className="text-center py-10 ..."><p className="text-text-muted">Carregando respostas...</p></div>
+                    {isLoading && Object.keys(avaliacoesAgrupadasPorSemestre).length === 0 && !error && (
+                        <div className="text-center py-10"><p className="text-text-muted">Carregando respostas...</p></div>
                     )}
                     {error && !isLoadingRespostas && <div className="text-center py-10"><p className="text-red-600 dark:text-red-400">{error}</p></div>}
 
@@ -743,38 +748,25 @@ useEffect(() => {
 
                     {selectedAvaliacaoDetalhes && (
                         <div className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
-                            <button
-                                onClick={() => setSelectedAvaliacaoId(null)}
-                                className="btn btn-outline btn-sm mb-6 inline-flex items-center"
-                            >
+                            <button onClick={() => setSelectedAvaliacaoId(null)} className="btn btn-outline btn-sm mb-6 inline-flex items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
                                 Voltar para Lista de Avaliações
                             </button>
-                            <h4 className="text-xl font-semibold text-primary mb-1">
-                                {selectedAvaliacaoDetalhes.semestre}
-                            </h4>
-                            <p className="text-sm text-text-muted mb-4">
-                                ID da Avaliação: {selectedAvaliacaoDetalhes.id} - Requer Login: {selectedAvaliacaoDetalhes.requerLoginCliente ? "Sim" : "Não"}
-                            </p>
-
-                            {selectedAvaliacaoDetalhes.usuarios.length === 0 && (
-                                <p className="text-text-muted py-4">Nenhuma resposta submetida para esta avaliação.</p>
-                            )}
-
+                            <h4 className="text-xl font-semibold text-primary mb-1">{selectedAvaliacaoDetalhes.semestre}</h4>
+                            <p className="text-sm text-text-muted mb-4">ID da Avaliação: {selectedAvaliacaoDetalhes.id} - Requer Login: {selectedAvaliacaoDetalhes.requerLoginCliente ? "Sim" : "Não"}</p>
+                            {selectedAvaliacaoDetalhes.usuarios.length === 0 && <p className="text-text-muted py-4">Nenhuma resposta submetida para esta avaliação.</p>}
                             <div className="space-y-6">
                                 {selectedAvaliacaoDetalhes.usuarios.map(respondente => (
                                     <div key={respondente.id} className="p-4 border border-border rounded-md bg-page-bg dark:bg-gray-800/50">
-                                        <p className="text-md font-medium text-foreground">
+                                        <p className="text-md font-medium text-foreground break-words">
                                             Respondente: {respondente.usuario ? `${respondente.usuario.nome} (${respondente.usuario.email})` : `Anônimo (Sessão: ...${respondente.anonymousSessionId?.slice(-6)})`}
                                         </p>
-                                        <p className="text-xs text-text-muted mb-3">
-                                            Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}
-                                        </p>
+                                        <p className="text-xs text-text-muted mb-3">Status: {respondente.status} ({respondente.isFinalizado ? "Finalizado" : "Em Andamento"}) - Em: {new Date(respondente.created_at).toLocaleString('pt-BR')}</p>
                                         <ul className="space-y-3">
                                             {respondente.respostas.map(resp => (
                                                 <li key={resp.id} className="text-sm">
-                                                    <strong className="block text-text-muted mb-0.5">{resp.pergunta.enunciado}</strong>
-                                                    <span className="text-foreground pl-1">{resp.resposta}</span>
+                                                    <strong className="block text-text-muted mb-0.5 break-words">{resp.pergunta.enunciado}</strong>
+                                                    <span className="text-foreground pl-1 break-words">{resp.resposta}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -788,39 +780,19 @@ useEffect(() => {
                         <div className="space-y-8">
                             {Object.entries(avaliacoesAgrupadasPorSemestre).map(([semestre, avaliacoesDoSemestre]) => (
                                 <div key={semestre} className="bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border">
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleSemestreExpandido(semestre)}
-                                        className="w-full flex justify-between items-center text-left py-2"
-                                        aria-expanded={semestresExpandidos.has(semestre) ? "true" : "false"}
-                                    >
-                                        <h4 className="text-lg font-semibold text-primary flex items-center">
-                                            <CalendarDays size={20} className="mr-2 text-primary/80" />
-                                            Semestre: {semestre}
-                                        </h4>
+                                    <button type="button" onClick={() => toggleSemestreExpandido(semestre)} className="w-full flex justify-between items-center text-left py-2" aria-expanded={semestresExpandidos.has(semestre)}>
+                                        <h4 className="text-lg font-semibold text-primary flex items-center"><CalendarDays size={20} className="mr-2 text-primary/80" />Semestre: {semestre}</h4>
                                         {semestresExpandidos.has(semestre) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                                     </button>
-
                                     {semestresExpandidos.has(semestre) && (
                                         <div className="mt-4 space-y-3 pl-2 border-l-2 border-primary/30">
                                             {avaliacoesDoSemestre.map(av => (
-                                                <button
-                                                    key={av.id}
-                                                    type="button"
-                                                    className="p-3 border border-border rounded-md hover:bg-page-bg dark:hover:bg-gray-700/40 cursor-pointer transition-colors duration-150 w-full text-left"
-                                                    onClick={() => setSelectedAvaliacaoId(av.id)}
-                                                >
-                                                    <p className="font-medium text-foreground">
-                                                        Avaliação ID: {av.id}
-                                                        <span className="text-xs text-text-muted ml-2">
-                                                            (Criada em: {new Date(av.created_at).toLocaleDateString('pt-BR')})
-                                                        </span>
-                                                    </p>
-                                                    <div className="text-sm text-text-muted flex items-center mt-1">
-                                                        <Users size={14} className="mr-1.5 text-text-muted/80" />
-                                                        {av._count?.usuarios ?? 0} respondente(s)
-                                                        <span className="mx-2">|</span>
-                                                        <span>Requer Login: {av.requerLoginCliente ? "Sim" : "Não"}</span>
+                                                <button key={av.id} type="button" className="p-3 border border-border rounded-md hover:bg-page-bg dark:hover:bg-gray-700/40 cursor-pointer transition-colors duration-150 w-full text-left" onClick={() => setSelectedAvaliacaoId(av.id)}>
+                                                    <p className="font-medium text-foreground break-words">Avaliação ID: {av.id} <span className="text-xs text-text-muted ml-2">(Criada em: {new Date(av.created_at).toLocaleDateString('pt-BR')})</span></p>
+                                                    <div className="text-sm text-text-muted flex items-center flex-wrap gap-x-2 gap-y-1 mt-1">
+                                                        <span className="flex items-center"><Users size={14} className="mr-1.5 text-text-muted/80" />{av._count?.usuarios ?? 0} respondente(s)</span>
+                                                        <span className="mx-2 hidden sm:inline">|</span>
+                                                        <span className="flex items-center">Requer Login: {av.requerLoginCliente ? "Sim" : "Não"}</span>
                                                     </div>
                                                 </button>
                                             ))}
@@ -837,86 +809,40 @@ useEffect(() => {
                 <div className="space-y-8">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                         <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
-                            Análise do Questionário: <span className="text-primary">{titulo}</span>
+                            Análise do Questionário: <span className="text-primary break-words">{titulo}</span>
                         </h3>
-
-                        {/* Filtro de Semestre */}
                         <div className="form-group flex items-center gap-2">
-                            <label htmlFor="semestre-filter" className="form-label mb-0 flex-shrink-0">
-                                <Filter size={16} className="mr-1.5" />Filtrar:
-                            </label>
-                            <select
-                                id="semestre-filter"
-                                className="input-edit-mode"
-                                value={selectedSemestre}
-                                onChange={e => setSelectedSemestre(e.target.value)}
-                                disabled={availableSemestres.length <= 1 || isLoadingDashboard}
-                            >
-                                {availableSemestres.map(s => (
-                                    <option key={s} value={s}>{s === 'todos' ? 'Todos os Semestres' : s}</option>
-                                ))}
+                            <label htmlFor="semestre-filter" className="form-label mb-0 flex-shrink-0"><Filter size={16} className="mr-1.5" />Filtrar:</label>
+                            <select id="semestre-filter" className="input-edit-mode" value={selectedSemestre} onChange={e => setSelectedSemestre(e.target.value)} disabled={availableSemestres.length <= 1 || isLoadingDashboard}>
+                                {availableSemestres.map(s => <option key={s} value={s}>{s === 'todos' ? 'Todos os Semestres' : s}</option>)}
                             </select>
                         </div>
                     </div>
 
                     {isLoadingDashboard && <div className="text-center p-10"><p className="text-text-muted">Carregando análise...</p></div>}
-                    {!isLoadingDashboard && !dashboardData && (
-                        <div className="text-center p-10">Não há dados para analisar ou os dados estão incompletos.</div>
-                    )}
-
+                    {!isLoadingDashboard && !dashboardData && <div className="text-center p-10">Não há dados para analisar ou os dados estão incompletos.</div>}
                     {!isLoadingDashboard && dashboardData && (
                         <>
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
                                 <StatCard title="Total de Avaliações" value={dashboardData.kpis.totalAvaliacoes} icon={FileText} color="text-indigo-500" bgColor="bg-indigo-50 dark:bg-indigo-700/30" />
                                 <StatCard title="Total de Respondentes" value={dashboardData.kpis.totalRespondentes} icon={Users} color="text-blue-500" bgColor="bg-blue-50 dark:bg-blue-700/30" />
                                 <StatCard title="Respostas Finalizadas" value={dashboardData.kpis.totalFinalizados} icon={CheckSquare} color="text-green-500" bgColor="bg-green-50 dark:bg-green-700/30" />
-                                {(() => {
-                                    const taxa = dashboardData.kpis.taxaDeConclusao;
-                                    const { icon, color, bg } = getCompletionIcon(taxa);
-                                    return (
-                                        <StatCard
-                                            title="Taxa de Conclusão"
-                                            value={`${taxa}%`}
-                                            icon={icon}
-                                            color={color}
-                                            bgColor={bg}
-                                        />
-                                    );
-                                })()}                            </div>
-
+                                <StatCard title="Tempo Estimado" value={dashboardData.kpis.estimatedTime} icon={Clock} color="text-purple-500" bgColor="bg-purple-50 dark:bg-purple-700/30" />
+                                {(() => { const { icon, color, bg } = getCompletionIcon(dashboardData.kpis.taxaDeConclusao); return <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={icon} color={color} bgColor={bg} />; })()}
+                            </div>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {dashboardData.graficos.map(grafico => (
-                                    <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />
-                                ))}
-
+                                {dashboardData.graficos.map(grafico => <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />)}
                                 {dashboardData.textQuestions.length > 0 && (
-                                    <div className={`bg-card-background dark:bg-gray-800 p-6 rounded-lg shadow border border-border ${dashboardData.graficos.length % 2 !== 0 ? 'lg:col-span-2' : ''
-                                        }`}>
+                                    <div className={`bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border ${dashboardData.graficos.length % 2 !== 0 ? 'lg:col-span-2' : ''}`}>
                                         <div className="form-group mb-4">
                                             <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
-                                            <select
-                                                id="text-question-select-specific"
-                                                className="input-edit-mode w-full mt-1"
-                                                value={selectedTextQuestion}
-                                                onChange={e => setSelectedTextQuestion(e.target.value)}
-                                                disabled={isLoadingWordCloud}
-                                            >
-                                                {dashboardData.textQuestions.map(q => (
-                                                    <option key={q.id} value={q.id}>
-                                                        {q.enunciado}
-                                                    </option>
-                                                ))}
+                                            <select id="text-question-select-specific" className="input-edit-mode w-full mt-1" value={selectedTextQuestion} onChange={e => setSelectedTextQuestion(e.target.value)} disabled={isLoadingWordCloud}>
+                                                {dashboardData.textQuestions.map(q => <option key={q.id} value={q.id}>{q.enunciado}</option>)}
                                             </select>
                                         </div>
                                         <div className="bg-white dark:bg-gray-100 p-4 rounded-md shadow-inner">
-                                            <div className="w-full h-80">
-                                                {isLoadingWordCloud ? (
-                                                    <div className="flex justify-center items-center h-full">
-                                                        <Loader2 className="animate-spin h-8 w-8 text-primary" />
-                                                    </div>
-                                                ) : (
-                                                    <WordCloud words={wordCloudData} title="" />
-                                                )}
+                                            <div className="w-full h-72 md:h-80">
+                                                {isLoadingWordCloud ? <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div> : <WordCloud words={wordCloudData} title="" />}
                                             </div>
                                         </div>
                                     </div>
@@ -926,80 +852,38 @@ useEffect(() => {
                     )}
                 </div>
             )}
+
             {isModalAberto && (
                 <div className="modal-backdrop">
                     <div className="modal-content">
                         <h3 className="text-xl font-semibold text-foreground mb-4">Automatizar Opções de Múltipla Escolha</h3>
-
-                        {/* Opções mestras */}
                         <div className="mb-6">
                             <h4 className="form-label">Opções Mestras:</h4>
                             {opcoesMestras.map((opcao, index) => (
                                 <div key={opcao.tempId} className="flex items-center gap-2 mb-2">
-                                    <input
-                                        type="text"
-                                        className="input-edit-mode flex-1"
-                                        placeholder={`Opção ${index + 1}`}
-                                        value={opcao.texto}
-                                        onChange={(e) => handleOpcaoMestraChange(index, e.target.value)}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeOpcaoMestra(index)}
-                                        className="btn btn-danger btn-sm"
-                                    >
-                                        Remover
-                                    </button>
+                                    <input type="text" className="input-edit-mode flex-1" placeholder={`Opção ${index + 1}`} value={opcao.texto} onChange={(e) => handleOpcaoMestraChange(index, e.target.value)} />
+                                    <button type="button" onClick={() => removeOpcaoMestra(index)} className="btn btn-danger btn-sm">Remover</button>
                                 </div>
                             ))}
-                            <button
-                                type="button"
-                                onClick={addOpcaoMestra}
-                                className="btn btn-outline btn-sm mt-2"
-                            >
-                                + Adicionar Opção
-                            </button>
+                            <button type="button" onClick={addOpcaoMestra} className="btn btn-outline btn-sm mt-2">+ Adicionar Opção</button>
                         </div>
-
-                        {/* Seletor de perguntas */}
                         <div className="mb-6">
                             <h4 className="form-label">Replicar em:</h4>
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                                 {quePergs.map((qp, index) => {
-                                    const id = qp.pergunta.id ?? qp.pergunta.tempId;
-                                    if (!id) return null;
-
+                                    const id = qp.pergunta.id ?? qp.pergunta.tempId; if (!id) return null;
                                     return (
                                         <label key={id} className="flex items-start gap-2 text-sm leading-relaxed">
-                                            <input
-                                                type="checkbox"
-                                                checked={perguntasSelecionadas.has(id)}
-                                                onChange={() => toggleSelecaoPergunta(id)}
-                                                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary shrink-0"
-                                            />
+                                            <input type="checkbox" checked={perguntasSelecionadas.has(id)} onChange={() => toggleSelecaoPergunta(id)} className="mt-1 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary" />
                                             <span className="break-words">{qp.pergunta.enunciado || `Pergunta ${index + 1}`}</span>
                                         </label>
                                     );
                                 })}
                             </div>
                         </div>
-
-                        {/* Ações */}
-                        <div className="flex justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsModalAberto(false)}
-                                className="btn btn-secondary"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleConfirmarAutomacao}
-                                className="btn btn-primary"
-                            >
-                                Confirmar e Aplicar
-                            </button>
+                        <div className="flex flex-wrap justify-end gap-3">
+                            <button type="button" onClick={() => setIsModalAberto(false)} className="btn btn-secondary">Cancelar</button>
+                            <button type="button" onClick={handleConfirmarAutomacao} className="btn btn-primary">Confirmar e Aplicar</button>
                         </div>
                     </div>
                 </div>

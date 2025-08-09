@@ -2,17 +2,17 @@ import { prisma } from "../../database/client.js";
 
 export class UpdateUsuarioController {
   async handle(request, response) {
-    const { id, nome, email, tipo } = request.body;
+    const { token, nome, email, tipo } = request.body;
     const { empresaId: adminEmpresaId } = request.user;
 
-    if (!id || !nome || !email || !tipo) {
-      return response.status(400).json({ message: "Dados incompletos para atualização." });
+    if (!token || !nome || !email || !tipo) {
+      return response.status(400).json({ message: "Dados incompletos. Token, nome, email e tipo são obrigatórios." });
     }
 
     try {
       const result = await prisma.usuario.updateMany({
         where: {
-          id: parseInt(id),
+          token: token,
           empresaId: parseInt(adminEmpresaId),
         },
         data: {
@@ -22,12 +22,14 @@ export class UpdateUsuarioController {
           updated_at: new Date(),
         },
       });
-
       if (result.count === 0) {
         return response.status(403).json({ message: "Ação não permitida. O usuário não foi encontrado na sua empresa." });
       }
 
-      const usuarioAtualizado = await prisma.usuario.findUnique({ where: { id: parseInt(id) }});
+      const usuarioAtualizado = await prisma.usuario.findUnique({ 
+        where: { token: token }
+      });
+      
       const { senha, ...userWithoutPassword } = usuarioAtualizado;
       
       return response.json(userWithoutPassword);

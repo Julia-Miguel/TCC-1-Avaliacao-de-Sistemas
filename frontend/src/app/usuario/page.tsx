@@ -12,6 +12,7 @@ interface UsuarioInterface {
   tipo: string;
   created_at: string;
   updated_at: string;
+  token: string;
 }
 
 export default function ListUsuario() {
@@ -82,7 +83,7 @@ export default function ListUsuario() {
               <td>{usuario.tipo}</td>
               <td>{formatDate(usuario.created_at)}</td>
               <td>{formatDate(usuario.updated_at)}</td>
-              <td><Link href={`/usuario/update/${usuario.id}`}>Atualizar</Link></td>
+              <td><Link href={`/usuario/update/${usuario.token}`}>Atualizar</Link></td>
               <td><button onClick={() => handleDeleteUsuario(usuario.id)}>Excluir</button></td>
             </tr>
           ))}

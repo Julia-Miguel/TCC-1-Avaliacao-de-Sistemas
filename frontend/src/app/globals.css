@@ -113,11 +113,14 @@ body.dark-mode {
 
 /* Estilos Globais Base */
 body {
+  min-height: 100%;
+  overflow-y: auto;
   margin: 0;
   font-family: var(--font-family-sans);
   background-color: var(--background);
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
   -moz-osx-font-smoothing: grayscale;
   font-size: 16px;
   line-height: 1.6;
@@ -454,7 +457,6 @@ table:not(.Create form table) td .btn:last-child {
 /* Containers de Página */
 .page-container {
   padding: var(--spacing-lg) var(--spacing-xl);
-  overflow-x: hidden;
 }
 
 @media (max-width: 768px) {
@@ -476,47 +478,6 @@ table:not(.Create form table) td .btn:last-child {
   font-weight: 700;
 }
 
-@media (max-width: 768px) {
-  table,
-  thead,
-  tbody,
-  th,
-  td,
-  tr {
-    display: block;
-  }
-
-  thead tr {
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-  }
-
-  tr {
-    border: 1px solid #ccc;
-    margin-bottom: 5px;
-  }
-
-  td {
-    border: none;
-    border-bottom: 1px solid #eee;
-    position: relative;
-    padding-left: 50%;
-    white-space: normal;
-    text-align: left;
-  }
-
-  td:before {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    width: 45%;
-    padding-right: 10px;
-    white-space: nowrap;
-    text-align: left;
-    font-weight: bold;
-  }
-}
 
 /* Estilos para a página de edição de questionário */
 .editor-form-card {
@@ -865,4 +826,162 @@ body.dark-mode .word-cloud-section {
 
 .switch.checked .switch-thumb {
   transform: translateX(20px);
+}
+
+
+
+
+/* --- Classes para Responsividade de Tabelas --- */
+@media (max-width: 768px) {
+  /* Esconde o cabeçalho da tabela tradicional */
+  .responsive-table thead {
+    display: none;
+  }
+
+  /* Transforma a tabela e as linhas em blocos */
+  .responsive-table, .responsive-table tbody, .responsive-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .responsive-table tr {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Transforma as células em linhas, com um label */
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    text-align: right;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .responsive-table tr:last-child td:last-child {
+      border-bottom: none;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label); /* Pega o texto do atributo data-label */
+    font-weight: 500;
+    text-align: left;
+    margin-right: 1rem;
+    color: var(--foreground);
+  }
+
+  /* Ajusta o grupo de botões de ação */
+  .responsive-table .actions-group {
+    justify-content: flex-end;
+  }
+}
+
+/* --- Ajustes Gerais para Telas Pequenas --- */
+@media (max-width: 640px) {
+  .page-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .form-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .form-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .pergunta-editor-item .flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}
+
+
+
+
+@media (max-width: 768px) {
+  .editor-form-card .form-header-actions {
+    flex-direction: row-reverse !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    justify-content: flex-start !important;
+  }
+  .editor-form-card .form-header-actions .btn {
+    flex: 0 1 auto;
+    white-space: nowrap;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+    margin-left: var(--spacing-xs);
+  }
+  .editor-form-card .form-header-actions .btn:last-child {
+    margin-left: 0;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .page-container > .mb-6.flex.flex-wrap.justify-center {
+    flex-direction: row-reverse !important;  
+    justify-content: flex-start !important;  
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+  }
+
+
+  .page-container > .mb-6.flex.flex-wrap.justify-center > .btn {
+    flex: 0 1 auto;
+    white-space: nowrap;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+    margin-left: var(--spacing-xs);      
+    margin-right: 0;                    
+  }
+
+  .page-container > .mb-6.flex.flex-wrap.justify-center > .btn:last-child {
+    margin-left: 0;                     
+  }
+}
+
+
+@media (max-width: 768px) {
+  .editor-form-card {
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .display-section {
+    padding: var(--spacing-sm) !important; 
+  }
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: var(--spacing-sm) !important;
+  }
+}
+
+/* Ajusta o cabeçalho das páginas em telas menores */
+@media (max-width: 768px) {
+  .table-header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .table-header-actions .button-group {
+    /* Opcional: faz o grupo de botões ocupar toda a largura */
+    width: 100%; 
+  }
 }

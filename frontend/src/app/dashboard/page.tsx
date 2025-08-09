@@ -26,6 +26,7 @@ interface KpiData {
   totalFinalizados: number;
   taxaDeConclusao: number;
   totalQuestionarios: number;
+  estimatedTime: string;
 }
 
 interface LastQuestionnaireInfo {
