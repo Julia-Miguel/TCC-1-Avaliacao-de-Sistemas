@@ -1,28 +1,31 @@
-"use client";
+'use client';
 
-import React, { createContext, useState, useContext, useEffect } from "react";
+import * as React from 'react';
+import { ThemeProvider as NextThemesProvider, type ThemeProviderProps } from 'next-themes';
 
-interface ThemeContextType {
+interface CustomThemeContextType {
   darkMode: boolean;
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType>({
+const ThemeContext = React.createContext<CustomThemeContextType>({
   darkMode: false,
   toggleTheme: () => {},
 });
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [darkMode, setDarkMode] = useState(false);
+export function ThemeProvider({
+  children,
+  ...props
+}: ThemeProviderProps) {
+  const [darkMode, setDarkMode] = React.useState(false);
 
-  const toggleTheme = () => {
-    setDarkMode((prev) => !prev);
-  };
+  const toggleTheme = React.useCallback(() => {
+    setDarkMode(prev => !prev);
+  }, []);
 
-  useEffect(() => {
-    const newClass = darkMode ? "dark-mode" : "light-mode";
-    // Remove classes de tema anteriores sem apagar as outras classes existentes:
-    document.body.classList.remove("dark-mode", "light-mode");
+  React.useEffect(() => {
+    const newClass = darkMode ? 'dark-mode' : 'light-mode';
+    document.body.classList.remove('dark-mode', 'light-mode');
     document.body.classList.add(newClass);
   }, [darkMode]);
 
@@ -33,9 +36,11 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <ThemeContext.Provider value={contextValue}>
-      {children}
+      <NextThemesProvider {...props}>
+        {children}
+      </NextThemesProvider>
     </ThemeContext.Provider>
   );
-};
+}
 
-export const useTheme = () => useContext(ThemeContext);
+export const useThemeContext = () => React.useContext(ThemeContext);

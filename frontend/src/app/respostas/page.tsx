@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import api from "@/services/api";
 import Link from "next/link";
 import "../globals.css";
-import { errorMonitor } from "node:stream";
-
 interface RespostaInterface {
   id: number;
   usuAval: {
@@ -27,7 +25,7 @@ interface RespostaInterface {
 
 export default function ListRespostas() {
   const [respostas, setRespostas] = useState<RespostaInterface[]>([]);
-  const [reloadTrigger, setReloadTrigger] = useState(0); // Estado para forçar recarga
+  const [reloadTrigger] = useState(0);
 
   const fetchRespostas = async () => {
     try {
