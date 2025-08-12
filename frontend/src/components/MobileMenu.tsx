@@ -1,6 +1,7 @@
+// frontend/src/components/menu/MobileMenu.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useState, useRef } from "react";
 import { Menu } from "lucide-react";
 import Draggable from "react-draggable";
 import SideMenu from "./SideMenu";
@@ -9,40 +10,24 @@ import "./SideMenu.css";
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  // 1. A posição agora sempre começará em {x: 0, y: 0}
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const nodeRef = useRef(null);
 
-  const nodeRef = useRef<HTMLButtonElement | null>(null);
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  // 2. O useEffect que carregava a posição foi REMOVIDO.
 
   const toggleMenu = () => setIsOpen((prev) => !prev);
 
-  useEffect(() => {
-    if (isOpen && dialogRef.current) {
-      try {
-        if (typeof dialogRef.current.showModal === "function") {
-          dialogRef.current.showModal();
-        }
-      } catch (err) {
-        console.error("Erro ao abrir o diálogo:", err);
-      }
-    } else if (!isOpen && dialogRef.current) {
-      try {
-        if (typeof dialogRef.current.close === "function") {
-          dialogRef.current.close();
-        }
-      } catch (err) {
-        console.error("Erro ao fechar o diálogo:", err);
-      }
-    }
-  }, [isOpen]);
-
-  const handleDragStart = (_e: any, data: { x: number; y: number }) => {
+  const handleDragStart = (e: any, data: { x: number; y: number }) => {
     setDragStartPos({ x: data.x, y: data.y });
   };
 
-  const handleDragStop = (_e: any, data: { x: number; y: number }) => {
+  const handleDragStop = (e: any, data: { x: number; y: number }) => {
     const newPosition = { x: data.x, y: data.y };
+    
+    // 3. A linha que salvava no localStorage foi REMOVIDA.
+    // A posição só é atualizada no estado do componente.
     setPosition(newPosition);
 
     const deltaX = Math.abs(data.x - dragStartPos.x);
@@ -64,41 +49,34 @@ export default function MobileMenu() {
       >
         <button
           ref={nodeRef}
-          type="button"
-          className="fixed top-4 left-4 z-[1200] p-2 rounded-md bg-white shadow-md text-gray-700 hover:bg-gray-100 transition-colors md:hidden cursor-grab active:cursor-grabbing"
+          className="fixed top-4 left-4 z-[1100] p-2 rounded-md bg-white shadow-md text-gray-700 hover:bg-gray-100 transition-colors md:hidden cursor-grab active:cursor-grabbing"
           aria-label="Abrir ou mover menu"
         >
           <Menu size={24} />
         </button>
       </Draggable>
 
-      {isOpen && (
-        <button
-          type="button"
-          className={`mobile-overlay ${isOpen ? "open" : ""}`}
-          aria-label="Fechar menu"
-          onClick={toggleMenu}
-        />
-      )}
+      {/* O resto do componente permanece igual */}
+      <div
+        className={`mobile-overlay ${isOpen ? "open" : ""}`}
+        onClick={toggleMenu}
+      ></div>
 
-      <dialog
-        ref={dialogRef}
+      <div
         className={`mobile-drawer ${isOpen ? "open" : ""}`}
-        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="drawer-content">
-          <div className="drawer-header">
-            <ApplicationLogo className="block h-10 w-auto text-primary mb-4" />
-          </div>
-
-          <SideMenu
-            collapsed={false}
-            setCollapsed={() => {}}
-            isMobile={true}
-            onCloseMenu={toggleMenu}
-          />
+        <div className="drawer-header">
+          <ApplicationLogo className="block h-10 w-auto text-primary mb-4" />
         </div>
-      </dialog>
+
+        <SideMenu
+          collapsed={false}
+          setCollapsed={() => {}}
+          isMobile={true}
+          onCloseMenu={toggleMenu}
+        />
+      </div>
     </>
   );
 }

@@ -5,7 +5,6 @@ import api from '@/services/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import '../../../globals.css';
-import '../../../responsividade.css';
 import { useAuth } from '@/contexts/AuthContext';
 
 // 1. A interface do usuário que vem da API
