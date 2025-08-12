@@ -107,7 +107,7 @@ function ListPerguntaContent() {
               <tbody>
                 {perguntas.map(pergunta => {
                   let tipoClasse = 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-                  const tipoTexto = pergunta.tipos?.toLowerCase().replace('_', ' ') || 'N/D';
+                  let tipoTexto = pergunta.tipos?.toLowerCase().replace('_', ' ') || 'N/D';
 
                   if (pergunta.tipos === 'MULTIPLA_ESCOLHA') {
                     tipoClasse = 'bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300';

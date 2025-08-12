@@ -9,6 +9,8 @@ import "../../responsividade.css";
 import AdminAuthGuard from '@/components/auth/AdminAuthGuard';
 import { PlusIcon, Trash2, ChevronDown, ChevronUp, CalendarDays, ListChecks, TrendingUp, TrendingDown, TrendingUpDown, FileText, CheckSquare, Users, Loader2, Filter, Clock } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { QuestionBarChart } from "@/components/dashboard/QuestionBarChart";
+import { WordCloud } from "@/components/dashboard/WordCloud";
 import {
     DndContext,
     closestCenter,
@@ -23,24 +25,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableItem } from '@/components/SortableItem';
-import dynamic from 'next/dynamic'
-
-
-const DynamicBarChart = dynamic(
-    () => import('@/components/dashboard/QuestionBarChart').then(mod => mod.QuestionBarChart),
-    {
-        loading: () => <p className="text-center p-4">Carregando gráfico...</p>,
-        ssr: false,
-    }
-);
-
-const DynamicWordCloud = dynamic(
-    () => import('@/components/dashboard/WordCloud').then(mod => mod.WordCloud),
-    {
-        loading: () => <p className="text-center p-4">Carregando nuvem de palavras...</p>,
-        ssr: false,
-    }
-);
+import { div } from "framer-motion/client";
 
 interface KpiData {
     totalAvaliacoes: number;
@@ -853,21 +838,21 @@ function EditQuestionarioFormContent() {
                                 {(() => { const { icon, color, bg } = getCompletionIcon(dashboardData.kpis.taxaDeConclusao); return <StatCard title="Taxa de Conclusão" value={`${dashboardData.kpis.taxaDeConclusao}%`} icon={icon} color={color} bgColor={bg} />; })()}
                             </div>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {dashboardData.graficos.map(grafico => <DynamicBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />)}
+                                {dashboardData.graficos.map(grafico => <QuestionBarChart key={grafico.perguntaId} title={grafico.enunciado} data={grafico.respostas} />)}
                                 {dashboardData.textQuestions.length > 0 && (
                                     <div className={`bg-card-background dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow border border-border ${dashboardData.graficos.length % 2 !== 0 ? 'lg:col-span-2' : ''}`}>
-                                    <div className="form-group mb-4">
-                                        <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
-                                        <select id="text-question-select-specific" className="input-edit-mode w-full mt-1" value={selectedTextQuestion} onChange={e => setSelectedTextQuestion(e.target.value)} disabled={isLoadingWordCloud}>
-                                            {dashboardData.textQuestions.map(q => <option key={q.id} value={q.id}>{q.enunciado}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="bg-white dark:bg-gray-100 p-4 rounded-md shadow-inner">
-                                        <div className="w-full h-72 md:h-80">
-                                            {isLoadingWordCloud ? <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div> : <DynamicWordCloud words={wordCloudData} title="" />}
+                                        <div className="form-group mb-4">
+                                            <label htmlFor="text-question-select-specific" className="form-label">Analisar Pergunta de Texto:</label>
+                                            <select id="text-question-select-specific" className="input-edit-mode w-full mt-1" value={selectedTextQuestion} onChange={e => setSelectedTextQuestion(e.target.value)} disabled={isLoadingWordCloud}>
+                                                {dashboardData.textQuestions.map(q => <option key={q.id} value={q.id}>{q.enunciado}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="bg-white dark:bg-gray-100 p-4 rounded-md shadow-inner">
+                                            <div className="w-full h-72 md:h-80">
+                                                {isLoadingWordCloud ? <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div> : <WordCloud words={wordCloudData} title="" />}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                                 )}
                             </div>
                         </>

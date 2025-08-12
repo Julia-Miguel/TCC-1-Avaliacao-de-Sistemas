@@ -71,7 +71,7 @@ function DashboardPageContent() {
             fetchWordCloud();
         }
     }, [selectedTextQuestion]);
-
+    
     if (isLoading) {
         return <div className="text-center p-10">Carregando dados do dashboard...</div>;
     }
@@ -98,8 +98,8 @@ function DashboardPageContent() {
                 <div>
                     <div className="form-group">
                         <label htmlFor="text-question-select" className="form-label">Analisar Pergunta de Texto:</label>
-                        <select
-                            id="text-question-select"
+                        <select 
+                            id="text-question-select" 
                             className="input-edit-mode"
                             value={selectedTextQuestion}
                             onChange={e => setSelectedTextQuestion(e.target.value)}
@@ -108,7 +108,8 @@ function DashboardPageContent() {
                             {textQuestions.map(q => <option key={q.id} value={q.id}>{q.enunciado}</option>)}
                         </select>
                     </div>
-                    {isLoadingWordCloud ? <div className="text-center p-10">Analisando textos...</div> : <WordCloud words={wordCloudData} title="" />}                </div>
+                    {isLoadingWordCloud ? <div className="text-center p-10">Analisando textos...</div> : <WordCloud words={wordCloudData} />}
+                </div>
             </div>
         </div>
     );

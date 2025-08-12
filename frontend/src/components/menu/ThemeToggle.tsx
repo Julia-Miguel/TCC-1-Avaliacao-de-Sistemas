@@ -1,8 +1,8 @@
-import { useThemeContext } from "./ThemeProvider";
+import { useTheme } from "./ThemeProvider";
 import './ThemeToggle.css';
 
 const ThemeToggle = () => {
-  const { darkMode, toggleTheme } = useThemeContext();
+  const { darkMode, toggleTheme } = useTheme();
 
   return (
     <button className={`theme-toggle ${darkMode ? 'dark' : 'light'}`} onClick={toggleTheme}>

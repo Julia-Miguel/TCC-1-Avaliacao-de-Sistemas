@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import api from "@/services/api";
 import { useRouter, useParams } from "next/navigation";
 import "../../../globals.css";
+import { errorMonitor } from "node:stream";
 
 interface QuePerg {
   id: number;
@@ -91,38 +92,32 @@ export default function UpdateQuePerg() {
       <form onSubmit={handleUpdateQuePerg}>
         <table>
           <tbody>
-            <tr>
-              <th scope="row"><label htmlFor="questionario">Questionário</label></th>
-              <td>
-                <select
-                  id="questionario"
-                  value={questionarioId}
-                  onChange={(e) => setQuestionarioId(e.target.value)}
-                  required
-                >
-                  <option value="">Selecione um questionário</option>
-                  {questionarios.map((q) => (
-                    <option key={q.id} value={q.id}>{q.titulo}</option>
-                  ))}
-                </select>
-              </td>
-            </tr>
-            <tr>
-              <th scope="row"><label htmlFor="pergunta">Pergunta</label></th>
-              <td>
-                <select
-                  id="pergunta"
-                  value={perguntaId}
-                  onChange={(e) => setPerguntaId(e.target.value)}
-                  required
-                >
-                  <option value="">Selecione uma pergunta</option>
-                  {perguntas.map((p) => (
-                    <option key={p.id} value={p.id}>{p.enunciado}</option>
-                  ))}
-                </select>
-              </td>
-            </tr>
+            <tr><td><label htmlFor="questionario">Questionário</label></td><td>
+              <select
+                id="questionario"
+                value={questionarioId}
+                onChange={(e) => setQuestionarioId(e.target.value)}
+                required
+              >
+                <option value="">Selecione um questionário</option>
+                {questionarios.map((q) => (
+                  <option key={q.id} value={q.id}>{q.titulo}</option>
+                ))}
+              </select>
+            </td></tr>
+            <tr><td><label htmlFor="pergunta">Pergunta</label></td><td>
+              <select
+                id="pergunta"
+                value={perguntaId}
+                onChange={(e) => setPerguntaId(e.target.value)}
+                required
+              >
+                <option value="">Selecione uma pergunta</option>
+                {perguntas.map((p) => (
+                  <option key={p.id} value={p.id}>{p.enunciado}</option>
+                ))}
+              </select>
+            </td></tr>
           </tbody>
         </table>
         <button type="submit">Salvar Alterações</button>

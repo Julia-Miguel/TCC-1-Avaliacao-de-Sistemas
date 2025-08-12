@@ -7,7 +7,6 @@ import api from "@/services/api";
 import Link from "next/link";
 import "../globals.css";
 import "../questionario.css";
-import "../responsividade.css";
 import { MoreVertical, Trash2, Edit3, Info, PlusIcon, Star } from 'lucide-react';
 import {
   DndContext,

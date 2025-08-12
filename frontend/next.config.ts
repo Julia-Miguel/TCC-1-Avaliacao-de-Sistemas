@@ -1,13 +1,7 @@
-// frontend/next.config.ts
+import type { NextConfig } from "next";
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-})
-
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  // Sua configuração do Next.js (se tiver alguma) entra aqui.
-  // Por enquanto, pode deixar vazio.
+const nextConfig: NextConfig = {
+  /* config options here */
 };
 
-module.exports = withBundleAnalyzer(nextConfig)
+export default nextConfig;

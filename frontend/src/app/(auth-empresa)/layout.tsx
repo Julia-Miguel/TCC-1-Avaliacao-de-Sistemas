@@ -1,6 +1,7 @@
 // frontend/src/app/(auth-empresa)/layout.tsx
 import type { Metadata } from "next";
 import "../globals.css"; // Seus estilos globais ainda são importantes
+import ApplicationLogo from "@/components/ApplicationLogo"; // Supondo que você queira usar
 
 export const metadata: Metadata = {
   title: "Acesso da Empresa",
