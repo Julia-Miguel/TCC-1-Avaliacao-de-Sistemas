@@ -110,7 +110,7 @@ function LoginForm() {
   return (
     <>
       <h3 className="text-center text-xl sm:text-2xl font-semibold text-text-base mb-2">
-        Login do Usuário
+        Login do Administrador
       </h3>
       {empresaNome && (
         <p className="text-center text-sm text-text-muted mb-6">
