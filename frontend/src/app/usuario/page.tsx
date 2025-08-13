@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
 
 // Ícones para uma UI mais rica
-import { PlusIcon, Edit3, Trash2, Users, ExternalLink } from 'lucide-react';
+import { PlusIcon, Edit3, Trash2, Users } from 'lucide-react';
 
 // --- Interfaces ---
 interface UsuarioInterface {
