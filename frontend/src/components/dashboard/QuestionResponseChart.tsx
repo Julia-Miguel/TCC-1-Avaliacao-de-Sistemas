@@ -9,8 +9,8 @@ interface ChartData {
 }
 
 interface QuestionResponseChartProps {
-  title: string;
-  data: ChartData[];
+  readonly title: string;
+  readonly data: readonly ChartData[];
 }
 
 export function QuestionResponseChart({ title, data }: QuestionResponseChartProps) {
@@ -19,7 +19,7 @@ export function QuestionResponseChart({ title, data }: QuestionResponseChartProp
       <h3 className="text-lg font-semibold text-foreground mb-4">{title}</h3>
       <div style={{ width: '100%', height: 300 }}>
         <ResponsiveContainer>
-          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <BarChart data={Array.from(data)} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <XAxis type="number" />
             <YAxis type="category" dataKey="name" width={150} />
             <Tooltip

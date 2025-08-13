@@ -11,6 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Loader2, // Importe o ícone de loading
+  AlertCircle, // Importe um ícone de erro
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,10 +26,8 @@ import api from "@/services/api";
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Questionários", icon: ClipboardList, href: "/questionarios" },
-  //  { label: "Perguntas Base", icon: FileQuestion, href: "/perguntas" },
-  //  { label: "Associar P-Q", icon: Link2, href: "/queperg" },
   { label: "Avaliações", icon: UserRoundCheck, href: "/avaliacao" },
-  { label: "Usuários", icon: Users, href: "/usuario" },
+  { label: "Administradores", icon: Users, href: "/usuario" },
 ];
 
 interface SideMenuProps {
@@ -69,13 +69,17 @@ export default function SideMenu({
         setUsuarios(response.data.usuarios || response.data);
       } catch (err: any) {
         console.error("Erro ao buscar usuários:", err.response?.data ?? err.message);
-        setError("Não foi possível carregar a lista de usuários.");
+        setError("Erro ao carregar dados.");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchUsuarios();
-  }, []);
+    if (loggedInAdmin) {
+        fetchUsuarios();
+    } else {
+        setIsLoading(false);
+    }
+  }, [loggedInAdmin]);
 
   const handleLinkClick = () => {
     if (isMobile && onCloseMenu) {
@@ -84,7 +88,6 @@ export default function SideMenu({
   };
 
   let buttonTitle: string;
-
   if (isMobile) {
     buttonTitle = "Fechar menu";
   } else if (collapsed) {
@@ -100,6 +103,50 @@ export default function SideMenu({
     );
     return found?.token ?? (loggedInAdmin as any).token ?? undefined;
   }, [usuarios, loggedInAdmin]);
+
+  const renderUserProfile = () => {
+    if (isLoading) {
+      return <div className="user-profile-feedback"><Loader2 className="animate-spin mr-2" size={16}/> Carregando...</div>;
+    }
+    if (error) {
+      return <div className="user-profile-feedback error"><AlertCircle className="mr-2" size={16}/> {error}</div>;
+    }
+    if (loggedInAdmin) {
+      return (
+        <div className="user-profile-section">
+            <button className="user-profile-button" onClick={() => setUserMenuOpen(!userMenuOpen)}>
+                <div className="user-info">
+                    <span className="user-name">{loggedInAdmin.nome}</span>
+                    <span className="user-email">{loggedInAdmin.email}</span>
+                </div>
+                {userMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+            <div className={`user-profile-menu ${userMenuOpen ? "open" : ""}`}>
+                <Link
+                    href={currentUserToken ? `/usuario/update/${currentUserToken}` : `/usuario`}
+                    className="btn btn-sm btn-outline p-1.5 inline-flex items-center"
+                    title="Editar Perfil"
+                    onClick={handleLinkClick}
+                >
+                    <UserCog size={16} className="mr-2" />
+                    Editar Perfil
+                </Link>
+                <button
+                    onClick={() => {
+                        setUserMenuOpen(false);
+                        logoutAdmin();
+                    }}
+                    className="logout-button"
+                >
+                    <LogOut size={16} className="mr-2" />
+                    Sair
+                </button>
+            </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
@@ -136,38 +183,7 @@ export default function SideMenu({
       </nav>
 
       <div className="side-menu-footer">
-        {!collapsed && loggedInAdmin && (
-          <div className="user-profile-section">
-            <button className="user-profile-button" onClick={() => setUserMenuOpen(!userMenuOpen)}>
-              <div className="user-info">
-                <span className="user-name">{loggedInAdmin.nome}</span>
-                <span className="user-email">{loggedInAdmin.email}</span>
-              </div>
-              {userMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </button>
-            <div className={`user-profile-menu ${userMenuOpen ? "open" : ""}`}>
-              <Link
-                href={currentUserToken ? `/usuario/update/${currentUserToken}` : `/usuario`}
-                className="btn btn-sm btn-outline p-1.5 inline-flex items-center"
-                title="Editar Perfil"
-                onClick={handleLinkClick}
-              >
-                <UserCog size={16} className="mr-2" />
-                Editar Perfil
-              </Link>
-              <button
-                onClick={() => {
-                  setUserMenuOpen(false);
-                  logoutAdmin();
-                }}
-                className="logout-button"
-              >
-                <LogOut size={16} className="mr-2" />
-                Sair
-              </button>
-            </div>
-          </div>
-        )}
+        {!collapsed && renderUserProfile()}
         <div className="theme-toggle-wrapper">
           {!collapsed && <span className="theme-toggle-label">Tema</span>}
           <ThemeToggle />

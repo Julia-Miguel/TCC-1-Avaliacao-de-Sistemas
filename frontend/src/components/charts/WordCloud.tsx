@@ -1,37 +1,26 @@
-// src/components/charts/WordCloud.tsx
 'use client';
 
-import WordCloud from 'react-wordcloud';
+import WordCloud from 'react-d3-cloud';
 import { useMemo } from 'react';
 
+// A interface agora usa 'readonly' para seguir as boas práticas
 interface WordCloudProps {
-  textData: string[];
+  readonly textData: string[];
 }
 
-// Opções de customização da nuvem de palavras
-const options = {
-  rotations: 2,
-  rotationAngles: [-90, 0] as [number, number],
-  fontSizes: [12, 60] as [number, number],
-  padding: 2,
-};
-
 export function WordCloudComponent({ textData }: WordCloudProps) {
-    // Processa o texto para contar a frequência de cada palavra
     const words = useMemo(() => {
         const frequencyMap: { [key: string]: number } = {};
         textData.forEach(text => {
-            // Separa as palavras, remove pontuação e palavras pequenas
             const cleanedText = text.toLowerCase().replace(/[.,!?;:]/g, '');
             const wordsInText = cleanedText.split(/\s+/);
 
             wordsInText.forEach(word => {
-                if (word.length > 3) { // Ignora palavras muito curtas
+                if (word.length > 3) {
                     frequencyMap[word] = (frequencyMap[word] || 0) + 1;
                 }
             });
         });
-
         return Object.entries(frequencyMap).map(([text, value]) => ({ text, value }));
     }, [textData]);
 
@@ -39,9 +28,21 @@ export function WordCloudComponent({ textData }: WordCloudProps) {
         return <div className="text-center text-text-muted p-4">Não há respostas de texto para exibir.</div>;
     }
 
+    // Função para determinar o tamanho da fonte com base na frequência
+    const fontSizeMapper = (word: { value: number }) => Math.log2(word.value) * 5 + 16;
+    
+    // Função para determinar a rotação (aleatório entre -90 e 0 graus)
+    const rotate = () => (Math.random() > 0.5 ? 0 : -90);
+
     return (
         <div style={{ height: 300, width: '100%' }}>
-            <WordCloud words={words} options={options} />
+            {/* As opções agora são passadas como propriedades individuais */}
+            <WordCloud
+                data={words}
+                fontSize={fontSizeMapper}
+                rotate={rotate}
+                padding={2}
+            />
         </div>
     );
 }

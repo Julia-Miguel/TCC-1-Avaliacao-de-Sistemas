@@ -88,7 +88,7 @@ function ListUsuarioContent() {
       {/* Cabeçalho da Página */}
       <div className="table-header-actions">
         <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
-          Gerenciamento de Usuários
+          Gerenciamento de Administradores
         </h3>
         <div className="button-group flex items-center gap-2">
           <Link href="/usuario/create" className="btn btn-primary inline-flex items-center">

@@ -108,7 +108,7 @@ function DashboardPageContent() {
                             {textQuestions.map(q => <option key={q.id} value={q.id}>{q.enunciado}</option>)}
                         </select>
                     </div>
-                    {isLoadingWordCloud ? <div className="text-center p-10">Analisando textos...</div> : <WordCloud words={wordCloudData} />}
+                    {isLoadingWordCloud ? <div className="text-center p-10">Analisando textos...</div> : <WordCloud words={wordCloudData} title="" />}
                 </div>
             </div>
         </div>
