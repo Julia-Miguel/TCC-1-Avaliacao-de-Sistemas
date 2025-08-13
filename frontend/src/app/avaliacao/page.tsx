@@ -93,15 +93,17 @@ function ListAvaliacaoContent() {
     });
   };
 
-  const handleDeleteAvaliacao = async (id: number) => {
-    if (!window.confirm("Deseja realmente excluir esta avaliação e todas as respostas associadas?")) return;
+  const handleDeleteAvaliacao = async (avaliacaoId: number) => {
+    if (!confirm(`Tem certeza que deseja deletar a avaliação com ID ${avaliacaoId}?`)) {
+      return;
+    }
     try {
-      await api.delete('/avaliacao', { data: { id } });
-      alert("Avaliação excluída com sucesso!");
-      setAvaliacoes(prev => prev.filter(avaliacao => avaliacao.id !== id));
-    } catch (err) {
-      console.error("Erro ao excluir a avaliação:", err);
-      alert("Erro ao excluir a avaliação.");
+      await api.delete(`/avaliacao/${avaliacaoId}`);
+      alert("Avaliação deletada com sucesso!");
+      window.location.reload();
+    } catch (error: any) {
+      console.error("Erro ao deletar a avaliação:", error.response?.data ?? error.message);
+      alert(error.response?.data?.message ?? "Falha ao deletar a avaliação.");
     }
   };
 

@@ -5,7 +5,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'seu-segredo-super-secreto-para-jwt
 
 export const authMiddleware = (request, response, next) => {
     console.log('[AuthMiddleware] Verificando rota:', request.method, request.originalUrl);
-    const authHeader = request.headers.authorization;
+    const authHeader = request.headers.authorization || request.headers.Authorization;
     console.log('[AuthMiddleware] Cabeçalho Authorization:', authHeader);
 
     if (!authHeader) {
@@ -37,14 +37,25 @@ export const authMiddleware = (request, response, next) => {
         }
 
         console.log('[AuthMiddleware] Token decodificado:', decoded);
+
+        // Anexa objeto raw para compatibilidade futura
         request.user = decoded;
 
-        if (request.user.tipo !== 'ADMIN_EMPRESA') {
-            console.log('[AuthMiddleware] Falha: Permissão insuficiente. Tipo do usuário:', request.user.tipo);
-            return response.status(403).json({ message: "Acesso negado. Permissão insuficiente." });
-        }
-        
-        console.log('[AuthMiddleware] Autorizado. Prosseguindo...');
+        // Padroniza os campos que os controllers esperam
+        request.usuarioId = decoded.usuarioId ?? decoded.id ?? null;
+        request.empresaId = decoded.empresaId ?? decoded.empresaId ?? null;
+        request.tipo = decoded.tipo ?? null;
+        request.nome = decoded.nome ?? null;
+        request.email = decoded.email ?? null;
+
+        console.log('[AuthMiddleware] Usuário autenticado:', {
+          usuarioId: request.usuarioId,
+          empresaId: request.empresaId,
+          tipo: request.tipo,
+          nome: request.nome,
+        });
+
+        // NÃO faz checks de role aqui — deixa o controller/middlewares específicos
         return next();
     });
 };

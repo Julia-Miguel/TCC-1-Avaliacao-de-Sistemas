@@ -7,6 +7,7 @@ import Link from "next/link";
 import "../../globals.css";
 import "../../responsividade.css";
 import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
+import { useAuth } from "@/contexts/AuthContext"; // 1. Importar o useAuth
 
 function CreateUsuarioContent() {
   const [nome, setNome] = useState("");
@@ -17,9 +18,18 @@ function CreateUsuarioContent() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // 2. Obter os dados do administrador logado
+  const { loggedInAdmin } = useAuth();
+
   const handleNewUsuario = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    // Verificação de segurança adicional
+    if (!loggedInAdmin?.empresaId) {
+        setError("Não foi possível identificar a sua empresa. Por favor, faça login novamente.");
+        return;
+    }
 
     if (!nome.trim() || !email.trim() || !senha.trim()) {
       setError("Todos os campos são obrigatórios.");
@@ -32,12 +42,13 @@ function CreateUsuarioContent() {
     
     setIsLoading(true);
 
-    // O tipo é fixo, então enviamos diretamente para a API.
+    // 3. Adicionar o 'empresaId' do admin logado aos dados enviados
     const data = { 
       nome, 
       email, 
       senha, 
-      tipo: 'ADMIN_EMPRESA' 
+      tipo: 'ADMIN_EMPRESA',
+      empresaId: loggedInAdmin.empresaId 
     };
 
     try {

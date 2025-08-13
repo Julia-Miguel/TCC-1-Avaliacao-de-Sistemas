@@ -8,11 +8,13 @@ import "../../../globals.css";
 import "../../../responsividade.css";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminAuthGuard from "@/components/auth/AdminAuthGuard";
+import { Trash2 } from "lucide-react"; // 1. Importar o ícone da lixeira
 
 interface Usuario {
   id: number;
   nome: string;
   email: string;
+  senha?: string; // Senha pode não vir da API, então é opcional
   tipo: string;
 }
 
@@ -20,12 +22,13 @@ function UpdateUsuarioContent() {
   const [usuarioParaExibir, setUsuarioParaExibir] = useState<Usuario | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState(""); // Campo para nova senha
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
 
-  const { loggedInAdmin } = useAuth();
+  const { loggedInAdmin, logoutAdmin } = useAuth(); // 2. Precisamos do logoutAdmin
   const router = useRouter();
   const params = useParams();
   const usuarioIdUrl = params.id as string;
@@ -49,6 +52,9 @@ function UpdateUsuarioContent() {
         setUsuarioParaExibir(usuarioDaApi);
         setNome(usuarioDaApi.nome);
         setEmail(usuarioDaApi.email);
+        
+        // Não definimos a senha vinda da API por segurança
+        setSenha(""); 
 
         if (loggedInAdmin.id === usuarioDaApi.id) {
           setCanEdit(true);
@@ -78,13 +84,19 @@ function UpdateUsuarioContent() {
     setIsLoading(true);
     setError(null);
 
+    // Envia a senha apenas se ela for preenchida
+    const data: Partial<Usuario> = {
+      id: usuarioParaExibir?.id,
+      nome,
+      email,
+      tipo: usuarioParaExibir?.tipo
+    };
+    if (senha) {
+      data.senha = senha;
+    }
+
     try {
-      await api.put("/usuario", {
-        id: usuarioParaExibir?.id,
-        nome,
-        email,
-        tipo: usuarioParaExibir?.tipo
-      });
+      await api.put("/usuario", data);
       alert("Usuário atualizado com sucesso!");
       router.push("/usuario");
     } catch (err: any) {
@@ -93,6 +105,26 @@ function UpdateUsuarioContent() {
       setIsLoading(false);
     }
   };
+
+  // 3. Lógica de exclusão copiada e adaptada
+  const handleDeleteUsuario = async (id: number) => {
+    if (!window.confirm("Deseja realmente excluir este usuário? Esta ação não pode ser desfeita.")) return;
+    try {
+      await api.delete(`/usuario/${id}`);
+      
+      // Se o usuário excluiu a própria conta, faz o logout e redireciona
+      if (loggedInAdmin && Number(loggedInAdmin.id) === Number(id)) {
+        alert("Sua conta foi excluída. Você será desconectado.");
+        logoutAdmin(); // Limpa o estado de autenticação
+        router.push('/login'); // Redireciona para a página de login
+      }
+    } catch (error: any) {
+      console.error("Erro ao excluir o usuário:", error.response?.data ?? error.message);
+      const errorMessage = error.response?.data?.message || "Erro ao excluir o usuário!";
+      alert(errorMessage);
+    }
+  };
+
 
   if (isLoading) {
     return <div className="page-container center-content"><p>Carregando perfil...</p></div>;
@@ -164,6 +196,20 @@ function UpdateUsuarioContent() {
                   />
                 </td>
               </tr>
+              <tr>
+                <th scope="row"><label htmlFor="senha" className="form-label">Nova Senha</label></th>
+                <td>
+                  <input
+                    type="password"
+                    id="senha"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Deixe em branco para não alterar"
+                    className="input-edit-mode"
+                    disabled={!canEdit || isLoading}
+                  />
+                </td>
+              </tr>
             </tbody>
           </table>
 
@@ -176,23 +222,16 @@ function UpdateUsuarioContent() {
               >
                 {isLoading ? "Salvando..." : "Salvar Alterações"}
               </button>
+              
+              {/* 4. Botão de exclusão adicionado e ligado à nova função */}
               <button
                 type="button"
                 className="btn btn-danger"
                 disabled={isLoading}
-                onClick={async () => {
-                  if (confirm("Tem certeza que deseja excluir sua conta?")) {
-                    try {
-                      await api.delete(`/usuario/${usuarioParaExibir?.id}`);
-                      alert("Usuário excluído com sucesso!");
-                      router.push("/logout");
-                    } catch (err: any) {
-                      setError(err.response?.data?.message ?? "Erro ao excluir usuário!");
-                    }
-                  }
-                }}
+                onClick={() => handleDeleteUsuario(usuarioParaExibir.id)}
                 style={{ marginLeft: "0.5rem" }}
               >
+                <Trash2 size={16} className="mr-2" />
                 Excluir Conta
               </button>
             </div>

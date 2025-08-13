@@ -1,3 +1,5 @@
+// frontend\src\app\usuario\page.tsx
+
 'use client';
 
 import { useEffect, useState, Suspense } from "react";
@@ -57,24 +59,20 @@ function ListUsuarioContent() {
   };
 
   const handleDeleteUsuario = async (id: number) => {
-    // Em um app real, prefira um modal customizado ao invés de window.confirm
     if (!window.confirm("Deseja realmente excluir este usuário? Esta ação não pode ser desfeita.")) return;
-    
     try {
-      await api.delete('/usuario', { data: { id } });
+      await api.delete(`/usuario/${id}`);
       setUsuarios(prev => prev.filter(usuario => usuario.id !== id));
-      
-      // Se o usuário excluiu a própria conta, faz o logout
       if (loggedInAdmin && Number(loggedInAdmin.id) === Number(id)) {
         alert("Sua conta foi excluída. Você será desconectado.");
         logoutAdmin();
       } else {
         alert("Usuário excluído com sucesso!");
       }
-
-    } catch (error) {
-      console.error("Erro ao excluir o usuário:", error);
-      alert("Erro ao excluir o usuário!");
+    } catch (error: any) {
+      console.error("Erro ao excluir o usuário:", error.response?.data ?? error.message);
+      const errorMessage = error.response?.data?.message || "Erro ao excluir o usuário!";
+      alert(errorMessage);
     }
   };
 
@@ -134,15 +132,14 @@ function ListUsuarioContent() {
               {usuarios.map(usuario => {
                 // Lógica para determinar se o usuário logado é o dono da linha
                 const isOwner = loggedInAdmin && Number(loggedInAdmin.id) === Number(usuario.id);
-                
+
                 return (
                   <tr key={usuario.id}>
                     <td data-label="ID">{usuario.id}</td>
                     <td data-label="Nome">{usuario.nome}</td>
                     <td data-label="Email">{usuario.email}</td>
                     <td data-label="Tipo">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                        usuario.tipo.includes('ADMIN')
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${usuario.tipo.includes('ADMIN')
                           ? 'bg-purple-100 text-purple-800 dark:bg-purple-700/30 dark:text-purple-300'
                           : 'bg-green-100 text-green-800 dark:bg-green-700/30 dark:text-green-300'
                         }`}>

@@ -36,6 +36,7 @@ html, body, #__next, #root {
   overflow-wrap: break-word !important;
 }
 
+/* Mobile specific tweaks */
 @media (max-width: 768px) {
   .page-container .questionnaire-card,
   .page-container .questionario-card,
@@ -43,7 +44,7 @@ html, body, #__next, #root {
   .page-container .bg-card-background {
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
-    margin-left: -6 !important;
+    margin-left: -6px !important; /* fixed unit (was -6) */
     margin-right: 0 !important;
   }
 
@@ -288,3 +289,54 @@ html, body, #__next {
     margin-left: 0;
   }
 }
+
+
+/* ==== Correções de responsividade mobile específicas ==== */
+
+/* Forçar que títulos que usam .truncate quebrem em telas pequenas */
+@media (max-width: 768px) {
+  /* se um span ou elemento com .truncate estiver dentro do header do card,
+     fazemos override para permitir wrap no mobile */
+  .card-header .truncate,
+  .card-header .title-container .truncate,
+  .card-header .title-container span {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* Garante que o título ocupe 100% e não force scroll horizontal */
+  .card-header .title-container {
+    min-width: 0; /* importante para que o flex allow shrink */
+    width: 100%;
+  }
+
+  /* Ajustes de grid — garante 1 coluna em telas pequenas */
+  .questionarios-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--spacing-md);
+  }
+
+  /* Permitir que enunciados longos quebrem linhas corretamente */
+  .perguntas-list,
+  .enunciado-pergunta,
+  .perguntas-list p {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Evita que a lista interna gere barra horizontal */
+  .perguntas-list {
+    padding-right: var(--spacing-sm);
+    max-height: 150px; /* já definido, mas assegura comportamento */
+  }
+
+  /* Se houver botões com largura fixa que forçam overflow, reduzir */
+  .card-header .botao {
+    width: 36px;
+    flex-shrink: 0;
+  }
+}
+
