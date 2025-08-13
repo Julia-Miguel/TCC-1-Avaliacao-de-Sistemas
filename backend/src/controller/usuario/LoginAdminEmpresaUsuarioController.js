@@ -37,6 +37,7 @@ export class LoginAdminEmpresaUsuarioController {
 
             const tokenPayload = {
                 usuarioId: adminUsuario.id,
+                id: adminUsuario.id,
                 empresaId: adminUsuario.empresaId,
                 tipo: adminUsuario.tipo,
                 nome: adminUsuario.nome,

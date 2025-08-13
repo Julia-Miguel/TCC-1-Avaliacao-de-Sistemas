@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import AdminAuthGuard from '../../components/auth/AdminAuthGuard';
 import api from "@/services/api";
 import Link from "next/link";
-import "../globals.css";
 import "../questionario.css";
+import "../responsividade.css";
 import { MoreVertical, Trash2, Edit3, Info, PlusIcon, Star } from 'lucide-react';
 import {
   DndContext,
@@ -23,7 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// --- INTERFACES ---
+// --- INTERFACES --- (mantidas iguais)
 interface OpcaoInterface {
   id: number;
   texto: string;
@@ -37,7 +37,6 @@ interface PerguntaDetalhadaInterface {
 interface QuePergItemInterface {
   pergunta: PerguntaDetalhadaInterface;
 }
-// ✅ Interface atualizada com os novos campos
 interface QuestionarioInterface {
   id: number;
   titulo: string;
@@ -52,20 +51,20 @@ interface QuestionarioInterface {
 }
 // --- FIM DAS INTERFACES ---
 
-// --- COMPONENTE SWITCH ---
+// --- COMPONENTE SWITCH --- (mantido igual)
 const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: () => void }) => (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={(e) => {
-          e.stopPropagation();
-          onCheckedChange();
-      }}
-      className={`switch ${checked ? 'checked' : ''}`}
-    >
-      <span className="switch-thumb" />
-    </button>
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={(e) => {
+      e.stopPropagation();
+      onCheckedChange();
+    }}
+    className={`switch ${checked ? 'checked' : ''}`}
+  >
+    <span className="switch-thumb" />
+  </button>
 );
 
 function ListQuestionariosContent() {
@@ -76,18 +75,15 @@ function ListQuestionariosContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ordem, setOrdem] = useState<number[]>([]);
-  
-  // ✅ Novo estado para controlar a existência do questionário de satisfação
+
   const [satisfacaoExiste, setSatisfacaoExiste] = useState(false);
 
-  // ✅ Função para recarregar os dados, útil após exclusão ou toggle
   const fetchQuestionarios = () => {
     setIsLoading(true);
     setError(null);
     api.get("/questionarios")
       .then(response => {
         const data = response.data as QuestionarioInterface[];
-        // Ordena os questionários pela propriedade 'ordem'
         const sortedData = data.sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
         setQuestionarios(sortedData);
         setOrdem(sortedData.map(q => q.id));
@@ -123,15 +119,15 @@ function ListQuestionariosContent() {
     const questionarioParaExcluir = questionarios.find(q => q.id === id);
     let confirmMessage = "Deseja realmente excluir este questionário? Esta ação não pode ser desfeita.";
     if (questionarioParaExcluir?.eh_satisfacao) {
-        confirmMessage = "Este é o questionário de satisfação. Deseja realmente excluí-lo? Esta ação não pode ser desfeita.";
+      confirmMessage = "Este é o questionário de satisfação. Deseja realmente excluí-lo? Esta ação não pode ser desfeita.";
     }
-    
+
     if (!window.confirm(confirmMessage)) return;
-    
+
     try {
       await api.delete(`/questionarios/${id}`);
       alert("Questionário excluído com sucesso!");
-      fetchQuestionarios(); // Recarrega os dados para atualizar a lista e o botão
+      fetchQuestionarios();
     } catch (err: any) {
       console.error("Erro ao excluir o questionário:", err);
       const errorMessage = err.response?.data?.message || "Erro ao excluir o questionário.";
@@ -139,13 +135,12 @@ function ListQuestionariosContent() {
     }
   };
 
-  // ✅ Nova função para o toggle do status
   const handleToggleAtivo = async (id: number) => {
     try {
       const response = await api.patch(`/questionarios/toggle-ativo/${id}`);
       const questionarioAtualizado = response.data;
-      
-      setQuestionarios(prev => 
+
+      setQuestionarios(prev =>
         prev.map(q => q.id === id ? { ...q, ativo: questionarioAtualizado.ativo } : q)
       );
 
@@ -192,7 +187,7 @@ function ListQuestionariosContent() {
       } catch (err) {
         console.error("Erro ao salvar ordem:", err);
         alert("Erro ao salvar ordem!");
-        setOrdem(questionarios.map(q => q.id)); // Reverte a ordem em caso de erro
+        setOrdem(questionarios.map(q => q.id));
       }
     }
   };
@@ -211,7 +206,6 @@ function ListQuestionariosContent() {
         <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
           Meus Questionários
         </h3>
-        {/* ✅ Botões de criação condicionais */}
         <div className="button-group flex space-x-2">
           {!satisfacaoExiste && (
             <Link href="/questionarios/create?satisfacao=true" className="btn btn-secondary">
@@ -256,24 +250,22 @@ function ListQuestionariosContent() {
                             type="button"
                             className="btn btn-card-title w-full text-left"
                             onClick={() => handleEditQuestionario(q.id)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); }}}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleEditQuestionario(q.id); } }}
                             aria-label={`Editar questionário ${q.titulo}`}
                           >
-                             {/* ✅ Título com estrela */}
                             <h4 className="flex items-center gap-2">
                               {q.eh_satisfacao && <Star size={18} className="text-yellow-500 flex-shrink-0" />}
                               <span className="truncate">{q.titulo}</span>
                             </h4>
                           </button>
                         </div>
-                        
-                        {/* ✅ Lógica para mostrar Switch ou Menu */}
+
                         {q.eh_satisfacao ? (
                           <div className="flex items-center gap-2" title={`Status: ${q.ativo ? 'Ativo' : 'Inativo'}`}>
-                             <span className={`text-xs font-semibold ${q.ativo ? 'text-green-600' : 'text-text-muted'}`}>
-                                {q.ativo ? 'ATIVO' : 'INATIVO'}
-                             </span>
-                             <Switch checked={q.ativo} onCheckedChange={() => handleToggleAtivo(q.id)} />
+                            <span className={`text-xs font-semibold ${q.ativo ? 'text-green-600' : 'text-text-muted'} hidden md:inline`}>
+                              {q.ativo ? 'ATIVO' : 'INATIVO'}
+                            </span>
+                            <Switch checked={q.ativo} onCheckedChange={() => handleToggleAtivo(q.id)} />
                           </div>
                         ) : (
                           <button
@@ -292,7 +284,7 @@ function ListQuestionariosContent() {
                       <div className="perguntas-list">
                         {q.perguntas && q.perguntas.length > 0 ? (
                           q.perguntas.slice(0, 3).map((quePergItem) => (
-                            <p key={quePergItem.pergunta.id} className="enunciado-pergunta truncate" title={quePergItem.pergunta.enunciado}>
+                            <p key={quePergItem.pergunta.id} className="enunciado-pergunta" title={quePergItem.pergunta.enunciado}>
                               {quePergItem.pergunta.enunciado}
                             </p>
                           ))
@@ -321,7 +313,7 @@ function ListQuestionariosContent() {
                           <button className="botao details-action w-full flex items-center" onClick={(e) => toggleDetalhes(q.id, e)}>
                             <Info size={16} className="mr-2" /> Detalhes
                           </button>
-                          <button className="botao delete-action w-full flex items-center" onClick={(e) => { e.stopPropagation(); handleDeleteQuestionario(q.id);}}>
+                          <button className="botao delete-action w-full flex items-center" onClick={(e) => { e.stopPropagation(); handleDeleteQuestionario(q.id); }}>
                             <Trash2 size={16} className="mr-2" /> Excluir
                           </button>
                         </div>
@@ -353,8 +345,7 @@ function ListQuestionariosContent() {
   );
 }
 
-// ✅ Envolvemos o componente principal em Suspense
-// Isso é necessário porque a página de criação (linkada a partir daqui) usa useSearchParams
+// ✅ Envolvemos o componente principal em Suspense (mantido igual)
 export default function ProtectedListQuestionariosPage() {
   return (
     <AdminAuthGuard>
@@ -365,7 +356,7 @@ export default function ProtectedListQuestionariosPage() {
   );
 }
 
-function SortableCard({ q, ...props }: Readonly<{ q: QuestionarioInterface; [key: string]: any }>) {
+function SortableCard({ q, ...props }: Readonly<{ q: QuestionarioInterface;[key: string]: any }>) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: q.id });
   const style = {
     transform: CSS.Transform.toString(transform),

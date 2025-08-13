@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 
-// Importando cada controller individualmente
+// Importando os controllers
 import { CreateUsuarioController } from '../controller/usuario/CreateUsuarioController.js';
 import { GetAllUsuarioController } from '../controller/usuario/GetAllUsuarioController.js';
 import { GetByIdUsuarioController } from '../controller/usuario/GetByIdUsuarioController.js';
@@ -27,17 +27,26 @@ const loginAdminEmpresaUsuarioController = new LoginAdminEmpresaUsuarioControlle
 const createClientePlataformaUsuarioController = new CreateClientePlataformaUsuarioController();
 const loginClientePlataformaUsuarioController = new LoginClientePlataformaUsuarioController();
 
+
 // --- Rotas Públicas ---
+// Rotas para clientes da plataforma se registrarem e logarem
 usuarioRouter.post('/clientes/register', createClientePlataformaUsuarioController.handle);
 usuarioRouter.post('/clientes/login', loginClientePlataformaUsuarioController.handle);
+// Rota para o PRIMEIRO admin de uma nova empresa se registrar
 usuarioRouter.post('/usuarios/register-admin', createAdminEmpresaUsuarioController.handle);
+// Rota para admins logarem
 usuarioRouter.post('/usuarios/login-admin', loginAdminEmpresaUsuarioController.handle);
-usuarioRouter.post('/usuario', createUsuarioController.handle);
 
-// --- Rotas Protegidas ---
+
+// --- Rotas Protegidas (Exigem autenticação) ---
+// Rota para um admin LOGADO criar OUTROS usuários para sua empresa
+usuarioRouter.post('/usuario', authMiddleware, createUsuarioController.handle);
+
+// Rotas para gerenciar usuários (ver todos, ver um, atualizar, deletar)
 usuarioRouter.get('/usuario', authMiddleware, getAllUsuarioController.handle);
 usuarioRouter.get('/usuario/:id', authMiddleware, getByIdUsuarioController.handle);
-usuarioRouter.put('/usuario', authMiddleware, updateUsuarioController.handle);
+usuarioRouter.put('/usuario', authMiddleware, updateUsuarioController.handle); 
 usuarioRouter.delete('/usuario/:id', authMiddleware, deleteUsuarioController.handle);
+
 
 export { usuarioRouter };

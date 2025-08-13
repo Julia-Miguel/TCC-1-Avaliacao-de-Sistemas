@@ -30,18 +30,18 @@ function UpdateAvaliacaoContent() {
   const [questionarios, setQuestionarios] = useState<Questionario[]>([]);
   const [requerLoginCliente, setRequerLoginCliente] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Para carregamento de dados e submit
-  const [error, setError] = useState<string|null>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
   const avaliacaoId = params.id ? parseInt(params.id as string) : null;
 
   useEffect(() => {
     if (!avaliacaoId) {
-        setError("ID da Avaliação não fornecido na URL.");
-        setIsLoading(false);
-        return;
+      setError("ID da Avaliação não fornecido na URL.");
+      setIsLoading(false);
+      return;
     }
-    
+
     setIsLoading(true);
     setError(null);
 
@@ -86,20 +86,21 @@ function UpdateAvaliacaoContent() {
       return;
     }
     if (avaliacaoId === null) {
-        setError("ID da avaliação é inválido para atualização.");
-        return;
+      setError("ID da avaliação é inválido para atualização.");
+      return;
     }
     setIsLoading(true);
 
+    // CORREÇÃO: Remova o 'id' do corpo dos dados
     const data = {
-      id: avaliacaoId,
       semestre: semestre.trim(),
-      questionario_id: parseInt(questionarioId),
+      questionarioId: parseInt(questionarioId), // Corrigido de questionario_id para questionarioId
       requerLoginCliente,
     };
 
     try {
-      await api.put("/avaliacao", data); // Backend verifica permissão e atualiza
+      // CORREÇÃO: Adicione o ID na URL da requisição
+      await api.put(`/avaliacao/${avaliacaoId}`, data);
       alert("Avaliação atualizada com sucesso!");
       router.push("/avaliacao");
     } catch (err: any) {
@@ -111,31 +112,36 @@ function UpdateAvaliacaoContent() {
   };
 
   if (isLoading && !semestre && !error) { // Condição de loading inicial
-      return <div className="page-container center-content"><p>Carregando dados da avaliação...</p></div>;
+    return <div className="page-container center-content"><p>Carregando dados da avaliação...</p></div>;
   }
 
   if (error && !semestre) { // Se deu erro ao carregar e não tem dados
-       return (
-            <div className="page-container center-content">
-                <p style={{color: 'red'}}>{error}</p>
-                <Link href="/avaliacao" className="btn btn-secondary" style={{marginTop: '1rem'}}>
-                    Voltar para Lista de Avaliações
-                </Link>
-            </div>
-        );
+    return (
+      <div className="page-container center-content">
+        <p style={{ color: 'red' }}>{error}</p>
+        <Link href="/avaliacao" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
+          Voltar para Lista de Avaliações
+        </Link>
+      </div>
+    );
   }
 
 
   return (
     <div className="page-container">
-      <div className="editor-form-card" style={{maxWidth: '700px'}}>
+      <div className="editor-form-card" style={{ maxWidth: '700px' }}>
         <div className="form-header">
           <h3>Atualização de Avaliação (ID: {avaliacaoId})</h3>
-           <Link href="/avaliacao" className="btn btn-outline btn-sm">Voltar</Link>
+          <Link href="/avaliacao" className="btn btn-outline btn-sm">Voltar</Link>
         </div>
+
+        {/* Correção do erro de hidratação: 
+          O comentário foi movido para fora da tabela e o código foi limpo 
+          para garantir que <tbody> seja o filho direto de <table>.
+        */}
         <form onSubmit={handleUpdateAvaliacao} className="display-section">
           {error && <p style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
-          <table> {/* Reutilizando sua estrutura de tabela para o form */}
+          <table>
             <tbody>
               <tr>
                 <th scope="row"><label htmlFor="semestre" className="form-label">Semestre / Contexto</label></th>
@@ -188,7 +194,7 @@ function UpdateAvaliacaoContent() {
             </tbody>
           </table>
           <div className="form-actions">
-             <button type="button" onClick={() => router.push('/avaliacao')} className="btn btn-secondary" disabled={isLoading}>
+            <button type="button" onClick={() => router.push('/avaliacao')} className="btn btn-secondary" disabled={isLoading}>
               Cancelar
             </button>
             <button type="submit" className="btn btn-primary" disabled={isLoading}>

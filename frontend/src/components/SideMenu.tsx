@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  Link2,
   Users,
   ClipboardList,
   LayoutDashboard,
-  FileQuestion,
   UserRoundCheck,
   Menu,
   UserCog,
@@ -20,13 +18,14 @@ import "./SideMenu.css";
 import { useAuth } from "@/contexts/AuthContext";
 import ApplicationLogo from "./ApplicationLogo";
 import ThemeToggle from "@/components/menu/ThemeToggle";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import api from "@/services/api";
 
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Questionários", icon: ClipboardList, href: "/questionarios" },
-//  { label: "Perguntas Base", icon: FileQuestion, href: "/perguntas" },
-//  { label: "Associar P-Q", icon: Link2, href: "/queperg" },
+  //  { label: "Perguntas Base", icon: FileQuestion, href: "/perguntas" },
+  //  { label: "Associar P-Q", icon: Link2, href: "/queperg" },
   { label: "Avaliações", icon: UserRoundCheck, href: "/avaliacao" },
   { label: "Usuários", icon: Users, href: "/usuario" },
 ];
@@ -38,15 +37,45 @@ interface SideMenuProps {
   readonly onCloseMenu?: () => void;
 }
 
+interface UsuarioInterface {
+  id: number;
+  nome: string;
+  email: string;
+  tipo: string;
+  created_at: string;
+  updated_at: string;
+  token: string;
+}
+
 export default function SideMenu({
   collapsed,
   setCollapsed,
   isMobile = false,
   onCloseMenu,
 }: SideMenuProps) {
+  const [usuarios, setUsuarios] = useState<UsuarioInterface[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
   const { loggedInAdmin, logoutAdmin } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchUsuarios = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await api.get("/usuario");
+        setUsuarios(response.data.usuarios || response.data);
+      } catch (err: any) {
+        console.error("Erro ao buscar usuários:", err.response?.data ?? err.message);
+        setError("Não foi possível carregar a lista de usuários.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUsuarios();
+  }, []);
 
   const handleLinkClick = () => {
     if (isMobile && onCloseMenu) {
@@ -63,6 +92,14 @@ export default function SideMenu({
   } else {
     buttonTitle = "Recolher menu";
   }
+
+  const currentUserToken = useMemo(() => {
+    if (!loggedInAdmin) return undefined;
+    const found = usuarios.find(
+      (u) => String(u.id) === String((loggedInAdmin as any).id)
+    );
+    return found?.token ?? (loggedInAdmin as any).token ?? undefined;
+  }, [usuarios, loggedInAdmin]);
 
   return (
     <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
@@ -110,13 +147,21 @@ export default function SideMenu({
             </button>
             <div className={`user-profile-menu ${userMenuOpen ? "open" : ""}`}>
               <Link
-                href={`/usuario/update/${loggedInAdmin.token}`}
-                className="profile-menu-item"
+                href={currentUserToken ? `/usuario/update/${currentUserToken}` : `/usuario`}
+                className="btn btn-sm btn-outline p-1.5 inline-flex items-center"
+                title="Editar Perfil"
+                onClick={handleLinkClick}
               >
                 <UserCog size={16} className="mr-2" />
                 Editar Perfil
               </Link>
-              <button onClick={logoutAdmin} className="logout-button">
+              <button
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  logoutAdmin();
+                }}
+                className="logout-button"
+              >
                 <LogOut size={16} className="mr-2" />
                 Sair
               </button>
