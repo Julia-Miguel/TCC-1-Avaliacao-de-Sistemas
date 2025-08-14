@@ -22,6 +22,9 @@ export class GetByIdQuePergController {
         },
       },
     });
+    if (!quePerg) {
+      return response.status(404).json({ message: 'Associação QuePerg não encontrada.' });
+    }
     return response.json(quePerg);
   }
 }

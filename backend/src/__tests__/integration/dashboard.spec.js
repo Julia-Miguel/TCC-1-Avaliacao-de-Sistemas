@@ -144,10 +144,8 @@ describe('Rotas de Dashboard', () => {
 
   describe('GET /api/analise-texto', () => {
     it('deve retornar 200 e algum resultado de análise quando autenticado', async () => {
-      // >>> ADICIONADO: query params obrigatórios: questionarioId + perguntaId
       const res = await request(app)
         .get('/api/analise-texto')
-        .query({ questionarioId: questionario.id, perguntaId: pergunta.id })
         .set('Authorization', `Bearer ${authToken}`);
 
       if (res.status !== 200) {
@@ -161,20 +159,15 @@ describe('Rotas de Dashboard', () => {
     });
 
     it('deve retornar 401 sem token', async () => {
-      const res = await request(app)
-        .get('/api/analise-texto')
-        .query({ questionarioId: questionario.id, perguntaId: pergunta.id });
-
+      const res = await request(app).get('/api/analise-texto');
       expect(res.status).toBe(401);
     });
   });
 
   describe('GET /api/tempo-estimado', () => {
     it('deve retornar 200 e dados de tempo estimado quando autenticado', async () => {
-      // >>> ADICIONADO: query param obrigatório: questionarioId
       const res = await request(app)
         .get('/api/tempo-estimado')
-        .query({ questionarioId: questionario.id })
         .set('Authorization', `Bearer ${authToken}`);
 
       if (res.status !== 200) {
@@ -188,10 +181,7 @@ describe('Rotas de Dashboard', () => {
     });
 
     it('deve retornar 401 sem token', async () => {
-      const res = await request(app)
-        .get('/api/tempo-estimado')
-        .query({ questionarioId: questionario.id });
-
+      const res = await request(app).get('/api/tempo-estimado');
       expect(res.status).toBe(401);
     });
   });
