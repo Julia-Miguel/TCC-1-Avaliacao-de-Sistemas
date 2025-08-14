@@ -1,4 +1,3 @@
-// frontend/src/services/api.ts
 import axios from "axios";
 
 const api = axios.create({
@@ -8,7 +7,6 @@ const api = axios.create({
 // Interceptor que adiciona o token de autenticação em cada requisição
 api.interceptors.request.use(
   (config) => {
-    // Garante que o código só rode no navegador
     if (typeof window !== "undefined") {
       const token = localStorage.getItem('adminToken');
       if (token) {
@@ -18,7 +16,43 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    return Promise.reject(error);
+    let err: Error;
+    if (error instanceof Error) {
+      err = error;
+    } else if (typeof error === 'string') {
+      err = new Error(error);
+    } else {
+      err = new Error(JSON.stringify(error));
+    }
+    return Promise.reject(err);
+  }
+);
+
+// ------------------- ADICIONE ESTE INTERCEPTOR DE RESPOSTA -------------------
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (
+      error.response &&
+      (error.response.data?.error === "jwt expired" ||
+       error.response.data?.message === "jwt expired" ||
+       error.response.status === 401)
+    ) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+      if (typeof window !== "undefined") {
+        window.location.href = "/empresas/login";
+      }
+    }
+    let err: Error;
+    if (error instanceof Error) {
+      err = error;
+    } else if (typeof error === 'string') {
+      err = new Error(error);
+    } else {
+      err = new Error(JSON.stringify(error));
+    }
+    return Promise.reject(err);
   }
 );
 
