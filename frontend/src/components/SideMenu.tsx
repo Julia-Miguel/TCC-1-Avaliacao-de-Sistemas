@@ -5,14 +5,14 @@ import {
   ClipboardList,
   LayoutDashboard,
   UserRoundCheck,
-  Menu,
+  Menu as MenuIcon,
   UserCog,
   LogOut,
   ChevronDown,
   ChevronUp,
   X,
-  Loader2, // Importe o ícone de loading
-  AlertCircle, // Importe um ícone de erro
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -74,93 +74,117 @@ export default function SideMenu({
         setIsLoading(false);
       }
     };
+
     if (loggedInAdmin) {
-        fetchUsuarios();
+      fetchUsuarios();
     } else {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }, [loggedInAdmin]);
 
   const handleLinkClick = () => {
-    if (isMobile && onCloseMenu) {
-      onCloseMenu();
-    }
+    if (isMobile && onCloseMenu) onCloseMenu();
   };
 
-  let buttonTitle: string;
-  if (isMobile) {
-    buttonTitle = "Fechar menu";
-  } else if (collapsed) {
-    buttonTitle = "Expandir menu";
-  } else {
-    buttonTitle = "Recolher menu";
-  }
+  const buttonTitle = isMobile
+    ? "Fechar menu"
+    : collapsed
+    ? "Expandir menu"
+    : "Recolher menu";
 
   const currentUserToken = useMemo(() => {
     if (!loggedInAdmin) return undefined;
-    const found = usuarios.find(
-      (u) => String(u.id) === String((loggedInAdmin as any).id)
-    );
+    const found = usuarios.find(u => String(u.id) === String((loggedInAdmin as any).id));
     return found?.token ?? (loggedInAdmin as any).token ?? undefined;
   }, [usuarios, loggedInAdmin]);
 
   const renderUserProfile = () => {
     if (isLoading) {
-      return <div className="user-profile-feedback"><Loader2 className="animate-spin mr-2" size={16}/> Carregando...</div>;
-    }
-    if (error) {
-      return <div className="user-profile-feedback error"><AlertCircle className="mr-2" size={16}/> {error}</div>;
-    }
-    if (loggedInAdmin) {
       return (
-        <div className="user-profile-section">
-            <button className="user-profile-button" onClick={() => setUserMenuOpen(!userMenuOpen)}>
-                <div className="user-info">
-                    <span className="user-name">{loggedInAdmin.nome}</span>
-                    <span className="user-email">{loggedInAdmin.email}</span>
-                </div>
-                {userMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </button>
-            <div className={`user-profile-menu ${userMenuOpen ? "open" : ""}`}>
-                <Link
-                    href={currentUserToken ? `/usuario/update/${currentUserToken}` : `/usuario`}
-                    className="btn btn-sm btn-outline p-1.5 inline-flex items-center"
-                    title="Editar Perfil"
-                    onClick={handleLinkClick}
-                >
-                    <UserCog size={16} className="mr-2" />
-                    Editar Perfil
-                </Link>
-                <button
-                    onClick={() => {
-                        setUserMenuOpen(false);
-                        logoutAdmin();
-                    }}
-                    className="logout-button"
-                >
-                    <LogOut size={16} className="mr-2" />
-                    Sair
-                </button>
-            </div>
+        <div className="user-profile-feedback">
+          <Loader2 aria-hidden="true" className="animate-spin mr-2" size={16} />
+          Carregando...
         </div>
       );
     }
+
+    if (error) {
+      return (
+        <div className="user-profile-feedback error">
+          <AlertCircle aria-hidden="true" className="mr-2" size={16} />
+          {error}
+        </div>
+      );
+    }
+
+    if (loggedInAdmin) {
+      return (
+        <div className="user-profile-section">
+          <button
+            className="user-profile-button"
+            onClick={() => setUserMenuOpen(prev => !prev)}
+            aria-label="Abrir menu do usuário"
+          >
+            <div className="user-info">
+              <span className="user-name">{loggedInAdmin.nome}</span>
+              <span className="user-email">{loggedInAdmin.email}</span>
+            </div>
+            {userMenuOpen ? (
+              <ChevronUp aria-hidden="true" size={20} />
+            ) : (
+              <ChevronDown aria-hidden="true" size={20} />
+            )}
+          </button>
+
+          <div className={`user-profile-menu ${userMenuOpen ? "open" : ""}`}>
+            <Link
+              href={currentUserToken ? `/usuario/update/${currentUserToken}` : `/usuario`}
+              className="btn btn-sm btn-outline p-1.5 inline-flex items-center"
+              title="Editar Perfil"
+              aria-label="Editar Perfil"
+              onClick={handleLinkClick}
+            >
+              <UserCog aria-hidden="true" size={16} className="mr-2" />
+              Editar Perfil
+            </Link>
+            <button
+              onClick={() => {
+                setUserMenuOpen(false);
+                logoutAdmin();
+              }}
+              className="logout-button"
+              aria-label="Sair da conta"
+            >
+              <LogOut aria-hidden="true" size={16} className="mr-2" />
+              Sair
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return null;
   };
 
   return (
     <aside className={`side-menu ${collapsed ? "collapsed" : ""}`}>
       <div className="side-menu-header">
-        <Link href={loggedInAdmin ? "/dashboard" : "/"} className="side-menu-logo-link">
-          <ApplicationLogo className="block h-8 w-auto text-primary" />
+        <Link
+          href={loggedInAdmin ? "/dashboard" : "/"}
+          className="side-menu-logo-link"
+          aria-label="Ir para página inicial"
+        >
+          <ApplicationLogo className="block h-8 w-auto text-primary" aria-hidden="true" />
         </Link>
-        {!collapsed && <span className="side-menu-title"> Q+ </span>}
+        {!collapsed && <span className="side-menu-title">Q+</span>}
         <button
+          type="button"
           className="hamburger-toggle"
           onClick={isMobile ? onCloseMenu : () => setCollapsed(!collapsed)}
           title={buttonTitle}
+          aria-label={buttonTitle}
         >
-          {isMobile ? <X /> : <Menu />}
+          {isMobile ? <X aria-hidden="true" /> : <MenuIcon aria-hidden="true" />}
         </button>
       </div>
 
@@ -173,9 +197,10 @@ export default function SideMenu({
               href={href}
               className={`side-menu-link ${isActive ? "active" : ""}`}
               title={label}
+              aria-label={`Ir para ${label}`}
               onClick={handleLinkClick}
             >
-              <Icon className="side-menu-icon" />
+              <Icon className="side-menu-icon" aria-hidden="true" />
               {!collapsed && <span className="side-menu-label">{label}</span>}
             </Link>
           );

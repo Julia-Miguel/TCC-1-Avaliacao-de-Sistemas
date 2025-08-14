@@ -1,4 +1,3 @@
-// backend/src/controller/public/avaliacao/CheckAvaliacaoController.js
 import { prisma } from '../../../database/client.js';
 
 export class CheckAvaliacaoController {
@@ -11,17 +10,21 @@ export class CheckAvaliacaoController {
 
     try {
       const avaliacao = await prisma.avaliacao.findUnique({
-        where: {
-          token: token,
-        },
-        select: { requerLoginCliente: true } 
+        where: { token },
+        select: { 
+          requerLoginCliente: true,
+          questionario: { select: { eh_satisfacao: true } }
+        }
       });
 
       if (!avaliacao) {
         return response.status(404).json({ message: "Avaliação não encontrada." });
       }
 
-      return response.status(200).json({ requerLoginCliente: avaliacao.requerLoginCliente });
+      return response.status(200).json({
+        requerLoginCliente: avaliacao.requerLoginCliente,
+        questionario: avaliacao.questionario
+      });
 
     } catch (error) {
       console.error("Erro ao verificar avaliação:", error);

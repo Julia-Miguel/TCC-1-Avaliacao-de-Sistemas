@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useMemo } from "react";
 
 interface ThemeContextType {
   darkMode: boolean;
@@ -15,27 +15,17 @@ const ThemeContext = createContext<ThemeContextType>({
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
 
-  const toggleTheme = () => {
-    setDarkMode((prev) => !prev);
-  };
+  const toggleTheme = () => setDarkMode(prev => !prev);
 
   useEffect(() => {
     const newClass = darkMode ? "dark-mode" : "light-mode";
-    // Remove classes de tema anteriores sem apagar as outras classes existentes:
     document.body.classList.remove("dark-mode", "light-mode");
     document.body.classList.add(newClass);
   }, [darkMode]);
 
-  const contextValue = React.useMemo(
-    () => ({ darkMode, toggleTheme }),
-    [darkMode, toggleTheme]
-  );
+  const contextValue = useMemo(() => ({ darkMode, toggleTheme }), [darkMode]);
 
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => useContext(ThemeContext);

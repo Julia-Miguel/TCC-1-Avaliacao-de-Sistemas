@@ -2,69 +2,69 @@ import { prisma } from '../../../database/client.js';
 
 export class GetPublicAvaliacaoByIdController {
   async handle(request, response) {
-    const { id } = request.params;
-    const avaliacaoId = parseInt(id, 10);
+    const { avaliacaoId: token } = request.params;
 
-    if (isNaN(avaliacaoId)) {
-      return response.status(400).json({ message: "ID da avaliação inválido." });
+    if (!token) {
+      return response.status(400).json({ message: "Token inválido." });
     }
 
     try {
       const avaliacao = await prisma.avaliacao.findUnique({
-        where: {
-          token: id
-        },
+        where: { token },
         include: {
+          criador: {
+            include: {
+              empresa: { select: { nome: true } }
+            }
+          },
           questionario: {
             include: {
               perguntas: {
                 include: {
                   pergunta: {
-                    include: {
-                      opcoes: true
-                    }
+                    include: { opcoes: true }
                   }
                 },
-                orderBy: {
-                  ordem: 'asc'
-                }
+                orderBy: { ordem: 'asc' }
               }
             }
           }
         }
       });
 
-      if (!avaliacao || !avaliacao.isPublica) {
-        return response.status(404).json({ message: "Avaliação não encontrada ou não é pública." });
+      if (!avaliacao) {
+        return response.status(404).json({ message: "Avaliação não encontrada." });
       }
 
-      if (!avaliacao.empresa) {
-        return response.status(500).json({ message: "Configuração inválida: A avaliação não está associada a uma empresa." });
+      if (!avaliacao.criador) {
+        return response.status(500).json({ message: "Configuração inválida: Avaliação sem criador." });
       }
-
       if (!avaliacao.questionario) {
-        return response.status(500).json({ message: "Configuração inválida: A avaliação não possui um questionário vinculado." });
+        return response.status(500).json({ message: "Configuração inválida: Avaliação sem questionário." });
       }
 
       const perguntasDoQuestionario = avaliacao.questionario.perguntas || [];
+      const perguntas = perguntasDoQuestionario
+        .filter(quePerg => quePerg.pergunta)
+        .map(quePerg => ({
+          id: quePerg.pergunta.id,
+          enunciado: quePerg.pergunta.enunciado,
+          obrigatoria: quePerg.pergunta.obrigatoria,
+          tipo: quePerg.pergunta.tipo || quePerg.pergunta.tipos,
+          opcoes: quePerg.pergunta.opcoes || [],
+        }));
+
       const responseData = {
-        avaliacaoId: avaliacao.id,
+        id: avaliacao.id,
         semestreAvaliacao: avaliacao.semestre,
-        requerLoginCliente: avaliacao.requer_login,
-        nomeEmpresa: avaliacao.empresa.nome,
+        requerLoginCliente: avaliacao.requerLoginCliente,
+        nomeEmpresa: avaliacao.criador.empresa?.nome || null,
         tituloQuestionario: avaliacao.questionario.titulo,
-        perguntas: perguntasDoQuestionario
-          .filter(quePerg => quePerg.pergunta)
-          .map(quePerg => ({
-            id: quePerg.pergunta.id,
-            enunciado: quePerg.pergunta.enunciado,
-            obrigatoria: quePerg.pergunta.obrigatoria,
-            tipo: quePerg.pergunta.tipo,
-            opcoes: quePerg.pergunta.opcoes || [],
-          })),
+        questionario: avaliacao.questionario,
+        perguntas
       };
 
-      return response.json(responseData);
+      return response.status(200).json(responseData);
 
     } catch (error) {
       console.error("Erro detalhado ao buscar dados da avaliação:", error);

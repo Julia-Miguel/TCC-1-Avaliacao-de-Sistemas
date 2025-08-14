@@ -7,7 +7,8 @@ import MobileMenu from "@/components/MobileMenu";
 import { ThemeProvider } from "@/components/menu/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { usePathname } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useMemo } from "react";
+import Head from "next/head"; // Import necessário
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -26,6 +27,7 @@ export default function RootLayout({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
+  // Rotas que não mostram menu
   const noNavSideBarRoutes = [
     "/empresas/registrar", 
     "/empresas/login", 
@@ -38,8 +40,27 @@ export default function RootLayout({
 
   const showNavAndSidebar = !noNavSideBarRoutes.some(route => pathname.startsWith(route));
 
+  // Mapeamento de títulos por rota
+  const pageTitle = useMemo(() => {
+    const map: Record<string, string> = {
+      "/dashboard": "Q+ - Dashboard",
+      "/questionarios": "Q+ - Questionários",
+      "/avaliacao": "Q+ - Avaliações",
+      "/usuario": "Q+ - Administradores",
+      "/empresas/login": "Login Empresa - Q+",
+      "/admin/login": "Login Admin - Q+",
+      "/clientes/login": "Login Cliente - Q+",
+    };
+    // Busca exata ou rota inicial
+    return map[pathname] || "Q+ - Sistema de Avaliação";
+  }, [pathname]);
+
   return (
     <html lang="pt" suppressHydrationWarning>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content="Sistema de questionários e avaliações Q+" />
+      </Head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <ThemeProvider>
           <AuthProvider>

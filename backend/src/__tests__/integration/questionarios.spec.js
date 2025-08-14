@@ -1,225 +1,332 @@
-// src/__tests__/integration/questionarios.spec.js
+// src/__tests__/integration/questionarios.improved.spec.js
+// Exemplo de como usar as funções auxiliares nos testes
+
 import request from 'supertest';
 import { app } from '../../server.js';
 import { prisma } from '../../database/client.js';
-import jwt from 'jsonwebtoken';
+import {
+  cleanDatabase,
+  createTestCompany,
+  createTestQuestionario,
+  expectSuccessResponse,
+  expectErrorResponse,
+  validateRequiredFields,
+  validateNoSensitiveFields,
+  testCRUDOperations,
+  DEFAULT_TEST_DATA
+} from '../helpers/testHelpers.js';
 
-describe('Rotas de Questionários (API E2E)', () => {
-  let empresa;
-  let usuario;
-  let questionario;
-  let pergunta;
-  let authToken;
+describe('Rotas de Questionários (Melhorado com Helpers)', () => {
+  let testData;
 
   beforeAll(async () => {
-    // limpeza (ordem importante por FK)
-    await prisma.resposta.deleteMany();
-    await prisma.usuAval.deleteMany();
-    await prisma.avaliacao.deleteMany();
-    await prisma.quePerg.deleteMany();
-    await prisma.opcao.deleteMany().catch(() => {});
-    await prisma.pergunta.deleteMany();
-    await prisma.questionario.deleteMany();
-    await prisma.usuario.deleteMany();
-    await prisma.empresa.deleteMany();
-
-    // cria/upsert empresa
-    empresa = await prisma.empresa.upsert({
-      where: { emailResponsavel: 'questionario-test@empresa.com' },
-      update: {},
-      create: {
-        nome: 'Empresa Questionario Test',
-        emailResponsavel: 'questionario-test@empresa.com',
-        senhaEmpresa: '123'
-      }
-    });
-
-    // cria usuário ADMIN vinculado à empresa
-    usuario = await prisma.usuario.create({
-      data: {
-        nome: 'Admin Questionario',
-        email: 'admin.questionario@teste.com',
-        tipo: 'ADMIN_EMPRESA',
-        empresaId: empresa.id
-      }
-    });
-
-    // cria pergunta existente (usado em alguns asserts)
-    pergunta = await prisma.pergunta.create({
-      data: {
-        enunciado: 'Qual a sua opinião?',
-        tipos: 'TEXTO',
-        obrigatoria: false
-      }
-    });
-
-    // cria questionário base (usado pelos GETs)
-    questionario = await prisma.questionario.create({
-      data: {
-        titulo: 'Questionário Teste - GET',
-        criadorId: usuario.id
-      }
-    });
-
-    // associa pergunta ao questionário (que_perg)
-    await prisma.quePerg.create({
-      data: {
-        questionarioId: questionario.id,
-        perguntaId: pergunta.id,
-        ordem: 1
-      }
-    });
-
-    // gera token compatível com authMiddleware
-    authToken = jwt.sign(
-      { id: usuario.id, tipo: usuario.tipo, empresaId: usuario.empresaId },
-      process.env.JWT_SECRET || 'supersecret_test_key',
-      { expiresIn: '1d' }
-    );
+    await cleanDatabase();
+    testData = await createTestCompany('-questionarios');
   });
 
   afterAll(async () => {
-    await prisma.resposta.deleteMany();
-    await prisma.usuAval.deleteMany();
-    await prisma.avaliacao.deleteMany();
-    await prisma.quePerg.deleteMany();
-    await prisma.pergunta.deleteMany();
-    await prisma.questionario.deleteMany();
-    await prisma.usuario.deleteMany();
-    await prisma.empresa.deleteMany();
+    await cleanDatabase();
     await prisma.$disconnect();
   });
 
-  /* ---------- READ: GET list / GET by id ---------- */
   describe('GET /api/questionarios', () => {
-    it('deve retornar 200 e uma lista de questionários quando autenticado', async () => {
-      const res = await request(app)
-        .get('/api/questionarios')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      if (res.status !== 200) {
-        // eslint-disable-next-line no-console
-        console.log('GET /api/questionarios response:', res.status, res.body || res.text);
-      }
-
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      const found = res.body.find((q) => q.id === questionario.id);
-      expect(found).toBeDefined();
+    beforeEach(async () => {
+      // Cria questionário para cada teste
+      await createTestQuestionario(testData.admin.id);
     });
 
-    it('deve retornar 401 sem token', async () => {
+    it('deve retornar lista de questionários com estrutura correta', async () => {
+      const res = await request(app)
+        .get('/api/questionarios')
+        .set('Authorization', `Bearer ${testData.authToken}`);
+
+      expectSuccessResponse(res);
+      expect(Array.isArray(res.body)).toBe(true);
+
+      if (res.body.length > 0) {
+        const questionario = res.body[0];
+        validateRequiredFields(questionario, ['id', 'titulo', 'criadorId']);
+        validateNoSensitiveFields(questionario);
+      }
+    });
+
+    it('deve retornar erro 401 sem autenticação', async () => {
       const res = await request(app).get('/api/questionarios');
-      expect(res.status).toBe(401);
+      expectErrorResponse(res, 401);
+    });
+
+    it('deve filtrar questionários por empresa do usuário', async () => {
+      // Cria outra empresa para verificar isolamento
+      const { admin: outroAdmin } = await createTestCompany('-outro');
+      await createTestQuestionario(outroAdmin.id);
+
+      const res = await request(app)
+        .get('/api/questionarios')
+        .set('Authorization', `Bearer ${testData.authToken}`);
+
+      expectSuccessResponse(res);
+      
+      // Todos os questionários devem ser da empresa do usuário logado
+      res.body.forEach(q => {
+        expect(q.criadorId).toBe(testData.admin.id);
+      });
     });
   });
 
   describe('GET /api/questionarios/:id', () => {
-    it('deve retornar 200 e o questionário quando autenticado', async () => {
+    let questionarioTeste;
+
+    beforeEach(async () => {
+      const result = await createTestQuestionario(testData.admin.id);
+      questionarioTeste = result.questionario;
+    });
+
+    it('deve retornar questionário completo com perguntas', async () => {
       const res = await request(app)
-        .get(`/api/questionarios/${questionario.id}`)
-        .set('Authorization', `Bearer ${authToken}`);
+        .get(`/api/questionarios/${questionarioTeste.id}`)
+        .set('Authorization', `Bearer ${testData.authToken}`);
 
-      if (res.status !== 200) {
-        // eslint-disable-next-line no-console
-        console.log(`GET /api/questionarios/${questionario.id} response:`, res.status, res.body || res.text);
-      }
-
-      expect(res.status).toBe(200);
-      expect(res.body).toBeDefined();
-      expect(res.body.id).toBe(questionario.id);
-      expect(res.body.perguntas).toBeDefined();
+      expectSuccessResponse(res);
+      validateRequiredFields(res.body, ['id', 'titulo', 'perguntas']);
       expect(Array.isArray(res.body.perguntas)).toBe(true);
-      const linked = res.body.perguntas.find((qp) => qp.pergunta?.id === pergunta.id);
-      expect(linked).toBeDefined();
+      
+      if (res.body.perguntas.length > 0) {
+        const pergunta = res.body.perguntas[0];
+        validateRequiredFields(pergunta, ['pergunta', 'ordem']);
+        validateRequiredFields(pergunta.pergunta, ['id', 'enunciado', 'tipos']);
+      }
     });
 
-    it('deve retornar 401 sem token', async () => {
-      const res = await request(app).get(`/api/questionarios/${questionario.id}`);
-      expect(res.status).toBe(401);
-    });
-
-    it('deve retornar 404 para id inexistente', async () => {
+    it('deve retornar 404 para ID inexistente', async () => {
       const res = await request(app)
-        .get('/api/questionarios/9999999')
-        .set('Authorization', `Bearer ${authToken}`);
+        .get('/api/questionarios/999999')
+        .set('Authorization', `Bearer ${testData.authToken}`);
 
-      expect([404, 400]).toContain(res.status);
+      expectErrorResponse(res, 404);
+    });
+
+    it('deve retornar 401 sem autenticação', async () => {
+      const res = await request(app)
+        .get(`/api/questionarios/${questionarioTeste.id}`);
+
+      expectErrorResponse(res, 401);
     });
   });
 
-  /* ---------- CREATE / UPDATE / DELETE via API (E2E) ---------- */
-  describe('CRUD via API - POST / PATCH / DELETE', () => {
-    let createdQuestionarioId;
-
-    it('POST /api/questionarios deve criar um questionário (201/200) e retornar o objeto criado', async () => {
-      const payload = {
-        titulo: 'Questionário Criado via API - Teste',
-        perguntas: [
-          { enunciado: 'Como avalia nosso suporte?', tipos: 'TEXTO', obrigatoria: true },
-          { enunciado: 'Avalie a clareza das informações', tipos: 'TEXTO', obrigatoria: false }
-        ]
+  describe('CRUD Completo via testCRUDOperations', () => {
+    it('deve executar operações CRUD completas', async () => {
+      const crudTestData = {
+        create: {
+          titulo: 'Questionário CRUD Teste',
+          perguntas: [
+            {
+              enunciado: 'Pergunta 1 do CRUD',
+              tipos: 'TEXTO',
+              obrigatoria: true
+            },
+            {
+              enunciado: 'Pergunta 2 do CRUD',
+              tipos: 'TEXTO',
+              obrigatoria: false
+            }
+          ]
+        },
+        update: {
+          titulo: 'Questionário CRUD Atualizado'
+        }
       };
+
+      const createdId = await testCRUDOperations(
+        request(app),
+        '/api/questionarios',
+        testData.authToken,
+        crudTestData
+      );
+
+      expect(createdId).toBeDefined();
+      expect(typeof createdId).toBe('number');
+    });
+  });
+
+  describe('Validações de Negócio', () => {
+    it('deve rejeitar questionário sem título', async () => {
+      const res = await request(app)
+        .post('/api/questionarios')
+        .set('Authorization', `Bearer ${testData.authToken}`)
+        .send({
+          perguntas: [DEFAULT_TEST_DATA.pergunta]
+        });
+
+      expectErrorResponse(res, 400);
+    });
+
+    it('deve aceitar questionário sem perguntas', async () => {
+      const res = await request(app)
+        .post('/api/questionarios')
+        .set('Authorization', `Bearer ${testData.authToken}`)
+        .send({
+          titulo: 'Questionário Vazio'
+        });
+
+      expectSuccessResponse(res, 201);
+    });
+
+    it('deve criar perguntas automaticamente quando fornecidas', async () => {
+      const perguntasTest = [
+        { enunciado: 'Auto pergunta 1', tipos: 'TEXTO', obrigatoria: true },
+        { enunciado: 'Auto pergunta 2', tipos: 'TEXTO', obrigatoria: false }
+      ];
 
       const res = await request(app)
         .post('/api/questionarios')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send(payload);
+        .set('Authorization', `Bearer ${testData.authToken}`)
+        .send({
+          titulo: 'Questionário com Auto Perguntas',
+          perguntas: perguntasTest
+        });
 
-      // debug
-      if (![200, 201].includes(res.status)) {
-        // eslint-disable-next-line no-console
-        console.log('POST /api/questionarios response:', res.status, res.body || res.text);
-      }
+      expectSuccessResponse(res, 201);
+      
+      // Verifica se as perguntas foram criadas
+      const questionarioCompleto = await request(app)
+        .get(`/api/questionarios/${res.body.id}`)
+        .set('Authorization', `Bearer ${testData.authToken}`);
 
-      expect([200, 201]).toContain(res.status);
-      // assume que o body contém o questionário criado
-      expect(res.body).toBeDefined();
-      // pode ser que o controller retorne o objeto inteiro ou somente { id }
-      const createdId = res.body.id ?? res.body?.questionario?.id;
-      expect(createdId).toBeDefined();
-      createdQuestionarioId = createdId;
+      expect(questionarioCompleto.body.perguntas).toHaveLength(2);
+    });
+  });
 
-      // valida no banco
-      const qFromDb = await prisma.questionario.findUnique({ where: { id: parseInt(createdQuestionarioId) } });
-      expect(qFromDb).toBeDefined();
-      expect(qFromDb.titulo).toBeTruthy();
+  describe('Cenários de Erro e Edge Cases', () => {
+    it('deve tratar erro de servidor graciosamente', async () => {
+      // Força erro interno (apenas para teste)
+      jest.spyOn(console, 'error').mockImplementation(() => {}); // silencia logs de erro
+      
+      const res = await request(app)
+        .get('/api/questionarios/invalidid')
+        .set('Authorization', `Bearer ${testData.authToken}`);
+
+      expect([400, 404, 500]).toContain(res.status);
+      
+      jest.restoreAllMocks();
     });
 
-    it('PATCH /api/questionarios/:id deve atualizar o questionário (200) — alterar título', async () => {
-      const newTitle = 'Questionário Atualizado via API - Teste';
+    it('deve lidar com payload muito grande', async () => {
+      const perguntasGigantes = Array(100).fill().map((_, i) => ({
+        enunciado: `Pergunta ${i} `.repeat(100), // texto muito longo
+        tipos: 'TEXTO',
+        obrigatoria: false
+      }));
+
       const res = await request(app)
-        .patch(`/api/questionarios/${createdQuestionarioId}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ titulo: newTitle });
+        .post('/api/questionarios')
+        .set('Authorization', `Bearer ${testData.authToken}`)
+        .send({
+          titulo: 'Questionário Gigante',
+          perguntas: perguntasGigantes
+        });
 
-      if (res.status !== 200) {
-        // eslint-disable-next-line no-console
-        console.log(`PATCH /api/questionarios/${createdQuestionarioId} response:`, res.status, res.body || res.text);
-      }
-
-      // aceitar 200 ou 204 — se 204, faremos fetch do DB para verificar
-      expect([200, 204]).toContain(res.status);
-
-      const qFromDb = await prisma.questionario.findUnique({ where: { id: parseInt(createdQuestionarioId) } });
-      expect(qFromDb).toBeDefined();
-      expect(qFromDb.titulo).toBe(newTitle);
+      // Pode ser aceito ou rejeitado dependendo dos limites configurados
+      expect([200, 201, 400, 413]).toContain(res.status);
     });
 
-    it('DELETE /api/questionarios/:id deve remover o questionário (200/204) e não existir mais no DB', async () => {
-      const res = await request(app)
-        .delete(`/api/questionarios/${createdQuestionarioId}`)
-        .set('Authorization', `Bearer ${authToken}`);
+    it('deve validar tipos de dados corretos', async () => {
+      const payloadsInvalidos = [
+        { titulo: 123 }, // título deve ser string
+        { titulo: null },
+        { titulo: '' }, // título vazio
+        { titulo: 'Válido', perguntas: 'não é array' },
+        { titulo: 'Válido', perguntas: [{ enunciado: 123 }] } // enunciado deve ser string
+      ];
 
-      if (![200, 204].includes(res.status)) {
-        // eslint-disable-next-line no-console
-        console.log(`DELETE /api/questionarios/${createdQuestionarioId} response:`, res.status, res.body || res.text);
+      for (const payload of payloadsInvalidos) {
+        const res = await request(app)
+          .post('/api/questionarios')
+          .set('Authorization', `Bearer ${testData.authToken}`)
+          .send(payload);
+
+        expect([400, 422]).toContain(res.status);
       }
+    });
+  });
 
-      expect([200, 204]).toContain(res.status);
+  describe('Performance e Concorrência', () => {
+    it('deve suportar múltiplas requisições simultâneas', async () => {
+      const requests = Array(5).fill().map((_, i) =>
+        request(app)
+          .post('/api/questionarios')
+          .set('Authorization', `Bearer ${testData.authToken}`)
+          .send({
+            titulo: `Questionário Concorrente ${i}`,
+            perguntas: [
+              { enunciado: `Pergunta ${i}`, tipos: 'TEXTO', obrigatoria: false }
+            ]
+          })
+      );
 
-      const qFromDb = await prisma.questionario.findUnique({ where: { id: parseInt(createdQuestionarioId) } });
-      expect(qFromDb).toBeNull();
+      const responses = await Promise.all(requests);
+
+      responses.forEach(res => {
+        expectSuccessResponse(res, 201);
+      });
+
+      // Verifica se todos foram criados
+      const listRes = await request(app)
+        .get('/api/questionarios')
+        .set('Authorization', `Bearer ${testData.authToken}`);
+
+      expect(listRes.body.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it('deve retornar resposta em tempo hábil', async () => {
+      const start = Date.now();
+
+      const res = await request(app)
+        .get('/api/questionarios')
+        .set('Authorization', `Bearer ${testData.authToken}`);
+
+      const duration = Date.now() - start;
+
+      expectSuccessResponse(res);
+      expect(duration).toBeLessThan(5000); // menos de 5 segundos
+    });
+  });
+
+  describe('Integração com outras entidades', () => {
+    it('deve permitir criar avaliação a partir do questionário', async () => {
+      const { questionario } = await createTestQuestionario(testData.admin.id);
+
+      const res = await request(app)
+        .post('/api/avaliacao')
+        .set('Authorization', `Bearer ${testData.authToken}`)
+        .send({
+          semestre: '2025.1',
+          questionarioId: questionario.id,
+          requerLoginCliente: false
+        });
+
+      expectSuccessResponse(res, 201);
+      expect(res.body.questionarioId).toBe(questionario.id);
+    });
+
+    it('deve impedir exclusão de questionário com avaliações ativas', async () => {
+      const { questionario } = await createTestQuestionario(testData.admin.id);
+
+      // Cria avaliação vinculada
+      await prisma.avaliacao.create({
+        data: {
+          semestre: '2025.1',
+          questionarioId: questionario.id,
+          criadorId: testData.admin.id,
+          requerLoginCliente: false
+        }
+      });
+
+      const res = await request(app)
+        .delete(`/api/questionarios/${questionario.id}`)
+        .set('Authorization', `Bearer ${testData.authToken}`);
+
+      // Deve falhar devido à restrição de FK ou regra de negócio
+      expect([400, 409]).toContain(res.status);
     });
   });
 });

@@ -11,16 +11,33 @@ export class IdentifiedStartAvaliacaoController {
     }
 
     try {
+      // Sempre salvar email em minúsculo
+      const emailLower = email.toLowerCase();
+
+      // Cria/atualiza usuário
       const usuario = await prisma.usuario.upsert({
-        where: { email: email },
+        where: { email: emailLower },
         update: { nome: nome },
         create: {
           nome,
-          email,
+          email: emailLower,
           tipo: 'CLIENTE_PLATAFORMA',
         },
       });
 
+      // Checa se já existe usuAval para esse usuario + avaliacao
+      const usuAvalExistente = await prisma.usuAval.findFirst({
+        where: {
+          avaliacaoId,
+          usuarioId: usuario.id
+        }
+      });
+
+      if (usuAvalExistente) {
+        return response.status(409).json({ message: "Avaliação já iniciada para este usuário." });
+      }
+
+      // Cria usuAval
       const usuAval = await prisma.usuAval.create({
         data: {
           avaliacaoId,
@@ -31,7 +48,8 @@ export class IdentifiedStartAvaliacaoController {
         },
       });
 
-      const avaliacaoCompleta = await prisma.avaliacao.findUnique({
+      // Busca avaliação para retornar dados relevantes ao frontend/teste
+      const avaliacao = await prisma.avaliacao.findUnique({
         where: { id: avaliacaoId },
         include: {
           questionario: {
@@ -46,11 +64,16 @@ export class IdentifiedStartAvaliacaoController {
           },
         },
       });
-      
+
+      // Retorno mais informativo
       const responseData = {
+        message: "Avaliação iniciada com sucesso.",
+        usuAvalId: usuAval.id,
+        avaliacao,
+        usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email }
       };
 
-      return response.status(200).json(responseData);
+      return response.status(201).json(responseData);
 
     } catch (error) {
       console.error("Erro ao iniciar avaliação identificada:", error);

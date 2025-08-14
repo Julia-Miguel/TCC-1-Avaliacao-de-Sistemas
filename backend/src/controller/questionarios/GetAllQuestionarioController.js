@@ -20,12 +20,17 @@ export class GetAllQuestionarioController {
                         select: { id: true, nome: true, email: true } 
                     },
                     perguntas: {
-                        orderBy: { ordem: 'asc' }, 
-                        include: {
+                        orderBy: { ordem: 'asc' },
+                        take: 3, // 🔹 limita para exibir apenas as 3 primeiras perguntas
+                        select: {
                             pergunta: {
-                                include: {
+                                select: {
+                                    id: true,
+                                    enunciado: true,
+                                    // 🔹 Se não precisa das opções na listagem, remova este bloco
                                     opcoes: {
-                                        orderBy: { id: 'asc' }
+                                        orderBy: { id: 'asc' },
+                                        select: { id: true, texto: true }
                                     }
                                 }
                             }
@@ -35,13 +40,12 @@ export class GetAllQuestionarioController {
                         select: { avaliacoes: true } 
                     }
                 },
-
                 orderBy: [
                     { ordem: 'asc' },
                     { created_at: 'desc' }
                 ]
             });
-            
+
             return response.status(200).json(questionarios);
 
         } catch (error) {

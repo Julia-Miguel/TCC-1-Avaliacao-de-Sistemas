@@ -57,6 +57,7 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
     type="button"
     role="switch"
     aria-checked={checked}
+    aria-label={checked ? "Desativar questionário" : "Ativar questionário"}
     onClick={(e) => {
       e.stopPropagation();
       onCheckedChange();
@@ -69,12 +70,14 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
 
 function ListQuestionariosContent() {
   const router = useRouter();
-  const [questionarios, setQuestionarios] = useState<QuestionarioInterface[]>([]);
+  const [questionarios, setQuestionarios] = useState<QuestionarioInterface[]>([
+    { id: 1, titulo: "Carregando...", perguntas: [], ativo: false, eh_satisfacao: false, created_at: "", updated_at: "" }
+  ]);
   const [menuAberto, setMenuAberto] = useState<number | null>(null);
   const [detalhesVisiveis, setDetalhesVisiveis] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [ordem, setOrdem] = useState<number[]>([]);
+  const [ordem, setOrdem] = useState<number[]>([1]);
 
   const [satisfacaoExiste, setSatisfacaoExiste] = useState(false);
 
@@ -84,7 +87,7 @@ function ListQuestionariosContent() {
     api.get("/questionarios")
       .then(response => {
         const data = response.data as QuestionarioInterface[];
-        const sortedData = data.sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+        const sortedData = data.toSorted((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
         setQuestionarios(sortedData);
         setOrdem(sortedData.map(q => q.id));
         const existe = data.some(q => q.eh_satisfacao);
@@ -193,11 +196,15 @@ function ListQuestionariosContent() {
   };
 
   if (isLoading) {
-    return <div className="page-container center-content"><p>Carregando questionários...</p></div>;
+    return (
+      <div className="page-container center-content">
+        <h3 className="text-xl sm:text-2xl font-semibold text-foreground">Carregando...</h3>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="page-container center-content"><p style={{ color: 'red' }}>{error}</p></div>;
+    return <div className="page-container center-content"><p className="error-message">{error}</p></div>;
   }
 
   return (
