@@ -1,49 +1,31 @@
-// backend/cleanup.js
+// backend/jest-setup.js
+const { execSync } = require('child_process');
+const { prisma } = require('./src/database/client.js'); // Usando require e o caminho para o seu client
 
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+// Executa uma vez antes de todos os testes começarem
+beforeAll(() => {
+  // Define a variável de ambiente para a base de dados de teste
+  process.env.DATABASE_URL = "file:./test.db";
+  // Roda as migrations para garantir que o schema está atualizado
+  execSync('npx prisma migrate deploy');
+});
 
-async function main() {
-  console.log('Iniciando script de limpeza de registros órfãos...');
+// Executa antes de CADA teste
+beforeEach(async () => {
+  // Limpa os dados de todas as tabelas
+  // IMPORTANTE: A ordem importa! Comece pelas tabelas com chaves estrangeiras.
+  await prisma.resposta.deleteMany();
+  await prisma.opcao.deleteMany();
+  await prisma.quePerg.deleteMany();
+  await prisma.pergunta.deleteMany();
+  await prisma.usuAval.deleteMany();
+  await prisma.avaliacao.deleteMany();
+  await prisma.questionario.deleteMany();
+  await prisma.usuario.deleteMany();
+  await prisma.empresa.deleteMany();
+});
 
-  // 1. Pega todas as conexões entre questionários e perguntas.
-  const todasAsConexoes = await prisma.quePerg.findMany();  
-  
-  let orfaosEncontrados = 0;
-
-  console.log(`Verificando ${todasAsConexoes.length} conexões...`);
-
-  // 2. Itera sobre cada conexão para verificar sua validade.
-  for (const conexao of todasAsConexoes) {
-    // 3. Para cada conexão, tenta encontrar a pergunta correspondente.
-    const perguntaExiste = await prisma.pergunta.findUnique({
-      where: { id: conexao.perguntaId },
-    });
-
-    // 4. Se a pergunta NÃO existe, a conexão é órfã e deve ser removida.
-    if (!perguntaExiste) {
-      orfaosEncontrados++;
-      console.log(`--> Conexão órfã encontrada (ID: ${conexao.id})! Apontava para a Pergunta ID ${conexao.perguntaId} (inexistente). Deletando...`);
-      
-      await prisma.quePerg.delete({
-        where: { id: conexao.id },
-      });
-    }
-  }
-
-  if (orfaosEncontrados > 0) {
-    console.log(`\nLimpeza concluída! ${orfaosEncontrados} registros órfãos foram removidos.`);
-  } else {
-    console.log('\nNenhum registro órfão encontrado. Seu banco de dados está consistente!');
-  }
-}
-
-main()
-  .catch((e) => {
-    console.error('Ocorreu um erro durante a limpeza:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    // Fecha a conexão com o banco de dados
-    await prisma.$disconnect();
-  });
+// Executa uma vez depois de todos os testes terminarem
+afterAll(async () => {
+  await prisma.$disconnect();
+});

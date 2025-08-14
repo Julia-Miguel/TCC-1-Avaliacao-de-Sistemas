@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.js && next dev --turbopack -H 0.0.0.0",
     "start": "nodemon src/index.js",
-    "test": "dotenv -e .env.test -- prisma migrate deploy && cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "test": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "build": "tsc"
   },
   "keywords": [],
@@ -29,16 +29,20 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.1",
+    "@types/supertest": "^6.0.3",
+    "babel-jest": "^30.0.5",
     "cross-env": "^7.0.3",
     "dotenv-cli": "^8.0.0",
-    "jest": "^30.0.3",
+    "jest": "^30.0.5",
     "nodemon": "^3.1.9",
     "prisma": "^6.4.1",
-    "supertest": "^7.1.1",
+    "supertest": "^7.1.4",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",

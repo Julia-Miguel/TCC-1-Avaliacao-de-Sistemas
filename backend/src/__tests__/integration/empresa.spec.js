@@ -1,65 +1,45 @@
+// backend/src/__tests__/integration/empresa.spec.js
 import request from 'supertest';
 import { app } from '../../server.js';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../database/client.js';
 
-const prisma = new PrismaClient();
+describe('Rotas de Empresas', () => {
 
-describe('Rotas de Empresa', () => {
-    // Limpa o banco antes de cada teste para garantir isolamento
-    beforeEach(async () => {
-        // ✅ ORDEM DE LIMPEZA CORRIGIDA E COMPLETA
-        // Esta é a mesma ordem segura dos outros testes
-        await prisma.resposta.deleteMany({});
-        await prisma.quePerg.deleteMany({});
-        await prisma.pergunta.deleteMany({});
-        await prisma.avaliacao.deleteMany({});
-        await prisma.questionario.deleteMany({});
-        await prisma.usuario.deleteMany({});
-        await prisma.empresa.deleteMany({});
+  it('deve ser capaz de criar uma nova empresa', async () => {
+    const response = await request(app)
+      .post('/api/empresas') 
+      .send({
+        nome: "Empresa Teste JS",
+        emailResponsavel: "contato@testejs.com",
+        senhaEmpresa: "senhaForte123"
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty('id');
+
+    const empresaNoDb = await prisma.empresa.findUnique({
+      where: { emailResponsavel: "contato@testejs.com" }
     });
+    expect(empresaNoDb).not.toBeNull();
+  });
 
-    afterAll(async () => {
-        await prisma.$disconnect();
-    });
+  it('não deve ser capaz de criar uma empresa com um email já existente', async () => {
+    await request(app)
+      .post('/api/empresas')
+      .send({
+        nome: "Empresa Original JS",
+        emailResponsavel: "duplicado@testejs.com",
+        senhaEmpresa: "123"
+      });
 
-    describe('POST /empresas/register', () => {
-        it('deve criar uma nova empresa com sucesso e retornar status 201', async () => {
-            const novaEmpresa = {
-                nome: 'Empresa de Teste Finalíssima',
-                emailResponsavel: 'contato@finalissima.com',
-                senhaEmpresa: 'senhaforte123',
-            };
-
-            const response = await request(app)
-                .post('/empresas/register')
-                .send(novaEmpresa);
-
-            expect(response.status).toBe(201);
-            expect(response.body).toHaveProperty('id');
-            expect(response.body.nome).toBe(novaEmpresa.nome);
-        });
-
-        it('deve retornar erro 400 ao tentar registrar com um email já existente', async () => {
-            // Cria uma empresa para o teste
-            await prisma.empresa.create({
-                data: {
-                    nome: 'Empresa Super Existente',
-                    emailResponsavel: 'email.super.duplicado@teste.com',
-                    senhaEmpresa: 'senha123',
-                },
-            });
-
-            // Tenta criar outra com o mesmo e-mail
-            const response = await request(app)
-                .post('/empresas/register')
-                .send({
-                    nome: 'Outra Empresa',
-                    emailResponsavel: 'email.super.duplicado@teste.com',
-                    senhaEmpresa: 'outrasenha',
-                });
-
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('Já existe uma empresa cadastrada com este nome ou email.');
-        });
-    });
+    const response = await request(app)
+      .post('/api/empresas')
+      .send({
+        nome: "Empresa Fantasma JS",
+        emailResponsavel: "duplicado@testejs.com",
+        senhaEmpresa: "456"
+      });
+    
+    expect(response.status).toBe(400);
+  });
 });

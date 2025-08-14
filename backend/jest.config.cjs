@@ -1,11 +1,7 @@
-// jest.config.js
+// backend/jest.config.cjs
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
-  // Padrão para encontrar os arquivos de teste
-  testMatch: [
-    '**/*.spec.js',
-    '**/*.spec.ts'
-  ],
+  // Arquivo que vai preparar e limpar a base de dados
+  setupFilesAfterEnv: ['<rootDir>/jest-setup.js'],
+  testMatch: ['**/*.spec.js'],
 };
-
