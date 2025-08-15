@@ -9,7 +9,7 @@ describe('Rotas de Empresa (API E2E)', () => {
   describe('POST /api/empresas/register (Cadastro)', () => {
     it('deve criar uma nova empresa com dados válidos', async () => {
       const response = await request(app)
-        .post('/api/empresas/register') // Rota corrigida
+        .post('/api/empresas/register')
         .send({
           nome: "Empresa de Teste Válida",
           emailResponsavel: "valido@empresa.com",
